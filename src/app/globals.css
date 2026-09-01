@@ -1,26 +1,48 @@
 @import "tailwindcss";
 
+/* 한성대 상징색(파랑) 계열로 잡은 팔레트. 다크모드도 같이 정의해서 어디서 시연해도 안 깨지게. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #f4f6fb;
+  --surface: #ffffff;
+  --surface-muted: #eef1f8;
+  --foreground: #10162a;
+  --muted: #64708c;
+  --border: #dfe4f0;
+  --brand: #1f4fd8;
+  --brand-soft: #e6ecfd;
+  --accent: #f5820b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0b0f1c;
+    --surface: #141a2c;
+    --surface-muted: #1b2338;
+    --foreground: #eef1f8;
+    --muted: #96a0bb;
+    --border: #26304a;
+    --brand: #6c8dff;
+    --brand-soft: #1c2748;
+    --accent: #ffa347;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  word-break: keep-all;
 }
