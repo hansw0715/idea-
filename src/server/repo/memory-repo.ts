@@ -80,7 +80,8 @@ function makeUser(
 }
 
 const SEED_USERS: User[] = [
-  makeUser('u1', '승원', 'IT공과대학', 2026),
+  // 시연용 관리자. 관리자 탭(/admin)은 이 계정으로만 열린다.
+  { ...makeUser('u1', '승원', 'IT공과대학', 2026), role: 'admin' },
   makeUser('u2', '지민', '디자인대학', 2025),
   makeUser('u3', '태현', '사회과학대학', 2024),
   makeUser('u4', '수빈', '크리에이티브인문예술대학', 2026),

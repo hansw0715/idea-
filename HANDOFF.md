@@ -8,6 +8,7 @@
 | 밥약 (주최자 승인) | 한승원 | ✅ 완료 |
 | 팀빌딩 (노쇼 관리 · 관리자 대시보드) | — | ⬜ |
 | 시설 예약 (공강 시간표 자동 계산) | — | ⬜ |
+| 셔틀버스 노선도 (시간표 + 실시간 위치) | 한승원 | ✅ 1차 |
 
 ---
 
@@ -191,3 +192,26 @@ npm run typecheck
 3. `노쇼왕` 으로 전환 → "노쇼 기록으로 참여 제한"
 4. 밥약 탭 → `현우` 로 신청 → `태현`(주최자) 으로 전환해 수락
 5. 주최자 메뉴에서 노쇼 체크 → 그 사람 신뢰도가 깎이는 것 확인
+
+---
+
+## 9. 셔틀버스 (`src/features/bus/`)
+
+- 화면: `/bus`(로그인 없이 열람) · `/bus/driver`(기사 폰에서 GPS 송신) · `/admin` 버스 탭(노선·정류장·시간표·방학 편집)
+- 시간표 = 출발지 출발 시각 목록 + 정류장별 소요 분. 계산은 `schedule.ts` 순수 함수(KST 기준, 테스트 있음)
+- 저장소: env에 Supabase가 있으면 `supabase-bus-repo`, 없으면 `seed.json` 인메모리 (`repo/index.ts`)
+- 실시간 위치: `POST /api/bus/positions` (`Authorization: Bearer BUS_DEVICE_TOKEN`). GPS 트래커를 사도 이 형식만 맞추면 된다.
+  AirTag는 위치를 꺼낼 공개 API가 없어서 못 쓴다.
+- ⚠️ `seed.json`의 노선·좌표·시간표는 **가짜**(`_todo`) — 실제 데이터로 교체 필요
+
+```bash
+cp .env.example .env.local          # Supabase 쓸 때만
+# Supabase SQL Editor에서 supabase/migrations/0001_bus.sql 실행 후
+npm run bus:seed                    # seed.json → Supabase
+npm run bus:simulate                # 가짜 버스를 노선 위로 달리게 (시연용)
+```
+
+## 10. 공용 UI (`src/components/ui/`)
+
+색·radius·간격 토큰은 `globals.css` 한 곳에만 있다. 페이지는 `Button / Card / Field·Input / Badge / Tabs / Modal / EmptyState`를 조립해서 만든다.
+디자인 교체 시 토큰 → `components/ui` 순서로만 고치면 된다.

@@ -13,13 +13,14 @@ const TABS = [
   { href: '/meals', label: '밥약', icon: '🍚', ready: true },
   { href: '/teams', label: '팀빌딩', icon: '🧩', ready: false },
   { href: '/facilities', label: '시설', icon: '📅', ready: false },
+  { href: '/bus', label: '버스', icon: '🚌', ready: true },
 ];
 
 export function Nav() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 grid grid-cols-5 border-t border-border bg-surface/95 backdrop-blur">
+    <nav className="sticky bottom-0 grid grid-cols-6 border-t border-border bg-surface/95 backdrop-blur">
       {TABS.map((tab) => {
         const active = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
         const className = `flex flex-col items-center gap-0.5 py-2.5 text-[11px] ${

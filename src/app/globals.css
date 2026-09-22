@@ -1,7 +1,21 @@
 @import "tailwindcss";
 
-/* 한성대 상징색(파랑) 계열로 잡은 팔레트. 다크모드도 같이 정의해서 어디서 시연해도 안 깨지게. */
+/*
+ * 디자인 토큰 — 색·글꼴·간격·radius는 전부 여기서만 정한다.
+ * 나중에 디자인을 통째로 바꿀 땐 이 파일의 값만 고치면 되고, 컴포넌트는 토큰 이름만 쓴다.
+ * 한성대 상징색(파랑) 계열. 다크모드도 같이 정의해서 어디서 시연해도 안 깨지게.
+ */
 :root {
+  /* 모양 */
+  --ui-radius-sm: 8px;
+  --ui-radius-md: 12px;
+  --ui-radius-lg: 16px;
+  --ui-radius-pill: 999px;
+  --ui-shadow-card: 0 1px 2px rgb(16 22 42 / 0.06);
+  /* 간격 */
+  --ui-page-gutter: 16px;
+
+  /* 색 */
   --background: #f4f6fb;
   --surface: #ffffff;
   --surface-muted: #eef1f8;
@@ -11,6 +25,10 @@
   --brand: #1f4fd8;
   --brand-soft: #e6ecfd;
   --accent: #f5820b;
+  --danger: #d93636;
+  --danger-soft: #fdeaea;
+  --success: #138a4f;
+  --success-soft: #e3f5ec;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -24,6 +42,10 @@
     --brand: #6c8dff;
     --brand-soft: #1c2748;
     --accent: #ffa347;
+    --danger: #ff6b6b;
+    --danger-soft: #3a1b20;
+    --success: #43c984;
+    --success-soft: #133024;
   }
 }
 
@@ -37,6 +59,16 @@
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
   --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --radius-sm: var(--ui-radius-sm);
+  --radius-md: var(--ui-radius-md);
+  --radius-lg: var(--ui-radius-lg);
+  --radius-pill: var(--ui-radius-pill);
+  --shadow-card: var(--ui-shadow-card);
+  --spacing-gutter: var(--ui-page-gutter);
   --font-sans: var(--font-geist-sans);
 }
 

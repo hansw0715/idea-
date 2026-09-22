@@ -25,8 +25,12 @@ export type User = {
    * 미팅/밥약은 읽기만 한다. 갱신 트리거는 shared/events.ts의 도메인 이벤트.
    */
   trustScore: number;
+  /** 관리자 대시보드(신고 처리, 버스 데이터 편집) 접근 권한. 없으면 일반 사용자. */
+  role?: 'user' | 'admin';
   createdAt: ISODateTime;
 };
+
+export const isAdmin = (u: User | null): boolean => u?.role === 'admin';
 
 /** 신뢰도가 이 밑이면 참여 차단. 팀빌딩 쪽 정책과 같은 상수를 쓰려고 여기 둠. */
 export const MIN_TRUST_TO_JOIN = 40;

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { isAdmin } from '@/shared/user';
+import { currentUser } from '@/server/session';
 
 /**
  * 홈. 4개 기능을 한 서비스로 보여주는 화면.
@@ -37,9 +39,19 @@ const FEATURES = [
     why: '예약이 너무 불편해서',
     ready: false,
   },
+  {
+    href: '/bus',
+    icon: '🚌',
+    title: '셔틀버스',
+    desc: '노선도 · 다음 버스까지 N분 · 실시간 위치',
+    why: '학교 셔틀은 지도 앱에 안 나와서',
+    ready: true,
+  },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const admin = isAdmin(await currentUser());
+
   return (
     <div className="space-y-4">
       <section className="rounded-2xl bg-brand p-5 text-white">
@@ -93,6 +105,12 @@ export default function Home() {
           );
         })}
       </div>
+
+      {admin && (
+        <Link href="/admin" className="block text-center text-xs text-muted underline">
+          관리자 페이지 →
+        </Link>
+      )}
     </div>
   );
 }
