@@ -1,7 +1,7 @@
 /** 클라이언트에서 API를 부르는 얇은 래퍼. (담당: 한승원) */
 import type { AppError } from '@/shared/types';
 import type { GatheringView, PublicUser } from '@/shared/view';
-import type { GatheringKind, SlotSpec } from '@/domain/gathering';
+import type { GatheringKind, GatheringMeta, SlotSpec } from '@/domain/gathering';
 
 export class ApiError extends Error {
   constructor(public readonly error: AppError) {
@@ -39,6 +39,7 @@ export type CreateGatheringBody = {
   joinDeadline: string;
   joinPolicy: 'auto' | 'approval';
   slots: SlotSpec[];
+  meta?: GatheringMeta;
 };
 
 export const createGathering = (body: CreateGatheringBody) =>

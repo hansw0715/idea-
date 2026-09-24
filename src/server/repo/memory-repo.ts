@@ -6,13 +6,23 @@
  */
 import { asGatheringId, asUserId, type GatheringId, type UserId } from '@/shared/types';
 import type { User } from '@/shared/user';
+import { DEFAULT_TEMPERATURE } from '@/domain/reputation/reputation';
 import type { Gathering } from '@/domain/gathering';
 import { createGathering } from '@/domain/gathering';
 import { MEETUP_PRESETS } from '@/features/meetup/preset';
 import { MEAL_PRESET } from '@/features/mealdate/preset';
-import type { GatheringRepo, UserRepo } from './gathering-repo';
+import type { Block, Report } from '@/domain/safety/safety';
+import type { QuickRequest, QuickRoom } from '@/features/mealdate/quick-match';
+import type { GatheringRepo, QuickMatchRepo, SafetyRepo, UserRepo } from './gathering-repo';
 
-type Store = { users: Map<string, User>; gatherings: Map<string, Gathering> };
+type Store = {
+  users: Map<string, User>;
+  gatherings: Map<string, Gathering>;
+  blocks: Block[];
+  reports: Map<string, Report>;
+  quickRequests: Map<string, QuickRequest>;
+  quickRooms: Map<string, QuickRoom>;
+};
 
 // Next.js dev 서버는 파일이 바뀔 때마다 모듈을 새로 불러오므로,
 // globalThis에 붙여두지 않으면 코드 한 줄 고칠 때마다 데이터가 날아간다.
@@ -45,6 +55,46 @@ export const gatheringRepo: GatheringRepo = {
   },
 };
 
+export const safetyRepo: SafetyRepo = {
+  async listBlocks() {
+    return [...getStore().blocks];
+  },
+  async saveBlock(block) {
+    const s = getStore();
+    if (!s.blocks.some((b) => b.blockerId === block.blockerId && b.blockedId === block.blockedId)) {
+      s.blocks.push(block);
+    }
+  },
+  async removeBlock(blockerId, blockedId) {
+    const s = getStore();
+    s.blocks = s.blocks.filter((b) => !(b.blockerId === blockerId && b.blockedId === blockedId));
+  },
+  async listReports() {
+    return [...getStore().reports.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+  async saveReport(report) {
+    getStore().reports.set(report.id, report);
+  },
+};
+
+export const quickMatchRepo: QuickMatchRepo = {
+  async listRequests() {
+    return [...getStore().quickRequests.values()];
+  },
+  async saveRequest(request) {
+    getStore().quickRequests.set(request.id, request);
+  },
+  async listRooms() {
+    return [...getStore().quickRooms.values()];
+  },
+  async findRoom(id) {
+    return getStore().quickRooms.get(id) ?? null;
+  },
+  async saveRoom(room) {
+    getStore().quickRooms.set(room.id, room);
+  },
+};
+
 export const userRepo: UserRepo = {
   async list() {
     return [...getStore().users.values()];
@@ -65,29 +115,38 @@ function makeUser(
   id: string,
   nickname: string,
   college: User['college'],
+  department: string,
   admissionYear: number,
-  trustScore = 100,
+  reputation: Partial<Pick<User, 'temperature' | 'warnings' | 'banned'>> = {},
 ): User {
   return {
     id: asUserId(id),
     nickname,
     college,
+    department,
     admissionYear,
     verified: true,
-    trustScore,
+    temperature: DEFAULT_TEMPERATURE,
+    warnings: 0,
+    banned: false,
+    ...reputation,
     createdAt: new Date('2026-03-02').toISOString(),
   };
 }
 
 const SEED_USERS: User[] = [
   // 시연용 관리자. 관리자 탭(/admin)은 이 계정으로만 열린다.
-  { ...makeUser('u1', '승원', 'IT공과대학', 2026), role: 'admin' },
-  makeUser('u2', '지민', '디자인대학', 2025),
-  makeUser('u3', '태현', '사회과학대학', 2024),
-  makeUser('u4', '수빈', '크리에이티브인문예술대학', 2026),
-  makeUser('u5', '현우', 'IT공과대학', 2025),
-  // 노쇼를 반복해서 신뢰도가 깎인 계정. 참여를 시도하면 LOW_TRUST로 막히는 걸 시연할 수 있다.
-  makeUser('u6', '노쇼왕', '미래융합사회과학대학', 2024, 25),
+  { ...makeUser('u1', '승원', 'IT공과대학', '컴퓨터공학부', 2026), role: 'admin' },
+  makeUser('u2', '지민', '디자인대학', '시각디자인전공', 2025),
+  makeUser('u3', '태현', '사회과학대학', '사회복지학과', 2024),
+  makeUser('u4', '수빈', '크리에이티브인문예술대학', '한국어문학부', 2026),
+  makeUser('u5', '현우', 'IT공과대학', '컴퓨터공학부', 2025),
+  // 노쇼 경고가 2번 쌓여 이용이 정지된 계정. 참여를 시도하면 막히는 걸 시연할 수 있다.
+  makeUser('u6', '노쇼왕', '미래융합사회과학대학', '융합행정학과', 2024, {
+    temperature: 21.5,
+    warnings: 2,
+    banned: true,
+  }),
 ];
 
 function seed(): Store {
@@ -175,7 +234,14 @@ function seed(): Store {
     if (created.ok) gatherings.set(m.id, created.value);
   }
 
-  return { users, gatherings };
+  return {
+    users,
+    gatherings,
+    blocks: [],
+    reports: new Map(),
+    quickRequests: new Map(),
+    quickRooms: new Map(),
+  };
 }
 
 export const DEFAULT_USER_ID: UserId = asUserId('u1');

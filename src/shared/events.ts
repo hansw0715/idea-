@@ -16,7 +16,8 @@ export type DomainEvent =
   | { type: 'gathering.left'; gatheringId: GatheringId; userId: UserId; at: ISODateTime }
   | { type: 'gathering.filled'; gatheringId: GatheringId; at: ISODateTime }
   | { type: 'gathering.cancelled'; gatheringId: GatheringId; at: ISODateTime }
-  | { type: 'participant.attended'; gatheringId: GatheringId; userId: UserId; at: ISODateTime }
+  | { type: 'participant.reviewed'; gatheringId: GatheringId; userId: UserId; mark: 'good' | 'soso' | 'noshow'; at: ISODateTime }
+  /** 같이 만난 사람 전원이 '안 왔어요'를 눌러 노쇼가 확정된 순간 (한 모임에서 한 번만) */
   | { type: 'participant.noshow'; gatheringId: GatheringId; userId: UserId; at: ISODateTime };
 
 export type EventType = DomainEvent['type'];

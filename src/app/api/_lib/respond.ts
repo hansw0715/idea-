@@ -15,7 +15,7 @@ const STATUS: Record<ErrorCode, number> = {
   NOT_APPLICANT: 409,
   TOO_EARLY: 409,
   INVALID: 400,
-  LOW_TRUST: 403,
+  BANNED: 403,
 };
 
 export function toErrorResponse(error: AppError) {

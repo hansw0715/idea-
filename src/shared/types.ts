@@ -45,7 +45,7 @@ export const ERROR_MESSAGES = {
   NOT_APPLICANT: '신청자가 아닙니다.',
   TOO_EARLY: '아직 모임 시작 전입니다.',
   INVALID: '입력값이 올바르지 않습니다.',
-  LOW_TRUST: '노쇼 기록이 많아 참여가 제한되었습니다.',
+  BANNED: '노쇼 경고가 쌓여 이용이 정지된 계정입니다.',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_MESSAGES;

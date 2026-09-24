@@ -7,10 +7,19 @@
  *
  * 순수 함수라서 서버/클라이언트 어디서 import 해도 안전하다.
  */
-import type { AttendanceMark, Gathering, GatheringKind, JoinPolicy } from '@/domain/gathering';
-import { currentStatus, isApplicant, isMember, seatsLeft, type GatheringStatusView } from '@/domain/gathering';
+import type { Gathering, GatheringKind, GatheringMeta, JoinPolicy, ReviewMark } from '@/domain/gathering';
+import {
+  currentStatus,
+  isApplicant,
+  isMember,
+  isNoshowConfirmed,
+  memberIds,
+  reviewOf,
+  seatsLeft,
+  type GatheringStatusView,
+} from '@/domain/gathering';
+import { joinBlockReason } from '@/domain/reputation/reputation';
 import type { User } from './user';
-import { MIN_TRUST_TO_JOIN } from './user';
 
 /** 남에게 보여줘도 되는 최소 정보. 실명/메일은 절대 안 내려보낸다. */
 export type PublicUser = {
@@ -18,7 +27,8 @@ export type PublicUser = {
   nickname: string;
   college: string;
   admissionYear: number;
-  trustScore: number;
+  /** 매너온도 */
+  temperature: number;
 };
 
 export type SlotView = {
@@ -45,18 +55,24 @@ export type GatheringView = {
   meetAt: string;
   joinDeadline: string;
   joinPolicy: JoinPolicy;
+  meta: GatheringMeta;
   status: GatheringStatusView;
   host: PublicUser;
   slots: SlotView[];
   /** 주최자에게만 채워진다. 다른 사람에겐 빈 배열. */
   applicants: ApplicantView[];
   applicantCount: number;
-  attendance: Record<string, AttendanceMark>;
+  /** 노쇼로 확정된 참여자 id */
+  noshowIds: string[];
+  /** 내가 다른 참여자에게 남긴 평가 (userId → mark) */
+  myReviews: Record<string, ReviewMark>;
   createdAt: string;
   viewer: ViewerState;
 };
 
 export type ViewerState = {
+  /** 보고 있는 사람의 id. 로그인 전이면 null */
+  userId: string | null;
   isHost: boolean;
   isMember: boolean;
   isApplicant: boolean;
@@ -68,8 +84,8 @@ export type ViewerState = {
   canApply: boolean;
   /** 마감 전이라 취소할 수 있는가 */
   canLeave: boolean;
-  /** 모임이 끝나서 출결을 찍을 수 있는가 (주최자만) */
-  canMarkAttendance: boolean;
+  /** 모임이 끝나서 같이 간 사람을 평가할 수 있는가 (참여자 모두) */
+  canReview: boolean;
   /** 참여가 막힌 이유. 버튼 옆에 그대로 보여준다. */
   blockedReason: string | null;
 };
@@ -79,7 +95,7 @@ export const toPublicUser = (u: User): PublicUser => ({
   nickname: u.nickname,
   college: u.college,
   admissionYear: u.admissionYear,
-  trustScore: u.trustScore,
+  temperature: u.temperature,
 });
 
 export function toView(
@@ -104,6 +120,7 @@ export function toView(
   const applicant = viewer ? isApplicant(g, viewer.id) : false;
 
   const viewerState: ViewerState = {
+    userId: viewer?.id ?? null,
     isHost,
     isMember: member,
     isApplicant: applicant,
@@ -111,7 +128,7 @@ export function toView(
     canJoin: false,
     canApply: false,
     canLeave: member && !isHost && status === 'open',
-    canMarkAttendance: isHost && (status === 'done' || now >= g.meetAt),
+    canReview: member && now >= g.meetAt,
     blockedReason: blockedReason(status, viewer, member, applicant),
   };
 
@@ -129,6 +146,7 @@ export function toView(
     meetAt: g.meetAt,
     joinDeadline: g.joinDeadline,
     joinPolicy: g.joinPolicy,
+    meta: g.meta,
     status,
     host: host ? toPublicUser(host) : unknownUser(g.hostId),
     slots,
@@ -141,7 +159,14 @@ export function toView(
         }))
       : [],
     applicantCount: g.applicants.length,
-    attendance: g.attendance,
+    noshowIds: memberIds(g).filter((id) => isNoshowConfirmed(g, id)),
+    myReviews: viewer
+      ? Object.fromEntries(
+          memberIds(g)
+            .map((id) => [id, reviewOf(g, viewer.id, id)?.mark])
+            .filter(([, mark]) => mark !== undefined) as [string, ReviewMark][],
+        )
+      : {},
     createdAt: g.createdAt,
     viewer: viewerState,
   };
@@ -162,8 +187,7 @@ function blockedReason(
   if (status === 'full') return '마감 (정원 참)';
   if (status === 'closed') return '신청 마감';
   if (!viewer.verified) return '학교 메일 인증 필요';
-  if (viewer.trustScore < MIN_TRUST_TO_JOIN) return `노쇼 기록으로 참여 제한 (신뢰도 ${viewer.trustScore})`;
-  return null;
+  return joinBlockReason(viewer);
 }
 
 const unknownUser = (id: string): PublicUser => ({
@@ -171,5 +195,5 @@ const unknownUser = (id: string): PublicUser => ({
   nickname: '(탈퇴한 사용자)',
   college: '-',
   admissionYear: 0,
-  trustScore: 0,
+  temperature: 0,
 });

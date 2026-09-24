@@ -5,7 +5,7 @@
 | 기능 | 담당 | 상태 |
 |---|---|---|
 | 미팅 (선착순 착석) | 한승원 | ✅ 완료 |
-| 밥약 (주최자 승인) | 한승원 | ✅ 완료 |
+| 밥약 (모집글 + 빠른 매칭) | 한승원 | ✅ 완료 |
 | 팀빌딩 (노쇼 관리 · 관리자 대시보드) | — | ⬜ |
 | 시설 예약 (공강 시간표 자동 계산) | — | ⬜ |
 | 셔틀버스 노선도 (시간표 + 실시간 위치) | 한승원 | ✅ 1차 |
@@ -72,40 +72,26 @@ src/
 
 ---
 
-## 3. 노쇼 관리 연동 — 서로 코드를 안 건드리는 방법
+## 3. 매너온도 · 노쇼 경고 (`src/domain/reputation/`)
 
-미팅/밥약은 신뢰도 계산을 **전혀 모른다.** 무슨 일이 있었는지만 이벤트로 뿌린다.
+당근마켓 매너온도 방식이다. **36.5도**에서 시작하고, 모임이 끝나면 같이 간 사람끼리 서로 평가한다
+(`좋았어요 / 보통이에요 / 안 왔어요`). 주최자 혼자 노쇼를 찍지 않는다 — 사이가 틀어졌다고 찍히면 안 되니까.
 
-```ts
-// src/features/team-building/trust.ts (담당자가 만들 파일)
-import { on } from '@/shared/events';
-
-on('participant.noshow', (e) => {
-  // e.userId, e.gatheringId, e.at
-  // 신뢰도를 얼마나 깎을지, 언제 회복시킬지는 전부 여기 정책
-});
-on('participant.attended', (e) => { /* ... */ });
-```
-
-발행되는 이벤트 (`src/shared/events.ts`):
-
-| 이벤트 | 언제 |
+| 규칙 | 값 |
 |---|---|
-| `gathering.created` | 모임이 만들어짐 |
-| `gathering.joined` | 선착순 착석 또는 승인 완료 |
-| `gathering.left` | 참여 취소 |
-| `gathering.filled` | 정원이 참 |
-| `gathering.cancelled` | 주최자가 모임을 접음 |
-| `participant.attended` | 주최자가 참석으로 체크 |
-| `participant.noshow` | 주최자가 노쇼로 체크 |
+| 좋았어요 | +0.4도 |
+| 노쇼 확정 | -5도, 경고 +1 |
+| 노쇼 확정 조건 | 그 사람을 뺀 **나머지 참여자 전원**이 '안 왔어요' |
+| 경고 2회 | 미팅·밥약 이용 정지 (관리자만 해제, 해제 시 경고 초기화) |
 
-지금은 `src/server/bootstrap.ts` 에 **임시 구현**(노쇼 -25, 참석 +5)이 들어 있다.
-담당자가 `trust.ts` 를 만들면 그 파일을 지우고 구독만 옮기면 된다.
+흐름: `submitReview()` → 전원 일치 시 `participant.noshow` 이벤트 → `src/server/reputation.ts`가 온도·경고 갱신.
+도메인은 온도 계산을 모르고, 온도 모듈은 모임을 모른다.
 
-신뢰도가 `MIN_TRUST_TO_JOIN`(40, `src/shared/user.ts`) 밑이면 참여가 자동으로 막힌다 —
-이 검사는 이미 도메인에 들어 있으니 따로 만들 필요 없다.
+## 3-1. 차단 · 신고 (`src/domain/safety/`)
 
----
+- 차단: 한쪽만 걸어도 **양쪽** 목록·매칭에서 사라진다. 상대에게 알리지 않는다.
+- 신고: 서로 다른 3명이 신고하면 관리자가 볼 때까지 자동으로 이용 정지 (`AUTO_RESTRICT_REPORTS`).
+- 관리자 처리: `/admin` → 신고 탭 (정지 / 조치 완료 / 반려 / 정지 해제)
 
 ## 4. 관리자 대시보드에서 쓸 것
 
@@ -166,7 +152,12 @@ export const gatheringRepo: GatheringRepo = { list, find, save, listByUser };
 | POST | `/api/gatherings/:id/reject` | `{ userId }` 거절 |
 | POST | `/api/gatherings/:id/leave` | 참여/신청 취소 |
 | POST | `/api/gatherings/:id/cancel` | 모임 취소 |
-| POST | `/api/gatherings/:id/attendance` | `{ userId, mark }` 출결 |
+| POST | `/api/gatherings/:id/review` | `{ userId, mark }` 상호 평가 (good/soso/noshow) |
+| GET/POST/PATCH/DELETE | `/api/meals/quick` | 밥약 빠른 매칭 (대기 / 신청 / 투표·수락 / 취소) |
+| GET/POST/DELETE | `/api/blocks` | 차단 |
+| POST | `/api/reports` | 신고 |
+| GET/POST | `/api/admin/reports` | 신고 처리 (관리자) |
+| GET | `/api/admin/stats` | 이용 통계 (관리자) |
 | GET/POST | `/api/me` | 현재 계정 / 계정 전환(시연용) |
 
 에러는 전부 `{ "error": { "code": "SLOT_FULL", "message": "..." } }` 모양이다.
@@ -184,7 +175,7 @@ npm run typecheck
 ```
 
 로그인은 아직 없다. 화면 오른쪽 위에서 계정을 바꿔 가며
-주최자 ↔ 참여자를 혼자 시연할 수 있다. `노쇼왕` 계정은 신뢰도가 25라 참여가 막히는 걸 보여준다.
+주최자 ↔ 참여자를 혼자 시연할 수 있다. `노쇼왕` 계정은 경고 2회라 참여가 막히는 걸 보여준다. `승원` 계정이 관리자다.
 
 **시연 순서 추천**
 1. 미팅 탭 → `지민` 계정으로 상대 쪽 자리 앉기 (선착순)
@@ -215,3 +206,19 @@ npm run bus:simulate                # 가짜 버스를 노선 위로 달리게 (
 
 색·radius·간격 토큰은 `globals.css` 한 곳에만 있다. 페이지는 `Button / Card / Field·Input / Badge / Tabs / Modal / EmptyState`를 조립해서 만든다.
 디자인 교체 시 토큰 → `components/ui` 순서로만 고치면 된다.
+
+## 11. 밥약 빠른 매칭 (`src/features/mealdate/`)
+
+조건(날짜·장소·인원·가능 시간·태그)만 걸어두면 맞는 사람을 찾아 **후보 방**을 만든다.
+각자 가능한 시간을 체크하고 **전원이 수락**해야 확정되며, 확정되면 보통 밥약(Gathering)으로 바뀌어
+참여·취소·평가·노쇼 로직을 그대로 탄다. 한 명이라도 거절하거나 30분이 지나면 방이 깨지고 나머지는 대기열로 돌아간다.
+
+- 순수 규칙: `quick-match.ts` (테스트 있음) / 저장·시간: `service.ts`
+- '같은 과만' 태그는 `dept:학과` 태그로 좁혀서 맞춘다 (학과는 화면에 노출하지 않는다)
+- 목록은 "곧 먹을 약속"이 위로 (`server/present.ts`의 `sortMealFeed`), 지난 약속은 자동으로 종료 처리된다
+
+## 12. 저장소 현황
+
+버스만 Supabase 어댑터가 있고 (`env` 있으면 Supabase, 없으면 seed.json),
+모임·평판·차단·신고·빠른 매칭은 아직 **인메모리**다. 미팅까지 끝낸 뒤 Supabase 스키마와 어댑터를 한 번에 붙인다.
+그래야 테이블을 두 번 설계하지 않는다.

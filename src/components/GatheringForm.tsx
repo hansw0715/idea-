@@ -11,7 +11,14 @@ import { useState } from 'react';
 import { createGathering, ApiError } from '@/lib/api';
 import { defaultLocalInput, localInputToISO } from '@/lib/format';
 import { MEETUP_PRESETS, MEETUP_SIZES, type MeetupSize } from '@/features/meetup/preset';
-import { MEAL_CAPACITY_OPTIONS, MEAL_PRESET } from '@/features/mealdate/preset';
+import {
+  MEAL_CAPACITY_OPTIONS,
+  MEAL_PRESET,
+  MEAL_TAGS,
+  MENU_CATEGORIES,
+  PLACE_TYPES,
+  type PlaceType,
+} from '@/features/mealdate/preset';
 
 type Props = { kind: 'meetup' | 'meal' };
 
@@ -43,6 +50,9 @@ export function GatheringForm({ kind }: Props) {
   const [deadline, setDeadline] = useState(defaultLocalInput(20));
   const [size, setSize] = useState<MeetupSize>('2:2');
   const [capacity, setCapacity] = useState(4);
+  const [placeType, setPlaceType] = useState<PlaceType>('학식');
+  const [menu, setMenu] = useState<string>(MENU_CATEGORIES[0]);
+  const [tags, setTags] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -60,6 +70,7 @@ export function GatheringForm({ kind }: Props) {
         joinDeadline: localInputToISO(deadline),
         joinPolicy: kind === 'meetup' ? 'auto' : 'approval',
         slots: kind === 'meetup' ? MEETUP_PRESETS[size].slots : MEAL_PRESET(capacity).slots,
+        meta: kind === 'meal' ? { placeType, menu, tags } : {},
       });
       router.push(copy.back);
       router.refresh();
@@ -137,6 +148,54 @@ export function GatheringForm({ kind }: Props) {
             ))}
           </div>
         </Field>
+      )}
+
+      {kind === 'meal' && (
+        <>
+          <Field label="장소 종류">
+            <div className="grid grid-cols-3 gap-2">
+              {PLACE_TYPES.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPlaceType(p)}
+                  className={`rounded-xl py-2 text-sm font-bold ${
+                    placeType === p ? 'bg-brand text-white' : 'border border-border text-muted'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <Field label="메뉴">
+            <select value={menu} onChange={(e) => setMenu(e.target.value)} className={inputClass}>
+              {MENU_CATEGORIES.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="태그" hint="분위기를 미리 맞춰두면 신청할 때 서로 편해요.">
+            <div className="flex flex-wrap gap-1.5">
+              {MEAL_TAGS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTags(tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t])}
+                  className={`rounded-lg px-2 py-1 text-[11px] font-semibold ${
+                    tags.includes(t) ? 'bg-brand text-white' : 'border border-border text-muted'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </Field>
+        </>
       )}
 
       <Field label="만나는 시간">

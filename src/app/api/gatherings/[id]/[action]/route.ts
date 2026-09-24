@@ -7,35 +7,35 @@
  *   reject     { userId }               신청 거절 (주최자)
  *   leave      {}                       참여 취소
  *   cancel     {}                       모임 취소 (주최자)
- *   attendance { userId, mark }         출결 기록 → 노쇼 이벤트 발행
+ *   review     { userId, mark }         모임 후 상호 평가 → 전원이 '안 왔어요'면 노쇼 확정
  *
  * 액션을 한 라우트로 모은 이유: 파일이 7개로 흩어지면 친구가 API를 훑어보기 어렵고,
  * 라우트마다 세션/에러 처리를 복붙하게 된다. 실제 판단은 전부 service.ts에 있다.
  */
 import { NextResponse } from 'next/server';
 import { asGatheringId, asUserId, fail } from '@/shared/types';
-import type { AttendanceMark } from '@/domain/gathering';
+import type { ReviewMark } from '@/domain/gathering';
 import {
   applyToGathering,
   approveApplicant,
   cancelGathering,
   joinGathering,
   leaveGathering,
-  markAttendance,
   rejectApplicant,
+  reviewParticipant,
 } from '@/server/service';
 import { viewOf } from '@/server/present';
 import { currentUser } from '@/server/session';
 import { toErrorResponse } from '../../../_lib/respond';
 
-const ACTIONS = ['join', 'apply', 'approve', 'reject', 'leave', 'cancel', 'attendance'] as const;
+const ACTIONS = ['join', 'apply', 'approve', 'reject', 'leave', 'cancel', 'review'] as const;
 type Action = (typeof ACTIONS)[number];
 
 type Body = {
   slotKey?: string;
   message?: string;
   userId?: string;
-  mark?: AttendanceMark;
+  mark?: ReviewMark;
 };
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string; action: string }> }) {
@@ -80,8 +80,8 @@ function run(action: Action, id: ReturnType<typeof asGatheringId>, me: ReturnTyp
     case 'cancel':
       return cancelGathering(id, me);
 
-    case 'attendance':
-      if (!body.userId || !body.mark) return Promise.resolve(fail('INVALID', '출결 정보가 없습니다.'));
-      return markAttendance(id, me, asUserId(body.userId), body.mark);
+    case 'review':
+      if (!body.userId || !body.mark) return Promise.resolve(fail('INVALID', '평가 정보가 없습니다.'));
+      return reviewParticipant(id, me, asUserId(body.userId), body.mark);
   }
 }

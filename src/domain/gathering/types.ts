@@ -7,7 +7,10 @@
  *   2) slots      — 자리 구성. 미팅은 [우리팀 2, 상대팀 2], 밥약은 [참여자 4]
  * 그래서 화면과 프리셋만 다르고 참여/취소/노쇼 로직은 한 벌만 존재한다.
  */
+import type { ReviewMark } from '@/domain/reputation/reputation';
 import type { GatheringId, ISODateTime, UserId } from '@/shared/types';
+
+export type { ReviewMark };
 
 export type GatheringKind = 'meetup' | 'meal' | 'team';
 
@@ -35,7 +38,29 @@ export type Applicant = {
   appliedAt: ISODateTime;
 };
 
-export type AttendanceMark = 'attended' | 'noshow';
+/**
+ * 모임이 끝난 뒤 참여자끼리 남기는 평가. 주최자 혼자가 아니라 같이 만난 사람 모두가 남긴다.
+ * 노쇼는 나머지 전원이 '안 왔어요'를 눌러야 확정된다 — 한 명의 오해로 경고가 찍히면 안 되니까.
+ */
+export type Review = {
+  by: UserId;
+  target: UserId;
+  mark: ReviewMark;
+  at: ISODateTime;
+};
+
+/**
+ * 기능별 부가 정보. 밥약은 장소 종류·메뉴·태그를 쓰고, 미팅/팀빌딩은 자기 필드를 넣는다.
+ * 도메인 규칙(정원, 마감, 평가)은 이 값을 보지 않는다 — 화면과 필터에서만 쓴다.
+ */
+export type GatheringMeta = {
+  /** 밥약: 학식 / 학교 주변 / 기타 */
+  placeType?: string;
+  /** 밥약: 메뉴 카테고리 */
+  menu?: string;
+  /** 태그 (예: 선후배 밥약, 조용히 먹기) */
+  tags?: string[];
+};
 
 export type Gathering = {
   id: GatheringId;
@@ -52,8 +77,9 @@ export type Gathering = {
   slots: Slot[];
   applicants: Applicant[];
   status: GatheringStatus;
-  /** 모임 후 주최자가 찍는 출결. 여기서 노쇼 이벤트가 나가고 신뢰도가 깎인다. */
-  attendance: Record<string, AttendanceMark>;
+  /** 모임 후 참여자끼리 남긴 평가. 여기서 노쇼가 확정되면 경고 이벤트가 나간다. */
+  reviews: Review[];
+  meta: GatheringMeta;
   createdAt: ISODateTime;
 };
 
@@ -72,4 +98,5 @@ export type CreateGatheringInput = {
   slots: SlotSpec[];
   /** 주최자가 앉을 자리. 생략하면 첫 번째 자리. */
   hostSlotKey?: string;
+  meta?: GatheringMeta;
 };

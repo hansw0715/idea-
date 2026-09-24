@@ -13,14 +13,16 @@ type Props = {
   newHref: string;
   ctaLabel: string;
   emptyText: string;
+  /** 값이 바뀌면 목록을 다시 불러온다 (빠른 매칭 확정 등) */
+  reloadToken?: number;
 };
 
-export function GatheringFeed({ kind, newHref, ctaLabel, emptyText }: Props) {
+export function GatheringFeed({ kind, newHref, ctaLabel, emptyText, reloadToken = 0 }: Props) {
   const [items, setItems] = useState<GatheringView[] | null>(null);
 
   useEffect(() => {
     fetchGatherings(kind).then(setItems).catch(() => setItems([]));
-  }, [kind]);
+  }, [kind, reloadToken]);
 
   const replace = useCallback((next: GatheringView) => {
     setItems((prev) => prev?.map((g) => (g.id === next.id ? next : g)) ?? prev);

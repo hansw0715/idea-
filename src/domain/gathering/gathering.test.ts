@@ -12,7 +12,8 @@ import {
   isMember,
   join,
   leave,
-  markAttendance,
+  isNoshowConfirmed,
+  submitReview,
   type Gathering,
 } from './index';
 
@@ -25,9 +26,12 @@ const user = (id: string, over: Partial<User> = {}): User => ({
   id: asUserId(id),
   nickname: id,
   college: 'IT공과대학',
+  department: '컴퓨터공학부',
   admissionYear: 2026,
   verified: true,
-  trustScore: 100,
+  temperature: 36.5,
+  warnings: 0,
+  banned: false,
   createdAt: NOW,
   ...over,
 });
@@ -151,10 +155,10 @@ describe('미팅 — 선착순 착석', () => {
     if (!r.ok) expect(r.error.code).toBe('FORBIDDEN');
   });
 
-  it('노쇼로 신뢰도가 깎인 사람은 막힌다', () => {
-    const r = join(meetup(), user('a', { trustScore: 20 }), 'guest', NOW);
+  it('노쇼 경고로 정지된 사람은 막힌다', () => {
+    const r = join(meetup(), user('a', { banned: true, warnings: 2 }), 'guest', NOW);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.code).toBe('LOW_TRUST');
+    if (!r.ok) expect(r.error.code).toBe('BANNED');
   });
 
   it('취소된 모임에는 못 들어간다', () => {
@@ -225,17 +229,68 @@ describe('취소와 노쇼', () => {
     if (!r.ok) expect(r.error.code).toBe('HOST_CANNOT_LEAVE');
   });
 
-  it('모임 시간 전에는 출결을 찍을 수 없다', () => {
+  it('모임 시간 전에는 평가할 수 없다', () => {
     const g = unwrap(join(meetup(), user('a'), 'guest', NOW));
-    const r = markAttendance(g, host.id, asUserId('a'), 'noshow', NOW);
+    const r = submitReview(g, host.id, asUserId('a'), 'noshow', NOW);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe('TOO_EARLY');
   });
+});
 
-  it('모임이 끝나면 주최자가 노쇼를 기록한다', () => {
+describe('모임 후 상호 평가', () => {
+  /** host + a + b 가 참여한 끝난 미팅 */
+  function met(): Gathering {
     let g = unwrap(join(meetup(), user('a'), 'guest', NOW));
-    g = unwrap(markAttendance(g, host.id, asUserId('a'), 'noshow', AFTER_MEET));
-    expect(g.attendance['a']).toBe('noshow');
+    g = unwrap(join(g, user('b'), 'guest', NOW));
+    return g;
+  }
+
+  it('참여자가 서로를 평가하면 기록되고 모임이 종료 상태가 된다', () => {
+    const g = unwrap(submitReview(met(), host.id, asUserId('a'), 'good', AFTER_MEET));
+    expect(g.reviews).toHaveLength(1);
     expect(g.status).toBe('done');
+  });
+
+  it('같은 사람을 다시 평가하면 덮어쓴다', () => {
+    let g = unwrap(submitReview(met(), host.id, asUserId('a'), 'noshow', AFTER_MEET));
+    g = unwrap(submitReview(g, host.id, asUserId('a'), 'good', AFTER_MEET));
+    expect(g.reviews).toHaveLength(1);
+    expect(g.reviews[0].mark).toBe('good');
+  });
+
+  it('자기 자신은 평가할 수 없다', () => {
+    const r = submitReview(met(), host.id, host.id, 'good', AFTER_MEET);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('INVALID');
+  });
+
+  it('참여하지 않은 사람은 평가할 수 없다', () => {
+    const r = submitReview(met(), asUserId('stranger'), asUserId('a'), 'noshow', AFTER_MEET);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error.code).toBe('NOT_JOINED');
+  });
+
+  it('한 명만 눌러서는 노쇼가 확정되지 않는다', () => {
+    const g = unwrap(submitReview(met(), host.id, asUserId('a'), 'noshow', AFTER_MEET));
+    expect(isNoshowConfirmed(g, asUserId('a'))).toBe(false);
+  });
+
+  it('나머지 전원이 눌러야 노쇼가 확정된다', () => {
+    let g = unwrap(submitReview(met(), host.id, asUserId('a'), 'noshow', AFTER_MEET));
+    g = unwrap(submitReview(g, asUserId('b'), asUserId('a'), 'noshow', AFTER_MEET));
+    expect(isNoshowConfirmed(g, asUserId('a'))).toBe(true);
+  });
+
+  it('한 명이라도 다르게 평가하면 확정이 풀린다', () => {
+    let g = unwrap(submitReview(met(), host.id, asUserId('a'), 'noshow', AFTER_MEET));
+    g = unwrap(submitReview(g, asUserId('b'), asUserId('a'), 'noshow', AFTER_MEET));
+    g = unwrap(submitReview(g, asUserId('b'), asUserId('a'), 'good', AFTER_MEET));
+    expect(isNoshowConfirmed(g, asUserId('a'))).toBe(false);
+  });
+
+  it('둘만 있는 모임에서도 상대가 누르면 확정된다', () => {
+    const g1 = unwrap(join(meetup(), user('a'), 'guest', NOW));
+    const g2 = unwrap(submitReview(g1, host.id, asUserId('a'), 'noshow', AFTER_MEET));
+    expect(isNoshowConfirmed(g2, asUserId('a'))).toBe(true);
   });
 });

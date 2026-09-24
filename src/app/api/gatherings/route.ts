@@ -8,7 +8,7 @@
  *   /api/admin/*       → 관리자 대시보드   (담당: 친구)
  */
 import { NextResponse } from 'next/server';
-import type { GatheringKind, SlotSpec } from '@/domain/gathering';
+import type { GatheringKind, GatheringMeta, SlotSpec } from '@/domain/gathering';
 import { createGathering } from '@/server/service';
 import { viewList, viewOf } from '@/server/present';
 import { currentUser } from '@/server/session';
@@ -30,6 +30,7 @@ type CreateBody = {
   joinDeadline: string;
   joinPolicy: 'auto' | 'approval';
   slots: SlotSpec[];
+  meta?: GatheringMeta;
 };
 
 export async function POST(req: Request) {

@@ -11,6 +11,8 @@
 import { useState } from 'react';
 import { act, ApiError } from '@/lib/api';
 import { formatMeetAt, timeLeft } from '@/lib/format';
+import { REVIEW_LABEL, temperatureFace, type ReviewMark } from '@/domain/reputation/reputation';
+import { SafetyMenu } from './SafetyMenu';
 import type { GatheringView, PublicUser, SlotView } from '@/shared/view';
 
 type Props = {
@@ -61,15 +63,32 @@ export function GatheringCard({ gathering: g, onChange }: Props) {
             <span className="ml-1 font-normal text-muted">· {g.host.college}</span>
           </p>
           <p className="text-[11px] text-muted">
-            {g.host.admissionYear % 100}학번 · 신뢰도 {g.host.trustScore}
+            {g.host.admissionYear % 100}학번 · {temperatureFace(g.host.temperature).emoji} {g.host.temperature.toFixed(1)}°
           </p>
         </div>
         <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.className}`}>
           {badge.label}
         </span>
+        <SafetyMenu
+          people={[g.host, ...g.slots.flatMap((s) => s.members)]}
+          context={g.kind}
+          refId={g.id}
+          meId={g.viewer.userId}
+        />
       </div>
 
       <h3 className="mt-3 text-[15px] font-bold leading-snug">{g.title}</h3>
+      {(g.meta.placeType || g.meta.menu || g.meta.tags?.length) && (
+        <ul className="mt-1.5 flex flex-wrap gap-1">
+          {[g.meta.placeType, g.meta.menu === '상관없음' ? null : g.meta.menu, ...(g.meta.tags ?? [])]
+            .filter(Boolean)
+            .map((t) => (
+              <li key={t} className="rounded-pill bg-surface-muted px-2 py-0.5 text-[11px] text-muted">
+                #{t}
+              </li>
+            ))}
+        </ul>
+      )}
       {g.body && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{g.body}</p>}
 
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-[13px]">
@@ -162,6 +181,8 @@ export function GatheringCard({ gathering: g, onChange }: Props) {
         </button>
       )}
 
+      {g.viewer.canReview && <ReviewPanel gathering={g} busy={busy} run={run} />}
+
       {g.viewer.isHost && <HostPanel gathering={g} busy={busy} run={run} />}
 
       {error && <p className="mt-3 text-[12px] font-medium text-red-500">{error}</p>}
@@ -195,10 +216,8 @@ function SlotBox({
             <Avatar user={m} size="sm" />
             <span className="truncate text-[12px] font-medium">{m.nickname}</span>
             {m.id === g.host.id && <span className="text-[10px] text-muted">주최</span>}
-            {g.attendance[m.id] === 'noshow' && (
-              <span className="rounded bg-red-500/15 px-1 text-[10px] font-semibold text-red-500">
-                노쇼
-              </span>
+            {g.noshowIds.includes(m.id) && (
+              <span className="rounded bg-danger-soft px-1 text-[10px] font-semibold text-danger">노쇼</span>
             )}
           </li>
         ))}
@@ -219,6 +238,61 @@ function SlotBox({
                 빈자리
               </div>
             )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// ---------- 모임 후 상호 평가 ----------
+
+/**
+ * 같이 간 사람들에 대한 평가. 노쇼는 나머지 전원이 눌러야 확정되므로,
+ * 몇 명이 눌렀는지를 같이 보여줘서 "나 혼자 누른다고 경고가 되는 게 아니다"를 알려준다.
+ */
+const MARKS: ReviewMark[] = ['good', 'soso', 'noshow'];
+
+function ReviewPanel({
+  gathering: g,
+  busy,
+  run,
+}: {
+  gathering: GatheringView;
+  busy: boolean;
+  run: (action: string, body?: Record<string, unknown>) => void;
+}) {
+  const others = g.slots.flatMap((s) => s.members).filter((m) => m.id !== g.viewer.userId);
+  if (others.length === 0) return null;
+
+  return (
+    <div className="mt-3 space-y-2 rounded-xl border border-dashed border-border p-3">
+      <p className="text-[11px] font-bold">오늘 어땠어요?</p>
+      <p className="text-[11px] text-muted">같이 간 사람 전원이 “안 왔어요”를 누르면 노쇼 경고가 들어가요.</p>
+      <ul className="space-y-2">
+        {others.map((m) => (
+          <li key={m.id} className="flex items-center gap-2">
+            <span className="flex-1 truncate text-[12px]">
+              {m.nickname}
+              {g.noshowIds.includes(m.id) && <span className="ml-1 text-[10px] text-danger">노쇼 확정</span>}
+            </span>
+            {MARKS.map((mark) => (
+              <button
+                key={mark}
+                type="button"
+                disabled={busy}
+                onClick={() => run('review', { userId: m.id, mark })}
+                className={`rounded-lg px-2 py-1 text-[11px] font-semibold ${
+                  g.myReviews[m.id] === mark
+                    ? mark === 'noshow'
+                      ? 'bg-danger text-white'
+                      : 'bg-brand text-white'
+                    : 'border border-border text-muted'
+                }`}
+              >
+                {REVIEW_LABEL[mark]}
+              </button>
+            ))}
           </li>
         ))}
       </ul>
@@ -251,7 +325,7 @@ function HostPanel({
                 <Avatar user={a.user} size="sm" />
                 <span className="text-[12px] font-semibold">{a.user.nickname}</span>
                 <span className="text-[11px] text-muted">
-                  {a.user.college} · 신뢰도 {a.user.trustScore}
+                  {a.user.college} · {a.user.temperature.toFixed(1)}°
                 </span>
               </div>
               {a.message && <p className="mt-1 text-[12px] text-muted">“{a.message}”</p>}
@@ -280,44 +354,6 @@ function HostPanel({
 
       {g.joinPolicy === 'approval' && g.applicants.length === 0 && g.status === 'open' && (
         <p className="text-[12px] text-muted">아직 신청자가 없어요.</p>
-      )}
-
-      {/* 노쇼 관리 연동 지점 — 여기서 찍은 결과가 이벤트로 나가 신뢰도를 깎는다 */}
-      {g.viewer.canMarkAttendance && members.length > 0 && (
-        <div>
-          <p className="mb-1.5 text-[11px] font-semibold text-muted">출결 체크</p>
-          <ul className="space-y-1.5">
-            {members.map((m) => (
-              <li key={m.id} className="flex items-center gap-2">
-                <span className="flex-1 truncate text-[12px]">{m.nickname}</span>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => run('attendance', { userId: m.id, mark: 'attended' })}
-                  className={`rounded-lg px-2 py-1 text-[11px] font-semibold ${
-                    g.attendance[m.id] === 'attended'
-                      ? 'bg-brand text-white'
-                      : 'border border-border text-muted'
-                  }`}
-                >
-                  참석
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => run('attendance', { userId: m.id, mark: 'noshow' })}
-                  className={`rounded-lg px-2 py-1 text-[11px] font-semibold ${
-                    g.attendance[m.id] === 'noshow'
-                      ? 'bg-red-500 text-white'
-                      : 'border border-border text-muted'
-                  }`}
-                >
-                  노쇼
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
 
       {g.status === 'open' && (

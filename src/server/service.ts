@@ -9,9 +9,10 @@ import { asGatheringId, fail, ok, type GatheringId, type Result, type UserId } f
 import { emit } from '@/shared/events';
 import type { User } from '@/shared/user';
 import * as G from '@/domain/gathering';
-import type { AttendanceMark, Gathering, GatheringKind, SlotSpec } from '@/domain/gathering';
+import type { Gathering, GatheringKind, GatheringMeta, ReviewMark, SlotSpec } from '@/domain/gathering';
 import { gatheringRepo, userRepo } from './repo/memory-repo';
-import './bootstrap';
+import { hiddenFor } from './safety-service';
+import './reputation';
 
 const nowISO = () => new Date().toISOString();
 
@@ -23,6 +24,18 @@ async function load(id: GatheringId): Promise<Result<Gathering>> {
 async function loadUser(id: UserId): Promise<Result<User>> {
   const u = await userRepo.find(id);
   return u ? ok(u) : fail('NOT_FOUND', '사용자를 찾을 수 없습니다.');
+}
+
+/**
+ * 차단한 사람이 있는 모임에는 들어가지 않는다. 차단은 한쪽만 걸어도 양쪽에 적용된다.
+ * (도메인은 차단을 모른다 — 사람 사이의 관계라 저장소가 필요해서 서비스에서 막는다)
+ */
+async function checkNotBlocked(g: Gathering, userId: UserId): Promise<Result<true>> {
+  const hidden = await hiddenFor(userId);
+  const people = [g.hostId, ...G.memberIds(g)];
+  return people.some((id) => hidden.has(id))
+    ? fail('FORBIDDEN', '차단한 사용자가 있는 모임이에요.')
+    : ok(true);
 }
 
 /** 도메인 함수가 성공했을 때만 저장하고 이벤트를 내보내는 공통 처리 */
@@ -55,6 +68,7 @@ export type CreateInput = {
   joinDeadline: string;
   joinPolicy: 'auto' | 'approval';
   slots: SlotSpec[];
+  meta?: GatheringMeta;
 };
 
 export async function createGathering(
@@ -64,6 +78,7 @@ export async function createGathering(
   const host = await loadUser(hostId);
   if (!host.ok) return host;
   if (!host.value.verified) return fail('FORBIDDEN', '학교 메일 인증 후 모임을 만들 수 있습니다.');
+  if (host.value.banned) return fail('BANNED', '이용이 제한된 계정은 모임을 만들 수 없습니다.');
 
   const now = nowISO();
   const created = G.createGathering(
@@ -85,6 +100,9 @@ export async function joinGathering(
   if (!g.ok) return g;
   if (!user.ok) return user;
 
+  const allowed = await checkNotBlocked(g.value, userId);
+  if (!allowed.ok) return allowed;
+
   const now = nowISO();
   return commit(G.join(g.value, user.value, slotKey, now), (next) => {
     emit({ type: 'gathering.joined', gatheringId: next.id, userId, at: now });
@@ -101,6 +119,9 @@ export async function applyToGathering(
   const [g, user] = await Promise.all([load(id), loadUser(userId)]);
   if (!g.ok) return g;
   if (!user.ok) return user;
+
+  const allowed = await checkNotBlocked(g.value, userId);
+  if (!allowed.ok) return allowed;
 
   return commit(G.apply(g.value, user.value, slotKey, message, nowISO()));
 }
@@ -156,23 +177,25 @@ export async function cancelGathering(
   );
 }
 
-/** 출결 기록 — 노쇼 관리 모듈로 이벤트가 나가는 지점 */
-export async function markAttendance(
+/**
+ * 모임 후 상호 평가 — 온도/경고 모듈로 이벤트가 나가는 지점.
+ * 노쇼 이벤트는 "이번 평가로 처음 확정됐을 때" 한 번만 내보낸다(중복 경고 방지).
+ */
+export async function reviewParticipant(
   id: GatheringId,
-  hostId: UserId,
-  userId: UserId,
-  mark: AttendanceMark,
+  reviewerId: UserId,
+  targetId: UserId,
+  mark: ReviewMark,
 ): Promise<Result<Gathering>> {
   const g = await load(id);
   if (!g.ok) return g;
 
+  const wasConfirmed = G.isNoshowConfirmed(g.value, targetId);
   const now = nowISO();
-  return commit(G.markAttendance(g.value, hostId, userId, mark, now), (next) =>
-    emit({
-      type: mark === 'noshow' ? 'participant.noshow' : 'participant.attended',
-      gatheringId: next.id,
-      userId,
-      at: now,
-    }),
-  );
+  return commit(G.submitReview(g.value, reviewerId, targetId, mark, now), (next) => {
+    emit({ type: 'participant.reviewed', gatheringId: next.id, userId: targetId, mark, at: now });
+    if (!wasConfirmed && G.isNoshowConfirmed(next, targetId)) {
+      emit({ type: 'participant.noshow', gatheringId: next.id, userId: targetId, at: now });
+    }
+  });
 }

@@ -41,7 +41,7 @@ export function UserSwitcher() {
       >
         {users.map((u) => (
           <option key={u.id} value={u.id}>
-            {u.nickname} ({u.trustScore})
+            {u.nickname} ({u.temperature.toFixed(1)}°)
           </option>
         ))}
       </select>

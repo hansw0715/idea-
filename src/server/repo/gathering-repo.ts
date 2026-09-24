@@ -8,6 +8,8 @@
 import type { GatheringId, UserId } from '@/shared/types';
 import type { User } from '@/shared/user';
 import type { Gathering, GatheringKind } from '@/domain/gathering';
+import type { Block, Report } from '@/domain/safety/safety';
+import type { QuickRequest, QuickRoom } from '@/features/mealdate/quick-match';
 
 export interface GatheringRepo {
   list(kind?: GatheringKind): Promise<Gathering[]>;
@@ -21,4 +23,22 @@ export interface UserRepo {
   list(): Promise<User[]>;
   find(id: UserId): Promise<User | null>;
   save(user: User): Promise<void>;
+}
+
+/** 차단·신고 (미팅·밥약 공통) */
+export interface SafetyRepo {
+  listBlocks(): Promise<Block[]>;
+  saveBlock(block: Block): Promise<void>;
+  removeBlock(blockerId: UserId, blockedId: UserId): Promise<void>;
+  listReports(): Promise<Report[]>;
+  saveReport(report: Report): Promise<void>;
+}
+
+/** 밥약 빠른 매칭 대기열 */
+export interface QuickMatchRepo {
+  listRequests(): Promise<QuickRequest[]>;
+  saveRequest(request: QuickRequest): Promise<void>;
+  listRooms(): Promise<QuickRoom[]>;
+  findRoom(id: string): Promise<QuickRoom | null>;
+  saveRoom(room: QuickRoom): Promise<void>;
 }

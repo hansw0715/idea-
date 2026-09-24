@@ -7,8 +7,9 @@
  */
 import { fail, ok, type Result } from '@/shared/types';
 import type { ISODateTime, UserId } from '@/shared/types';
-import { MIN_TRUST_TO_JOIN, type User } from '@/shared/user';
-import type { AttendanceMark, CreateGatheringInput, Gathering, Slot } from './types';
+import type { User } from '@/shared/user';
+import { joinBlockReason, type ReviewMark } from '@/domain/reputation/reputation';
+import type { CreateGatheringInput, Gathering, Review, Slot } from './types';
 
 /** 저장 상태 + 시간으로만 계산되는 'closed'를 합친 화면용 상태 */
 export type GatheringStatusView = 'open' | 'full' | 'closed' | 'cancelled' | 'done';
@@ -86,7 +87,8 @@ export function createGathering(
     slots,
     applicants: [],
     status: 'open',
-    attendance: {},
+    reviews: [],
+    meta: input.meta ?? {},
     createdAt: now,
   });
 }
@@ -99,7 +101,8 @@ function checkEligibility(g: Gathering, user: User, now: ISODateTime): Result<tr
   if (status === 'closed') return fail('DEADLINE_PASSED');
   if (status === 'full') return fail('SLOT_FULL', '정원이 모두 찼습니다.');
   if (!user.verified) return fail('FORBIDDEN', '학교 메일 인증 후 참여할 수 있습니다.');
-  if (user.trustScore < MIN_TRUST_TO_JOIN) return fail('LOW_TRUST');
+  const blocked = joinBlockReason(user);
+  if (blocked) return fail('BANNED', blocked);
   if (isMember(g, user.id)) return fail('ALREADY_JOINED');
   if (isApplicant(g, user.id)) return fail('ALREADY_JOINED', '이미 신청했습니다. 승인을 기다려 주세요.');
   return ok(true);
@@ -221,30 +224,50 @@ export function cancel(g: Gathering, hostId: UserId): Result<Gathering> {
   return ok({ ...g, status: 'cancelled' });
 }
 
-// ---------- 출결 (노쇼 관리 연동 지점) ----------
+// ---------- 모임 후 상호 평가 (노쇼 관리 연동 지점) ----------
 
 /**
- * 모임 시각이 지난 뒤 주최자가 참석/노쇼를 찍는다.
- * 여기서 나가는 'participant.noshow' 이벤트를 팀빌딩(노쇼 관리) 담당자가 구독해 신뢰도를 깎는다.
- * 이 파일은 신뢰도 계산 방식을 전혀 모른다.
+ * 모임 시각이 지난 뒤 참여자가 다른 참여자를 평가한다. 같은 사람을 다시 평가하면 덮어쓴다.
+ * 여기서 확정된 노쇼로 'participant.noshow' 이벤트가 나가고, 그걸 받아 온도/경고가 갱신된다.
+ * 이 파일은 온도 계산 방식을 전혀 모른다.
  */
-export function markAttendance(
+export function submitReview(
   g: Gathering,
-  hostId: UserId,
-  userId: UserId,
-  mark: AttendanceMark,
+  reviewerId: UserId,
+  targetId: UserId,
+  mark: ReviewMark,
   now: ISODateTime,
 ): Result<Gathering> {
-  if (g.hostId !== hostId) return fail('FORBIDDEN', '주최자만 출결을 기록할 수 있습니다.');
   if (now < g.meetAt) return fail('TOO_EARLY');
-  if (!isMember(g, userId)) return fail('NOT_JOINED');
+  if (!isMember(g, reviewerId)) return fail('NOT_JOINED', '참여한 사람만 평가할 수 있습니다.');
+  if (!isMember(g, targetId)) return fail('NOT_JOINED', '그 사람은 이 모임 참여자가 아닙니다.');
+  if (reviewerId === targetId) return fail('INVALID', '자기 자신은 평가할 수 없습니다.');
 
+  const review: Review = { by: reviewerId, target: targetId, mark, at: now };
   return ok({
     ...g,
     status: 'done',
-    attendance: { ...g.attendance, [userId]: mark },
+    reviews: [...g.reviews.filter((r) => !(r.by === reviewerId && r.target === targetId)), review],
   });
 }
+
+/** 내가 이 사람에게 남긴 평가 */
+export const reviewOf = (g: Gathering, by: UserId, target: UserId): Review | undefined =>
+  g.reviews.find((r) => r.by === by && r.target === target);
+
+/**
+ * 노쇼 확정 여부 — 그 사람을 뺀 나머지 참여자가 **전원** '안 왔어요'를 눌렀을 때만 true.
+ * (참여자가 그 사람 혼자면 확정할 사람이 없으므로 false)
+ */
+export function isNoshowConfirmed(g: Gathering, targetId: UserId): boolean {
+  const others = memberIds(g).filter((id) => id !== targetId);
+  if (others.length === 0) return false;
+  return others.every((id) => reviewOf(g, id, targetId)?.mark === 'noshow');
+}
+
+/** 이 모임에서 노쇼로 확정된 사람들 */
+export const confirmedNoshows = (g: Gathering): UserId[] =>
+  memberIds(g).filter((id) => isNoshowConfirmed(g, id));
 
 // ---------- 내부 ----------
 
