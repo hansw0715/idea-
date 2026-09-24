@@ -4,7 +4,7 @@
 
 | 기능 | 담당 | 상태 |
 |---|---|---|
-| 미팅 (선착순 착석) | 한승원 | ✅ 완료 |
+| 미팅 (라운지 선착순 + 단톡방) | 한승원 | ✅ 완료 |
 | 밥약 (모집글 + 빠른 매칭) | 한승원 | ✅ 완료 |
 | 팀빌딩 (노쇼 관리 · 관리자 대시보드) | — | ⬜ |
 | 시설 예약 (공강 시간표 자동 계산) | — | ⬜ |
@@ -153,6 +153,7 @@ export const gatheringRepo: GatheringRepo = { list, find, save, listByUser };
 | POST | `/api/gatherings/:id/leave` | 참여/신청 취소 |
 | POST | `/api/gatherings/:id/cancel` | 모임 취소 |
 | POST | `/api/gatherings/:id/review` | `{ userId, mark }` 상호 평가 (good/soso/noshow) |
+| GET/POST | `/api/gatherings/:id/messages` | 단톡방 읽기(폴링)·보내기 |
 | GET/POST/PATCH/DELETE | `/api/meals/quick` | 밥약 빠른 매칭 (대기 / 신청 / 투표·수락 / 취소) |
 | GET/POST/DELETE | `/api/blocks` | 차단 |
 | POST | `/api/reports` | 신고 |
@@ -222,3 +223,14 @@ npm run bus:simulate                # 가짜 버스를 노선 위로 달리게 (
 버스만 Supabase 어댑터가 있고 (`env` 있으면 Supabase, 없으면 seed.json),
 모임·평판·차단·신고·빠른 매칭은 아직 **인메모리**다. 미팅까지 끝낸 뒤 Supabase 스키마와 어댑터를 한 번에 붙인다.
 그래야 테이블을 두 번 설계하지 않는다.
+
+## 13. 미팅 라운지 · 단톡방 (`src/components/meetup/`, `src/domain/chat/`)
+
+라운지는 카톡 단톡방에 "2:2 할 사람?" 올리는 느낌 그대로다. 한 줄만 쓰면 글이 올라가고,
+사람들이 **우리 쪽 / 상대 쪽** 빈 의자에 선착순으로 앉는다. 자리가 다 차는 순간
+`gathering.filled` 이벤트 → `src/server/rooms.ts`가 **그 사람들만의 단톡방**을 연다 (방 id = 모임 id).
+
+- 연락처·실명은 공개하지 않는다. 약속 조율은 단톡방 안에서만 (개인정보 이슈)
+- 차단한 사람의 말풍선은 "차단한 사용자의 메시지예요"로 가려진다
+- '같은 과 빼고' 옵션: `meta.excludeSameDept` — 학과는 화면에 안 보이므로 서버(`service.ts`)에서 검사한다
+- 지금은 3초 폴링. Supabase를 붙이면 `ChatRoom`의 폴링만 Realtime 구독으로 바꾸면 된다.

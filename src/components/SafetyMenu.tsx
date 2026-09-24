@@ -6,6 +6,7 @@
  * 차단하면 서로의 글과 매칭에서 사라지고, 신고는 서로 다른 3명이 쌓이면 자동으로 이용이 막힌다.
  * 상대에게는 알리지 않는다 — 알림이 가면 보복이 무서워서 아무도 안 누른다.
  */
+import Link from 'next/link';
 import { useState } from 'react';
 import { Badge, Button, Field, Modal, Select, Textarea } from '@/components/ui';
 import { ApiError } from '@/lib/api';
@@ -119,7 +120,12 @@ function SafetyModal({
             차단
           </Button>
         </div>
-        <p className="text-[11px] text-muted">차단하면 서로의 모임과 매칭에서 사라져요. 상대에게는 알리지 않아요.</p>
+        <p className="text-[11px] text-muted">
+          차단하면 서로의 모임과 매칭에서 사라져요. 상대에게는 알리지 않아요.{' '}
+          <Link href="/blocks" className="underline">
+            차단 목록 보기
+          </Link>
+        </p>
       </div>
     </Modal>
   );

@@ -106,11 +106,16 @@ export default async function Home() {
         })}
       </div>
 
-      {admin && (
-        <Link href="/admin" className="block text-center text-xs text-muted underline">
-          관리자 페이지 →
+      <div className="flex justify-center gap-3 text-xs text-muted">
+        <Link href="/blocks" className="underline">
+          차단 목록
         </Link>
-      )}
+        {admin && (
+          <Link href="/admin" className="underline">
+            관리자 페이지
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

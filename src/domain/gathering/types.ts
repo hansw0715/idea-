@@ -60,6 +60,8 @@ export type GatheringMeta = {
   menu?: string;
   /** 태그 (예: 선후배 밥약, 조용히 먹기) */
   tags?: string[];
+  /** 미팅: 같은 학과 사람은 못 들어오게 (아는 사람 만나는 걸 막는 안전장치) */
+  excludeSameDept?: boolean;
 };
 
 export type Gathering = {

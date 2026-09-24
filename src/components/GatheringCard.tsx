@@ -8,6 +8,7 @@
  *  - joinPolicy 'approval'  → 한 줄 남기고 신청 → 주최자가 승인 (밥약)
  * 팀빌딩(kind: 'team')도 승인제라서 그대로 재사용할 수 있다.
  */
+import Link from 'next/link';
 import { useState } from 'react';
 import { act, ApiError } from '@/lib/api';
 import { formatMeetAt, timeLeft } from '@/lib/format';
@@ -179,6 +180,16 @@ export function GatheringCard({ gathering: g, onChange }: Props) {
         >
           신청 취소
         </button>
+      )}
+
+      {/* 자리가 다 차면 그 사람들만의 단톡방이 열린다 (domain/chat) */}
+      {g.viewer.isMember && (g.status === 'full' || g.status === 'done') && (
+        <Link
+          href={`/rooms/${g.id}`}
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-brand py-2.5 text-sm font-bold text-white"
+        >
+          💬 단톡방 열기
+        </Link>
       )}
 
       {g.viewer.canReview && <ReviewPanel gathering={g} busy={busy} run={run} />}

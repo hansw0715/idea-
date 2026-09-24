@@ -12,8 +12,9 @@ import { createGathering } from '@/domain/gathering';
 import { MEETUP_PRESETS } from '@/features/meetup/preset';
 import { MEAL_PRESET } from '@/features/mealdate/preset';
 import type { Block, Report } from '@/domain/safety/safety';
+import type { Message } from '@/domain/chat/chat';
 import type { QuickRequest, QuickRoom } from '@/features/mealdate/quick-match';
-import type { GatheringRepo, QuickMatchRepo, SafetyRepo, UserRepo } from './gathering-repo';
+import type { ChatRepo, GatheringRepo, QuickMatchRepo, SafetyRepo, UserRepo } from './gathering-repo';
 
 type Store = {
   users: Map<string, User>;
@@ -22,6 +23,7 @@ type Store = {
   reports: Map<string, Report>;
   quickRequests: Map<string, QuickRequest>;
   quickRooms: Map<string, QuickRoom>;
+  messages: Map<string, Message[]>;
 };
 
 // Next.js dev 서버는 파일이 바뀔 때마다 모듈을 새로 불러오므로,
@@ -74,6 +76,19 @@ export const safetyRepo: SafetyRepo = {
   },
   async saveReport(report) {
     getStore().reports.set(report.id, report);
+  },
+};
+
+export const chatRepo: ChatRepo = {
+  async list(roomId) {
+    return [...(getStore().messages.get(roomId) ?? [])];
+  },
+  async save(message) {
+    const s = getStore();
+    s.messages.set(message.roomId, [...(s.messages.get(message.roomId) ?? []), message]);
+  },
+  async hasMessages(roomId) {
+    return (getStore().messages.get(roomId)?.length ?? 0) > 0;
   },
 };
 
@@ -241,6 +256,7 @@ function seed(): Store {
     reports: new Map(),
     quickRequests: new Map(),
     quickRooms: new Map(),
+    messages: new Map(),
   };
 }
 

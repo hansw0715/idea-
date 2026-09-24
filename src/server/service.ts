@@ -13,6 +13,7 @@ import type { Gathering, GatheringKind, GatheringMeta, ReviewMark, SlotSpec } fr
 import { gatheringRepo, userRepo } from './repo/memory-repo';
 import { hiddenFor } from './safety-service';
 import './reputation';
+import './rooms';
 
 const nowISO = () => new Date().toISOString();
 
@@ -35,6 +36,19 @@ async function checkNotBlocked(g: Gathering, userId: UserId): Promise<Result<tru
   const people = [g.hostId, ...G.memberIds(g)];
   return people.some((id) => hidden.has(id))
     ? fail('FORBIDDEN', '차단한 사용자가 있는 모임이에요.')
+    : ok(true);
+}
+
+/**
+ * '같은 과 빼고' 미팅에 같은 학과 사람이 들어오는 걸 막는다.
+ * 학과는 화면에 안 보이는 정보라 도메인이 아니라 여기서 검사한다.
+ */
+async function checkDepartment(g: Gathering, user: User): Promise<Result<true>> {
+  if (!g.meta.excludeSameDept) return ok(true);
+
+  const people = await Promise.all([g.hostId, ...G.memberIds(g)].map((id) => userRepo.find(id)));
+  return people.some((m) => m && m.id !== user.id && m.department === user.department)
+    ? fail('FORBIDDEN', '같은 학과는 참여할 수 없는 미팅이에요.')
     : ok(true);
 }
 
@@ -102,6 +116,8 @@ export async function joinGathering(
 
   const allowed = await checkNotBlocked(g.value, userId);
   if (!allowed.ok) return allowed;
+  const sameDept = await checkDepartment(g.value, user.value);
+  if (!sameDept.ok) return sameDept;
 
   const now = nowISO();
   return commit(G.join(g.value, user.value, slotKey, now), (next) => {
@@ -122,6 +138,8 @@ export async function applyToGathering(
 
   const allowed = await checkNotBlocked(g.value, userId);
   if (!allowed.ok) return allowed;
+  const sameDept = await checkDepartment(g.value, user.value);
+  if (!sameDept.ok) return sameDept;
 
   return commit(G.apply(g.value, user.value, slotKey, message, nowISO()));
 }
