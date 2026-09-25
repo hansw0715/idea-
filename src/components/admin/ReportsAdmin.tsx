@@ -41,7 +41,7 @@ export function ReportsAdmin() {
   const shown = filter === 'open' ? reports.filter((r) => r.status === 'open') : reports;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 md:max-w-3xl">
       <Tabs<Filter>
         items={[
           { value: 'open', label: '처리 대기', hint: String(reports.filter((r) => r.status === 'open').length) },

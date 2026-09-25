@@ -54,19 +54,19 @@ export default async function Home() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl bg-brand p-5 text-white">
+      <section className="rounded-2xl bg-brand p-5 text-white md:p-8">
         <p className="text-[12px] opacity-80">한성대학교 학생 서비스</p>
-        <h2 className="mt-1 text-xl font-bold leading-snug">
+        <h2 className="mt-1 text-xl font-bold leading-snug md:text-3xl">
           같이 할 사람이 없어서
           <br />
           못 했던 것들
         </h2>
-        <p className="mt-2 text-[13px] opacity-90">
+        <p className="mt-2 text-[13px] opacity-90 md:text-base">
           미팅도, 밥도, 팀도, 공간도 — 상상BOOK-e에서 한 번에.
         </p>
       </section>
 
-      <div className="grid gap-3">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map((f) => {
           const inner = (
             <>

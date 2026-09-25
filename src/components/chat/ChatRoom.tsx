@@ -75,7 +75,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
   if (!room) return <div className="h-64 animate-pulse rounded-lg bg-surface-muted" />;
 
   return (
-    <div className="flex h-[calc(100dvh-13rem)] flex-col gap-2">
+    <div className="mx-auto flex h-[calc(100dvh-13rem)] w-full max-w-2xl flex-col gap-2 md:h-[calc(100dvh-10rem)]">
       <header className="space-y-1">
         <h1 className="text-base font-bold">{room.title}</h1>
         <p className="text-xs text-muted">

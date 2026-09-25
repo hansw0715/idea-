@@ -77,7 +77,7 @@ export function MeetupLounge() {
           💌 미팅 할 사람? 올리기
         </button>
       ) : (
-        <Card className="space-y-3">
+        <Card className="space-y-3 md:max-w-2xl">
           <Field label="인원" hint="우리 쪽 / 상대 쪽으로 자리가 나뉘어요.">
             <div className="grid grid-cols-4 gap-2">
               {MEETUP_SIZES.map((s) => (

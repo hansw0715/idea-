@@ -70,7 +70,7 @@ export function QuickMatchPanel({ onConfirmed }: { onConfirmed: () => void }) {
   const request = state.request;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 md:max-w-2xl">
       {error && <Badge tone="danger">{error}</Badge>}
 
       {room && room.status === 'pending' && (

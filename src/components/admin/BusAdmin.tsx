@@ -122,7 +122,7 @@ export function BusAdmin() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 md:max-w-3xl">
       {snapshot.storage === 'memory' && (
         <p className="rounded-md bg-accent/15 px-3 py-2 text-xs text-accent">
           Supabase가 연결되지 않아 인메모리 저장소를 쓰고 있어요. 서버를 재시작하면 수정 내용이 seed.json 값으로 돌아가요.

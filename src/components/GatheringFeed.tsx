@@ -45,15 +45,17 @@ export function GatheringFeed({ kind, newHref, ctaLabel, emptyText, reloadToken 
         </p>
       )}
 
-      {items?.map((g) => (
-        <GatheringCard key={g.id} gathering={g} onChange={replace} />
-      ))}
+      <div className="grid gap-3 md:grid-cols-2">
+        {items?.map((g) => (
+          <GatheringCard key={g.id} gathering={g} onChange={replace} />
+        ))}
+      </div>
     </div>
   );
 }
 
 const SkeletonList = () => (
-  <div className="space-y-3">
+  <div className="grid gap-3 md:grid-cols-2">
     {[0, 1].map((i) => (
       <div key={i} className="h-48 animate-pulse rounded-2xl bg-surface" />
     ))}

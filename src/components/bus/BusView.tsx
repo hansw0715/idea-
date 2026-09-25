@@ -86,31 +86,33 @@ export function BusView() {
         onChange={selectRoute}
       />
 
-      <div className="relative h-[45dvh] min-h-64 overflow-hidden rounded-lg border border-border">
-        <BusMap route={route} positions={routePositions} selectedStopId={stopId} onSelectStop={selectStop} />
-        <div className="pointer-events-none absolute left-2 top-2 z-[1000]">
-          <Badge tone={routePositions.length ? 'success' : 'neutral'} className="shadow-card">
-            {routePositions.length ? `● 실시간 운행 ${routePositions.length}대` : '실시간 위치 없음 · 시간표 기준'}
-          </Badge>
+      <div className="gap-3 md:grid md:grid-cols-[1.5fr_1fr] md:items-start">
+        <div className="relative h-[45dvh] min-h-64 overflow-hidden rounded-lg border border-border md:h-[62dvh]">
+          <BusMap route={route} positions={routePositions} selectedStopId={stopId} onSelectStop={selectStop} />
+          <div className="pointer-events-none absolute left-2 top-2 z-[1000]">
+            <Badge tone={routePositions.length ? 'success' : 'neutral'} className="shadow-card">
+              {routePositions.length ? `● 실시간 운행 ${routePositions.length}대` : '실시간 위치 없음 · 시간표 기준'}
+            </Badge>
+          </div>
         </div>
-      </div>
 
-      {route && (
-        <Card className="p-0">
-          <ol className="divide-y divide-border">
-            {route.stops.map((s) => (
-              <StopRow
-                key={s.id}
-                stop={s}
-                color={route.color}
-                selected={s.id === stopId}
-                next={nextArrivals(network, route, s.id, now)}
-                onClick={() => selectStop(s.id)}
-              />
-            ))}
-          </ol>
-        </Card>
-      )}
+        {route && (
+          <Card className="mt-3 p-0 md:mt-0 md:max-h-[62dvh] md:overflow-y-auto">
+            <ol className="divide-y divide-border">
+              {route.stops.map((s) => (
+                <StopRow
+                  key={s.id}
+                  stop={s}
+                  color={route.color}
+                  selected={s.id === stopId}
+                  next={nextArrivals(network, route, s.id, now)}
+                  onClick={() => selectStop(s.id)}
+                />
+              ))}
+            </ol>
+          </Card>
+        )}
+      </div>
 
       <p className="text-center text-[11px] text-muted">
         시간표 기준 예상 시각이에요. 교통 상황에 따라 달라질 수 있어요.

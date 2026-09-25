@@ -23,7 +23,7 @@ export function StatsAdmin() {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <Stat label="가입자" value={`${stats.users.total}명`} sub={`메일 인증 ${stats.users.verified}명`} />
         <Stat label="평균 매너온도" value={`${stats.users.averageTemperature}°`} sub={`이용 정지 ${stats.users.banned}명`} />
         <Stat
