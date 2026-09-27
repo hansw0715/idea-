@@ -1,0 +1,23 @@
+# Fly.io 배포 설정. `fly launch`가 app 이름이 겹치면 바꿔 줍니다.
+# DB는 Supabase(Postgres)를 쓰므로 볼륨이 필요 없습니다.
+# 배포 전에 비밀 값을 등록하세요:
+#   fly secrets set DATABASE_URL="postgresql://..." JWT_SECRET="..."
+app = "campus-space"
+primary_region = "nrt"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  API_PORT = "8080"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

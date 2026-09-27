@@ -1,0 +1,19 @@
+[build]
+  command = "npm run build"
+  publish = "client/dist"
+
+[functions]
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
+
+# /api/* 요청은 서버리스 함수로, 나머지는 SPA로 넘긴다.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

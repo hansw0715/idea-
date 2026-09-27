@@ -1,0 +1,15 @@
+
+node_modules/
+data/
+client/dist/
+.env
+.env.local
+
+# Local Netlify folder
+.netlify
+
+# 캡처 결과물
+shots/
+
+# 이 저장소와 무관한 별개 프로젝트
+sail-homepage/
