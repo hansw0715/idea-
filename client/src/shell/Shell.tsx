@@ -4,6 +4,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from '../ui';
 import type { IconName } from '../ui';
 import { useDisplay } from '../ui/Display';
+import { LOUNGE_ENABLED } from '../features';
 
 /* ── 하단 탭바 숨김 제어 (전체 화면 흐름에서 사용) ─────────────── */
 interface ShellApi {
@@ -28,6 +29,8 @@ function routeTitle(pathname: string): string | null {
   if (pathname === '/') return '홈';
   if (pathname === '/timetable') return '내 시간표';
   if (pathname === '/meetings') return '회의';
+  if (pathname === '/lounge') return '라운지';
+  if (pathname === '/admin') return '관리자';
   if (pathname === '/account') return '내 정보';
   return null; // 회의 상세 등: 화면 제목(h1)을 따라간다
 }
@@ -72,7 +75,7 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/', label: '홈', icon: 'home', end: true },
   { to: '/timetable', label: '시간표', icon: 'calendar' },
   { to: '/meetings', label: '회의', icon: 'users' },
-  { to: '/account', label: '내 정보', icon: 'user' },
+  ...(LOUNGE_ENABLED ? [{ to: '/lounge', label: '라운지', icon: 'lounge' as IconName }] : []),
 ];
 
 export function TabBar() {
@@ -160,6 +163,11 @@ export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppH
       )}
       <div className="app-header__actions">
         {actions}
+        {!hasBack && !bare && (
+          <Link to="/account" className="btn btn--icon" aria-label="내 정보">
+            <Icon name="user" className="btn__icon" />
+          </Link>
+        )}
         <button
           type="button"
           className="btn btn--icon"

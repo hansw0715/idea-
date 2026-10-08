@@ -1,9 +1,15 @@
 export class ApiError extends Error {
   status: number;
+  /** 서버가 돌려준 오류 코드 (라운지 API: PROFILE_REQUIRED, SLOT_FULL …). 없으면 undefined. */
+  code?: string;
+  /** 오류 본문 전체. SCHOOL_LOCKED 의 retryAfterSec·long 처럼 코드별 추가 필드를 읽을 때 쓴다. */
+  data?: Record<string, unknown>;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string, data?: Record<string, unknown>) {
     super(message);
     this.status = status;
+    this.code = code;
+    this.data = data;
   }
 }
 
@@ -39,7 +45,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
         ? data.error
         : '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
-    throw new ApiError(res.status, message);
+    const code =
+      data && typeof data === 'object' && 'code' in data && typeof data.code === 'string'
+        ? data.code
+        : undefined;
+    const extra = data && typeof data === 'object' ? (data as Record<string, unknown>) : undefined;
+    throw new ApiError(res.status, message, code, extra);
   }
   return data as T;
 }
@@ -47,5 +58,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
+  put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
+  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
   del: <T>(path: string, body?: unknown) => request<T>('DELETE', path, body),
 };

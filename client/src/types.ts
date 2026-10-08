@@ -1,6 +1,9 @@
 export interface User {
   id: number;
-  email: string;
+  /** 로그인 아이디 */
+  username: string;
+  /** 학교 메일로 가입한 옛 계정만 있다 */
+  email?: string | null;
   name: string;
   /** 운영용으로 미리 만들어 둔 계정. 탈퇴할 수 없다. */
   isAdmin?: boolean;
@@ -35,7 +38,6 @@ export interface Meeting {
 export interface Member {
   id: number;
   name: string;
-  email: string;
   isOwner: number;
 }
 

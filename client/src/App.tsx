@@ -14,6 +14,12 @@ import TimetablePage from './pages/TimetablePage';
 import Meetings from './pages/Meetings';
 import MeetingDetail from './pages/MeetingDetail';
 import Account from './pages/Account';
+import { LoungeProvider } from './lounge/LoungeContext';
+import { LOUNGE_ENABLED } from './features';
+import { SchoolProvider } from './school/SchoolContext';
+import LoungePage from './lounge/LoungePage';
+import ChatRoomPage from './lounge/ChatRoomPage';
+import AdminPage from './lounge/AdminPage';
 
 /** 로그인 후 화면: 로그인이 안 되어 있으면 로그인으로 보낸다. 헤더·탭바는 AppFrame 이 맡는다. */
 function Protected({ children }: { children: ReactNode }) {
@@ -68,6 +74,11 @@ function SessionWatcher({ onExpired }: { onExpired: () => void }) {
   return null;
 }
 
+/** 라운지가 꺼져 있으면 프로필을 불러오지도, 프로필 시트를 띄우지도 않는다. */
+function MaybeLounge({ children }: { children: ReactNode }) {
+  return LOUNGE_ENABLED ? <LoungeProvider>{children}</LoungeProvider> : <>{children}</>;
+}
+
 export default function App() {
   const cached = readCachedUser();
   const [user, setUserState] = useState<User | null>(cached);
@@ -110,6 +121,8 @@ export default function App() {
           <ConfirmProvider>
             <AuthContext.Provider value={{ user, setUser }}>
               <SessionWatcher onExpired={() => setUser(null)} />
+              <MaybeLounge>
+              <SchoolProvider>
               <BrowserRouter>
                 <Routes>
                   <Route path="/login" element={<Public><Login /></Public>} />
@@ -119,9 +132,18 @@ export default function App() {
                   <Route path="/meetings" element={<Protected><Meetings /></Protected>} />
                   <Route path="/meetings/:id" element={<Protected><MeetingDetail /></Protected>} />
                   <Route path="/account" element={<Protected><Account /></Protected>} />
+                  {LOUNGE_ENABLED && (
+                    <>
+                      <Route path="/lounge" element={<Protected><LoungePage /></Protected>} />
+                      <Route path="/lounge/rooms/:id" element={<Protected><ChatRoomPage /></Protected>} />
+                      <Route path="/admin" element={<Protected><AdminPage /></Protected>} />
+                    </>
+                  )}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
+              </SchoolProvider>
+              </MaybeLounge>
             </AuthContext.Provider>
           </ConfirmProvider>
         </ToastProvider>

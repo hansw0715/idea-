@@ -23,7 +23,7 @@ dashboardRouter.get(
     // 네 덩어리를 각각 질의하면 왕복이 네 번 든다. Postgres가 한 번에 묶어 주도록
     // JSON으로 합쳐 한 번의 왕복으로 끝낸다.
     const row = await get<{
-      user: { id: number; email: string; name: string; isAdmin: boolean } | null;
+      user: { id: number; username: string; email: string | null; name: string; isAdmin: boolean } | null;
       timetable: unknown[];
       meetings: unknown[];
       reservations: unknown[];
@@ -31,12 +31,12 @@ dashboardRouter.get(
     }>(
       `SELECT
          (SELECT to_jsonb(u) FROM (
-            SELECT id, email, name, is_admin AS "isAdmin" FROM users WHERE id = ?
+            SELECT id, username, email, name, is_admin AS "isAdmin" FROM users WHERE id = ?
           ) u) AS "user",
 
          (SELECT coalesce(jsonb_agg(t ORDER BY t.day, t."startMin"), '[]'::jsonb) FROM (
             SELECT id, day, start_min AS "startMin", end_min AS "endMin", title, place,
-                   repeat_kind AS "repeatKind", date
+                   repeat_kind AS "repeatKind", date, source
             FROM timetable_entries
             WHERE user_id = ?
               AND (repeat_kind = 'weekly' OR (date >= ? AND date <= ?))

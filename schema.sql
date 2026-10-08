@@ -6,7 +6,10 @@
 
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
-  email TEXT NOT NULL UNIQUE,
+  -- 로그인 아이디 (유니크 인덱스는 앱이 첫 요청 때 만든다: uq_users_username)
+  username TEXT,
+  -- 학교 메일로 가입한 옛 계정만 값이 있다. 새 가입은 NULL.
+  email TEXT UNIQUE,
   name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()

@@ -39,6 +39,7 @@ import {
   useToast,
 } from '../ui';
 import type { Reservation, TimetableEntry } from '../types';
+import SchoolTimetableAction from '../school/SchoolTimetableAction';
 import './timetable.css';
 
 type TabId = 'timetable' | 'search';
@@ -308,6 +309,9 @@ export default function TimetablePage() {
             일정 추가하기
           </Button>
         </div>
+
+        {/* 학교 계정이 연동되어 있을 때만 "학교 시간표 가져오기" 한 줄이 보인다. 가져오면 목록을 새로고침한다. */}
+        <SchoolTimetableAction onImported={reload} />
 
         <Tabs
           label="시간표 화면"

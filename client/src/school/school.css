@@ -1,0 +1,351 @@
+/* ───────────────────────────────────────────────────────────────
+   학교 계정 연동 화면 전용 스타일 (접두사 school-)
+   색·간격·글자 크기는 styles/tokens.css 의 변수만 쓴다 (hex 직접 사용 금지, 크기는 rem).
+   ─────────────────────────────────────────────────────────────── */
+
+/* ── 연동 안내문(수집 목적·보관 방식·한계) — 접어 두지 않는다 ───── */
+.school-notice {
+  margin-bottom: var(--sp-7);
+  padding: var(--sp-6);
+  border-radius: var(--r);
+  background: var(--c-surface);
+}
+.school-notice__title {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.school-notice__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding-left: var(--sp-7);
+  list-style: disc;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.school-notice__foot {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* ── 알림 / 진행 표시 ───────────────────────────────────────── */
+.school-alert {
+  margin-bottom: var(--sp-6);
+  scroll-margin-top: var(--sp-6);
+}
+.school-alert > p + p,
+.school-alert .alert__body p + p {
+  margin-top: var(--sp-3);
+}
+
+.school-wait {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+  padding: var(--sp-6);
+  border-radius: var(--r);
+  background: var(--c-surface);
+}
+.school-wait__text {
+  flex: 1;
+  min-width: 0;
+}
+.school-wait__label {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.school-wait__sub {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* 시트 하단 버튼: 한 줄에 둘이 들어가면 나란히, 좁거나 글자가 커지면 Primary 가 위에 오도록 쌓는다 */
+.school-foot {
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.school-foot > * {
+  flex: 1 1 9rem;
+}
+/* 첫 자식이 Primary — 한 줄일 때 조금 더 넓게 (긴 처리 중 문구가 덜 접히게) */
+.school-foot > :first-child {
+  flex: 1.6 1 14rem;
+}
+
+/* ── 연동 폼 ────────────────────────────────────────────────── */
+.school-consent {
+  margin-top: var(--sp-2);
+  margin-bottom: var(--sp-6);
+}
+.school-consent__reason {
+  margin-top: var(--sp-2);
+}
+
+.school-done__title {
+  margin-top: var(--sp-6);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+}
+.school-done__text {
+  margin-top: var(--sp-2);
+  color: var(--c-text-sub);
+}
+
+/* ── 이름 : 값 목록 (카드·신청서 공용) ───────────────────────── */
+.school-info {
+  margin: 0;
+}
+.school-info__row {
+  padding: var(--sp-4) 0;
+  border-bottom: 1px solid var(--c-divider);
+}
+.school-info__row:first-child {
+  padding-top: 0;
+}
+.school-info__row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.school-info__key {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.school-info__val {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-md);
+  color: var(--c-text);
+}
+
+/* ── 내 정보 카드 ───────────────────────────────────────────── */
+.school-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.school-card__head .card__title {
+  margin-bottom: 0;
+}
+.school-card__lead {
+  color: var(--c-text-sub);
+}
+.school-card__lead + .school-card__lead {
+  margin-top: var(--sp-3);
+}
+.school-card__menu {
+  margin-top: var(--sp-5);
+  border-top: 1px solid var(--c-divider);
+}
+.school-card__menu .list__item:last-child {
+  border-bottom: 1px solid var(--c-divider);
+}
+.school-card__warn {
+  margin-top: var(--sp-5);
+}
+.school-card__menu .list__main,
+.school-card__menu .list__sub {
+  display: block;
+}
+.school-card__icon {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--c-text-sub);
+}
+.school-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-6);
+}
+.school-card__actions > * {
+  flex: 1 1 14rem;
+}
+
+/* ── 시간표 가져오기 ────────────────────────────────────────── */
+.school-tt-bar {
+  margin-bottom: var(--sp-5);
+}
+.school-tt-bar__note {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.school-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-1) var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+.school-summary__who {
+  font-weight: var(--fw-bold);
+}
+.school-summary__count {
+  color: var(--c-text-sub);
+  font-size: var(--fs-sm);
+}
+
+.school-notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+.school-notes__list {
+  margin-top: var(--sp-3);
+  padding-left: var(--sp-7);
+  list-style: disc;
+}
+
+.school-day {
+  margin-top: var(--sp-7);
+}
+.school-day:first-of-type {
+  margin-top: 0;
+}
+.school-day__title {
+  padding-bottom: var(--sp-3);
+  border-bottom: 2px solid var(--c-border-strong);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.school-class {
+  padding: var(--sp-5) 0;
+  border-bottom: 1px solid var(--c-divider);
+}
+.school-class:last-child {
+  border-bottom: 0;
+}
+.school-class__time {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+.school-class__name {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+}
+.school-class__meta {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* ── 내 학교 예약 ───────────────────────────────────────────── */
+.school-group + .school-group {
+  margin-top: var(--sp-8);
+}
+.school-group__title {
+  padding-bottom: var(--sp-3);
+  border-bottom: 2px solid var(--c-border-strong);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.school-res {
+  padding: var(--sp-5) 0;
+  border-bottom: 1px solid var(--c-divider);
+}
+.school-res:last-child {
+  border-bottom: 0;
+}
+.school-res__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.school-res__title {
+  flex: 1 1 14rem;
+  min-width: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+}
+.school-res .badge {
+  max-width: 100%;
+  height: auto;
+  min-height: 2.4rem;
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+  line-height: 1.2;
+  white-space: normal;
+}
+.school-res__meta {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* ── 학교 바로 신청 ─────────────────────────────────────────── */
+.school-book__section + .school-book__section {
+  margin-top: var(--sp-8);
+}
+.school-book__heading {
+  margin-bottom: var(--sp-4);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.school-book__lead {
+  margin-bottom: var(--sp-4);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.school-book__fields {
+  margin-top: var(--sp-6);
+}
+.school-book__confirm {
+  padding: var(--sp-6);
+  border: 1px solid var(--c-action);
+  border-radius: var(--r);
+  background: var(--c-action-bg);
+}
+.school-book__confirm p + p {
+  margin-top: var(--sp-2);
+}
+.school-book__confirm-title {
+  font-weight: var(--fw-bold);
+}
+.school-book__confirm-note {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.school-book__found {
+  margin-top: var(--sp-4);
+  padding-left: var(--sp-7);
+  list-style: disc;
+}
+.school-book__link {
+  margin-top: var(--sp-5);
+}
+
+/* ── 가입 3단계 ─────────────────────────────────────────────── */
+.school-step__title {
+  margin-bottom: var(--sp-5);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+}
+.school-step__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-top: var(--sp-8);
+}
+
+/* ── 회의 상세의 학교 바로 신청 안내 한 줄 ───────────────────── */
+.school-hint {
+  margin-top: var(--sp-5);
+}

@@ -1,0 +1,202 @@
+/* 밥약 빠른 매칭 시트 전용 스타일 — 접두사 lounge-quick-
+   색·간격은 tokens.css 변수만 쓴다. 시트·버튼·칩·알림은 공용 클래스를 그대로 쓰고 여기서는 배치만 만든다. */
+
+/* ── 공통 ────────────────────────────────────────────────────── */
+.lounge-quick-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-7);
+}
+
+.lounge-quick-lead {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.lounge-quick-h {
+  margin-bottom: var(--sp-4);
+  font-size: var(--fs-h4);
+  font-weight: var(--fw-bold);
+}
+.lounge-quick-h.lounge-quick-h-flush {
+  margin-bottom: 0;
+}
+/* 이 시트 안의 .field 는 간격을 body 의 gap 이 맡는다 */
+.lounge-quick-body .field {
+  margin-bottom: 0;
+}
+
+.lounge-quick-poll-note {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* 조건 요약: 항목 이름은 작게, 값은 본문 크기로 */
+.lounge-quick-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--sp-3) var(--sp-6);
+  margin: 0;
+}
+.lounge-quick-summary dt {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-quick-summary dd {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--fs-md);
+}
+
+/* ── 조건 입력 ───────────────────────────────────────────────── */
+.lounge-quick-form .field {
+  margin-bottom: 0;
+}
+.lounge-quick-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-7);
+}
+
+/* 시간 구간·태그 칩 묶음 (폭이 좁으면 한 줄에 하나) */
+.lounge-quick-bands {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: var(--sp-3);
+}
+.lounge-quick-bands .tag {
+  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
+}
+.lounge-quick-chip-why {
+  font-size: var(--fs-xs);
+}
+.lounge-quick-votes {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+.tag[aria-pressed='true'] .lounge-quick-votes {
+  color: var(--c-action-text);
+}
+
+/* 처리 중에는 칩이 눌리지 않게 한다 (disabled 로 바꾸면 포커스가 사라진다) */
+.lounge-quick-bands .tag[aria-disabled='true'] {
+  cursor: progress;
+}
+
+/* ── 대기 중 ─────────────────────────────────────────────────── */
+.lounge-quick-wait {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+}
+.lounge-quick-wait-title {
+  font-size: var(--fs-h4);
+  font-weight: var(--fw-bold);
+}
+
+/* ── 후보 방 ─────────────────────────────────────────────────── */
+.lounge-quick-room-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.lounge-quick-members {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lounge-quick-member {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-height: var(--touch);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+}
+.lounge-quick-member-text {
+  flex: 1;
+  min-width: 0;
+}
+.lounge-quick-member-name {
+  font-weight: var(--fw-bold);
+}
+.lounge-quick-member-college {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-quick-member-state {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-quick-member-state svg {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+.lounge-quick-member-state.is-done {
+  color: var(--c-success-text);
+  font-weight: var(--fw-bold);
+}
+
+.lounge-quick-timer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+  background: var(--c-surface);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-quick-timer-left {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 하단 고정 영역 (시트 footer) ─────────────────────────────── */
+.lounge-quick-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  width: 100%;
+}
+.lounge-quick-foot-row {
+  display: flex;
+  gap: var(--sp-3);
+}
+.lounge-quick-foot-row > .btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+/* 거절은 글자 길이만큼만, 남는 폭은 수락이 쓴다 */
+.lounge-quick-foot-row > .lounge-quick-foot-side {
+  flex: 0 0 auto;
+}
+.lounge-quick-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-quick-reason svg {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+  margin-top: 0.2rem;
+}

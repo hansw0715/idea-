@@ -1,0 +1,226 @@
+/* ───────────────────────────────────────────────────────────────
+   관리자 화면 전용 스타일 (접두사 lounge-admin-)
+   색·간격·글자 크기는 styles/tokens.css 의 변수만 쓴다. 크기는 rem — 글자 150%에서도 같이 커진다.
+   ─────────────────────────────────────────────────────────────── */
+
+.lounge-admin-lead {
+  margin-bottom: var(--sp-6);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.lounge-admin-tabs {
+  margin-bottom: var(--sp-6);
+}
+
+/* 탭 패널 안의 위쪽 줄: 설명 + 새로 고치기 */
+.lounge-admin-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.lounge-admin-toolbar__text {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+/* 오른쪽 끝 텍스트 버튼은 글자가 거터 끝에 맞도록 안쪽 여백만큼 당긴다 */
+.lounge-admin-toolbar > .btn--text {
+  flex: none;
+  margin-right: calc(var(--sp-3) * -1);
+}
+
+.lounge-admin-filter {
+  margin-bottom: var(--sp-5);
+}
+
+/* ── 신고 카드 ───────────────────────────────────────────────── */
+.lounge-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.lounge-admin-report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  min-width: 0;
+}
+
+.lounge-admin-report__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.lounge-admin-report__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+.lounge-admin-report__time {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+
+/* 자세한 내용: 회색 면 위 글자는 text-sub 이상으로 */
+.lounge-admin-report__detail {
+  margin: 0;
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  white-space: pre-wrap;
+}
+.lounge-admin-report__detail--empty {
+  color: var(--c-text-sub);
+}
+
+.lounge-admin-report__who {
+  margin: 0;
+  font-size: var(--fs-md);
+}
+.lounge-admin-report__who strong {
+  font-weight: var(--fw-bold);
+}
+
+/* 대상 상태: 매너온도 · 노쇼 경고 · 이용 상태 */
+.lounge-admin-target {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--sp-4) var(--sp-5);
+  margin: 0;
+}
+.lounge-admin-target__item {
+  min-width: 0;
+}
+.lounge-admin-target__key {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.lounge-admin-target__val {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  min-height: 2.4rem;
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text);
+}
+
+.lounge-admin-report__open {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-admin-report__open strong {
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+}
+
+/* 처리 버튼: 내용 길이만큼 차지하고 줄이 모자라면 아래 줄로 내려가 가득 채운다 */
+.lounge-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.lounge-admin-actions > .btn {
+  flex: 1 1 auto;
+}
+
+/* ── 통계 ───────────────────────────────────────────────────── */
+.lounge-admin-summary {
+  margin: 0 0 var(--sp-6);
+  font-size: var(--fs-md);
+  color: var(--c-text);
+}
+
+.lounge-admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--sp-3);
+  margin: 0;
+}
+.lounge-admin-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+.lounge-admin-stat__label {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-admin-stat__value {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text);
+}
+.lounge-admin-stat__note {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+
+.lounge-admin-kinds {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.lounge-admin-kind__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.lounge-admin-kind__name {
+  margin: 0;
+  font-size: var(--fs-h4);
+  font-weight: var(--fw-bold);
+}
+.lounge-admin-kind__cancel {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.lounge-admin-kind__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.4rem, 1fr));
+  gap: var(--sp-4) var(--sp-3);
+  margin: 0;
+}
+.lounge-admin-kind__key {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-admin-kind__val {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text);
+}
+
+.lounge-admin-note {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* 선명한 화면: 회색 면(--c-surface)이 흰색이 되어 내용 상자의 경계가 사라지므로 보더로 구분한다 */
+:root[data-contrast='high'] .lounge-admin-report__detail {
+  border: 1px solid var(--c-border);
+}

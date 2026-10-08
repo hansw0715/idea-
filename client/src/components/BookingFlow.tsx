@@ -57,7 +57,7 @@ interface BookingFlowProps {
   /** 팀원 수업 + 이 회의의 예약을 합친 시간표 항목 */
   gridEntries: GridEntry[];
   week: WeekControls;
-  /** 예약이 만들어졌을 때. 흐름을 닫고 결과 안내를 띄우는 일은 부모가 맡는다. */
+  /** 예약 계획이 만들어졌을 때. 흐름을 닫고 학교 신청 화면을 여는 일은 부모가 맡는다. */
   onBooked: (created: Reservation, facility: Facility) => void;
 }
 
@@ -436,7 +436,7 @@ export default function BookingFlow({
               aria-describedby={hintId}
               loading={pending}
             >
-              {step === 4 ? (pending ? '예약 중…' : '예약하기') : '다음'}
+              {step === 4 ? (pending ? '준비 중…' : '학교에 신청하기') : '다음'}
             </Button>
           </div>
         </div>
@@ -476,11 +476,13 @@ export default function BookingFlow({
               회의에 참여할 팀원이 없습니다. 창을 닫고 팀원 이름을 눌러 다시 넣어 주세요.
             </Alert>
           ) : slotsError ? (
+            // 알림 안의 다시 시도 버튼도 터치 대상 최소 44px 를 지켜야 하므로 sm(40) 이 아닌 기본(48) 크기를 쓴다.
+            // (이 파일의 다른 알림 버튼도 같은 이유로 기본 크기다.)
             <Alert
               tone="danger"
               title="여유 시간을 계산하지 못했습니다."
               actions={
-                <Button variant="secondary" size="sm" onClick={() => setSlotsTick((n) => n + 1)}>
+                <Button variant="secondary" onClick={() => setSlotsTick((n) => n + 1)}>
                   다시 시도하기
                 </Button>
               }
@@ -628,7 +630,7 @@ export default function BookingFlow({
             <Alert
               tone="warning"
               actions={
-                <Button variant="secondary" size="sm" onClick={() => goStep(1)}>
+                <Button variant="secondary" onClick={() => goStep(1)}>
                   시간 다시 고르기
                 </Button>
               }
@@ -686,7 +688,7 @@ export default function BookingFlow({
               tone="danger"
               title="시설 목록을 불러오지 못했습니다."
               actions={
-                <Button variant="secondary" size="sm" onClick={() => setFacilitiesTick((n) => n + 1)}>
+                <Button variant="secondary" onClick={() => setFacilitiesTick((n) => n + 1)}>
                   다시 시도하기
                 </Button>
               }
@@ -718,7 +720,7 @@ export default function BookingFlow({
                   <Alert
                     tone="warning"
                     actions={
-                      <Button variant="secondary" size="sm" onClick={() => goStep(2)}>
+                      <Button variant="secondary" onClick={() => goStep(2)}>
                         날짜 다시 고르기
                       </Button>
                     }
@@ -770,7 +772,7 @@ export default function BookingFlow({
             <h3 className="section__title mtg-step-title" tabIndex={-1} ref={headingRef}>
               예약 내용 확인
             </h3>
-            <p className="section__sub">내용이 맞으면 예약하기를 눌러 주세요.</p>
+            <p className="section__sub">내용이 맞으면 학교에 신청하기를 눌러 주세요.</p>
           </div>
 
           {submitError && (
@@ -817,10 +819,10 @@ export default function BookingFlow({
             </dl>
           </div>
 
-          <Alert tone="info" title="학교 예약은 따로 신청해야 합니다.">
-            예약하기를 누르면 우리 앱에 예약 계획이 저장됩니다. 이어서{' '}
-            {selectedFacilityInfo.systemLabel ?? '학교'} 예약 시스템에서 같은 시간으로 신청을
-            완료해 주세요.
+          <Alert tone="info" title="다음 화면에서 학교에 바로 신청해요.">
+            학교에 신청하기를 누르면 {selectedFacilityInfo.systemLabel ?? '학교'} 예약 시스템에 보낼
+            내용을 한 번 더 보여 드려요. 거기서 확인하고 보내기 전에는 아무것도 신청되지 않고,
+            신청하지 않고 닫으면 예약도 만들어지지 않아요.
           </Alert>
         </div>
       )}

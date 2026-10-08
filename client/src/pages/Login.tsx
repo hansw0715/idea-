@@ -5,13 +5,18 @@ import { api } from '../api';
 import { useAuth } from '../auth';
 import type { User } from '../types';
 import { AppHeader } from '../shell/Shell';
+import { cacheKey, startKeyDerivation } from '../school/loginKey';
 import { Alert, Button, PasswordField, TextField, btnClass } from '../ui';
 import './auth.css';
 
 const ID_FIELD = 'login-id';
 const PW_FIELD = 'login-password';
 
-/** 로그인: 학번 또는 이메일 + 비밀번호. 탭바 없는 한 컬럼 화면. */
+/**
+ * 로그인: 플랫폼 아이디 + 비밀번호. 탭바 없는 한 컬럼 화면.
+ * 로그인에 성공하면 같은 아이디·비밀번호로 학교 계정 암호 키를 이 기기에서 만들어 둔다(서버에는 보내지 않는다) —
+ * 그래서 새 기기에서 로그인해도 학교 연동이 이어진다.
+ */
 export default function Login() {
   const { setUser } = useAuth();
   const navigate = useNavigate();
@@ -21,6 +26,7 @@ export default function Login() {
   const [pwError, setPwError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [pendingLabel, setPendingLabel] = useState('로그인 중…');
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
 
@@ -41,9 +47,7 @@ export default function Login() {
     if (pending) return;
     setError(null);
 
-    const nextIdError = identifier.trim()
-      ? null
-      : '학번 또는 이메일을 입력해 주세요. 계정을 확인하는 데 필요합니다.';
+    const nextIdError = identifier.trim() ? null : '아이디를 입력해 주세요. 계정을 확인하는 데 필요합니다.';
     const nextPwError = password ? null : '비밀번호를 입력해 주세요. 본인 확인에 필요합니다.';
     setIdError(nextIdError);
     setPwError(nextPwError);
@@ -53,8 +57,13 @@ export default function Login() {
     }
 
     setPending(true);
+    setPendingLabel('로그인 중…');
     try {
-      const user = await api.post<User>('/auth/login', { email: identifier.trim(), password });
+      // 키 만들기(약 1초)는 서버 확인과 나란히 시작해 기다림을 겹친다. 서버가 허락한 뒤에만 이 기기에 둔다.
+      const keyPromise = startKeyDerivation(identifier, password);
+      const user = await api.post<User>('/auth/login', { username: identifier.trim(), password });
+      setPendingLabel('보안 열쇠를 만드는 중…');
+      cacheKey(user.id, await keyPromise);
       setUser(user);
       navigate('/');
     } catch (err) {
@@ -95,12 +104,11 @@ export default function Login() {
             <TextField
               id={ID_FIELD}
               name="username"
-              label="학번 또는 이메일"
+              label="아이디"
               required
               size="lg"
               type="text"
-              placeholder="학번 또는 이메일 주소"
-              help="@hansung.ac.kr 은 생략해도 됩니다."
+              placeholder="아이디"
               error={idError}
               value={identifier}
               onChange={(e) => {
@@ -130,7 +138,7 @@ export default function Login() {
               enterKeyHint="go"
             />
             <Button type="submit" size="lg" block loading={pending}>
-              {pending ? '로그인 중…' : '로그인'}
+              {pending ? pendingLabel : '로그인'}
             </Button>
           </form>
         </section>

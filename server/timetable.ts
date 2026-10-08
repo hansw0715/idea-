@@ -8,9 +8,10 @@ export const timetableRouter = Router();
 
 timetableRouter.use(requireAuth);
 
+// source: 'manual' = 직접 입력, 'school' = 학교에서 가져온 수업(server/school). 화면이 둘을 구분해 보여 줄 수 있게 내려보낸다.
 export const ENTRY_COLUMNS =
   'id, day, start_min AS "startMin", end_min AS "endMin", title, place, ' +
-  'repeat_kind AS "repeatKind", date';
+  'repeat_kind AS "repeatKind", date, source';
 
 /**
  * 한 주에 보일 일정만 고르는 조건.
@@ -132,6 +133,7 @@ timetableRouter.post(
       place: placeText,
       repeatKind: once ? 'once' : 'weekly',
       date: entryDate,
+      source: 'manual', // 이 경로로 만든 일정은 항상 직접 입력이다 (DB 기본값과 같다)
     });
   }),
 );

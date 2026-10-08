@@ -1,0 +1,47 @@
+/* 라운지 공용 조각 (접두사 lounge-): 아바타, 매너온도 */
+
+.lounge-avatar {
+  --avatar-size: 3.6rem;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  border: 2px solid var(--avatar-color, var(--m-1));
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--avatar-color, var(--m-1)) 16%, var(--gray-0));
+  line-height: 1;
+}
+.lounge-avatar--sm {
+  --avatar-size: 2.4rem;
+  border-width: 1px;
+}
+.lounge-avatar--lg {
+  --avatar-size: 5.6rem;
+  border-width: 3px;
+}
+.lounge-avatar__face {
+  font-size: calc(var(--avatar-size) * 0.58);
+}
+
+.lounge-temp {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text-sub);
+  white-space: nowrap;
+}
+.lounge-temp--danger {
+  color: var(--c-danger-text);
+}
+.lounge-temp--success {
+  color: var(--c-success-text);
+}
+.lounge-temp--primary {
+  color: var(--c-action-text);
+}
+.lounge-temp__label {
+  font-size: var(--fs-xs);
+}

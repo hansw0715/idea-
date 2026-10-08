@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
+import { LOUNGE_MIGRATIONS } from './lounge/schema.js';
+import { SCHOOL_MIGRATIONS } from './school/schema.js';
 
 /** Vercel / Netlify / AWS Lambda 처럼 파일시스템이 유지되지 않는 실행 환경인지. */
 export const isServerless = Boolean(
@@ -140,7 +142,10 @@ export async function insert(sql: string, params: unknown[] = []): Promise<numbe
 export const SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
+    -- 로그인 아이디. 유니크 인덱스(uq_users_username)는 USERNAME_MIGRATIONS 가 만든다(옛 DB 와 같은 경로).
+    username TEXT,
+    -- 학교 메일로 가입한 옛 계정만 값이 있다. 새 가입은 NULL (UNIQUE 라도 NULL 은 여러 개 허용).
+    email TEXT UNIQUE,
     name TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     -- 운영용으로 미리 만들어 둔 계정. 스스로 탈퇴할 수 없다.
@@ -345,6 +350,43 @@ const LATE_MIGRATIONS = `
 `;
 
 /**
+ * 플랫폼 아이디 로그인 + 학번 하나당 계정 하나. 전부 멱등이며 빠른 경로·느린 경로가 똑같이 실행한다.
+ * school_student_hash 컬럼은 SCHOOL_MIGRATIONS 가 만들므로 반드시 그 뒤에 실행한다.
+ */
+const USERNAME_MIGRATIONS = `
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;
+  ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+
+  -- 옛 계정(admin1~3, 데모, 학교 메일 가입자)이 아이디로 계속 로그인하도록 이메일의 앞부분을 아이디로 채운다.
+  -- 같은 앞부분이 둘 이상이거나 이미 쓰는 아이디면 건너뛴다(유니크 인덱스 생성이 실패해 서버가 못 뜨는 일을 막는다).
+  UPDATE users u SET username = s.uname
+    FROM (
+      SELECT DISTINCT ON (lower(split_part(email, '@', 1))) id, lower(split_part(email, '@', 1)) AS uname
+        FROM users
+       WHERE username IS NULL AND email IS NOT NULL AND split_part(email, '@', 1) <> ''
+       ORDER BY lower(split_part(email, '@', 1)), id
+    ) s
+   WHERE u.id = s.id
+     AND NOT EXISTS (SELECT 1 FROM users x WHERE x.username = s.uname);
+
+  -- 학번 하나당 계정 하나. 이 규칙 이전에 같은 학번을 연동한 계정이 둘 이상이면 인덱스를 만들 수 없으므로,
+  -- 가장 먼저 연동한 계정만 남기고 나머지의 학교 연동은 해제한다(그 계정은 '학교 계정 다시 연동'으로 안내된다).
+  UPDATE users SET school_cipher = NULL, school_hint = NULL, school_student_hash = NULL,
+                   school_linked_at = NULL, school_department = NULL, school_admission_year = NULL
+   WHERE school_student_hash IS NOT NULL
+     AND id IN (
+       SELECT id FROM (
+         SELECT id, row_number() OVER (PARTITION BY school_student_hash ORDER BY school_linked_at NULLS LAST, id) AS rn
+           FROM users WHERE school_student_hash IS NOT NULL
+       ) t WHERE t.rn > 1
+     );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username ON users(username);
+  CREATE UNIQUE INDEX IF NOT EXISTS uq_users_school_student_hash ON users(school_student_hash)
+    WHERE school_student_hash IS NOT NULL;
+`;
+
+/**
  * 운영용 관리자 계정. DB를 새로 만들어도 바로 들어갈 수 있도록 함께 심는다.
  * 비밀번호는 ADMIN_PASSWORD 환경 변수로 바꿀 수 있고, 이미 있는 계정은 건드리지 않는다.
  */
@@ -365,10 +407,11 @@ async function seedAdmins(): Promise<void> {
   const hash = bcrypt.hashSync(password, 10);
   for (const admin of ADMIN_ACCOUNTS) {
     await run(
-      `INSERT INTO users (email, name, password_hash, is_admin)
-       VALUES (?, ?, ?, TRUE)
-       ON CONFLICT (email) DO NOTHING`,
-      [admin.email, admin.name, hash],
+      // 충돌 대상을 적지 않는다: 이메일이든 아이디든 이미 있으면 건드리지 않는다.
+      `INSERT INTO users (email, username, name, password_hash, is_admin)
+       VALUES (?, ?, ?, ?, TRUE)
+       ON CONFLICT DO NOTHING`,
+      [admin.email, admin.email.split('@')[0], admin.name, hash],
     );
   }
 }
@@ -386,6 +429,9 @@ async function migrate(): Promise<void> {
     if (probe && Number(probe.c) === FACILITY_SEED.length) {
       // 나중에 추가된 테이블은 빠른 경로에서도 한 번 보장한다.
       await d.exec(LATE_MIGRATIONS);
+      await d.exec(LOUNGE_MIGRATIONS);
+      await d.exec(SCHOOL_MIGRATIONS);
+      await d.exec(USERNAME_MIGRATIONS);
       return;
     }
   } catch {
@@ -395,6 +441,9 @@ async function migrate(): Promise<void> {
   await d.exec(SCHEMA);
   await d.exec(FACILITY_COLUMNS);
   await d.exec(LATE_MIGRATIONS);
+  await d.exec(LOUNGE_MIGRATIONS);
+  await d.exec(SCHOOL_MIGRATIONS);
+  await d.exec(USERNAME_MIGRATIONS);
   await lockDownTables();
   await seedAdmins();
 

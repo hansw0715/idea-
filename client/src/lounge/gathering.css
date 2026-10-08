@@ -1,0 +1,632 @@
+/* 모임 UI 전용 스타일 (작업 C2) — 접두사 lounge-gath-
+   테이블 시트 · 자리 만들기 · 사용자 카드 · 차단 목록 · 프로필 · 모임 한 줄 요약.
+   색·간격·라운드는 tokens.css 의 변수만 쓴다(hex 직접 사용 금지). 크기는 rem. 글자 굵기는 400/700 뿐. */
+
+/* ── 공통 조각 ─────────────────────────────────────────────── */
+.lounge-gath-h3 {
+  font-size: var(--fs-h4);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+}
+.lounge-gath-gap {
+  margin-bottom: var(--sp-5);
+}
+.lounge-gath-badge-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-right: var(--sp-1);
+  flex: none;
+}
+
+/* 여러 줄 입력: 밑줄형 입력 모양을 그대로 쓰되 면을 살짝 깔아 여러 줄임을 드러낸다 */
+.lounge-gath-textarea {
+  min-height: 9rem;
+  padding: var(--sp-3) var(--sp-2);
+  background: var(--c-surface);
+  line-height: 1.5;
+  resize: vertical;
+}
+.lounge-gath-fieldmeta {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+.lounge-gath-count {
+  flex: none;
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 모임 한 줄 요약 (GatheringListItem) ────────────────────── */
+.lounge-gath-item {
+  align-items: flex-start;
+  min-height: var(--h-lg);
+  padding: var(--sp-4) 0;
+}
+.lounge-gath-item__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid currentColor;
+  border-radius: var(--r-pill);
+  background: var(--c-action-bg);
+  color: var(--c-action-text);
+}
+.lounge-gath-item__icon svg {
+  width: 2rem;
+  height: 2rem;
+}
+.lounge-gath-item__icon--meal {
+  background: var(--c-success-bg);
+  color: var(--c-success-text);
+}
+.lounge-gath-item__body {
+  display: block;
+}
+.lounge-gath-item__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.lounge-gath-item__when {
+  display: block;
+}
+.lounge-gath-item__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.lounge-gath-item__seats {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: 2.4rem;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+  white-space: nowrap;
+}
+.lounge-gath-item__seats .lounge-gath-badge-icon {
+  width: 1.8rem;
+  height: 1.8rem;
+  margin-right: 0;
+  color: var(--c-text-sub);
+}
+.lounge-gath-item .list__chev {
+  align-self: center;
+}
+
+/* ── 테이블 시트 ───────────────────────────────────────────── */
+/* 성공·오류 알림: 스크롤해도 시트 위쪽에 붙어 있어 어디서 눌렀든 결과가 보인다.
+   시트 본문이 위·아래 여백(--sp-6)을 가진 스크롤 상자라서, 붙는 위치와 처음 위치를 모두 그 여백만큼 올려 머리글에 맞닿게 한다. */
+.lounge-gath-msgs {
+  position: sticky;
+  top: calc(var(--sp-6) * -1);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: calc(var(--sp-6) * -1) calc(var(--gutter) * -1) var(--sp-5);
+  padding: var(--sp-5) var(--gutter);
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-divider);
+}
+.lounge-gath-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-7);
+}
+.lounge-gath-stack--tight {
+  gap: var(--sp-4);
+}
+.lounge-gath-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-4);
+}
+.lounge-gath-head .btn--icon {
+  flex: none;
+  margin: calc(var(--sp-2) * -1) calc(var(--sp-3) * -1) 0 0;
+}
+.lounge-gath-title {
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+}
+
+.lounge-gath-person {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  width: 100%;
+  min-height: var(--h-lg);
+  padding: var(--sp-4);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+  background: var(--c-bg);
+  color: inherit;
+  text-align: left;
+}
+.lounge-gath-person:active {
+  background: var(--c-surface);
+}
+.lounge-gath-person__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-1);
+}
+.lounge-gath-person__name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  font-weight: var(--fw-bold);
+}
+.lounge-gath-person__sub {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-gath-person--compact {
+  min-height: var(--touch);
+  padding: 0;
+  border: 0;
+}
+
+.lounge-gath-hashtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-sm);
+  color: var(--c-action-text);
+}
+.lounge-gath-body {
+  white-space: pre-wrap;
+  color: var(--c-text);
+}
+.lounge-gath-info {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--c-divider);
+}
+.lounge-gath-info > div {
+  display: flex;
+  gap: var(--sp-4);
+  padding: var(--sp-4) 0;
+  border-bottom: 1px solid var(--c-divider);
+}
+.lounge-gath-info dt {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 10rem;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-gath-info dt svg {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+}
+.lounge-gath-info dd {
+  flex: 1;
+  min-width: 0;
+}
+.lounge-gath-info__left {
+  color: var(--c-action-text);
+  font-weight: var(--fw-bold);
+}
+
+/* 자리 */
+.lounge-gath-slot {
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+}
+.lounge-gath-slot.is-selected {
+  padding: calc(var(--sp-4) - 1px) calc(var(--sp-5) - 1px);
+  border: 2px solid var(--c-action);
+}
+.lounge-gath-slot__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.lounge-gath-slot__label {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.lounge-gath-slot__count {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-gath-seats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.lounge-gath-seat {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: var(--h-md);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r);
+  color: inherit;
+  text-align: left;
+}
+.lounge-gath-seat--taken {
+  border: 0;
+  background: transparent;
+}
+.lounge-gath-seat--taken:active {
+  background: var(--c-surface);
+}
+.lounge-gath-seat--empty {
+  border: 1px dashed var(--c-border);
+  justify-content: space-between;
+}
+.lounge-gath-seat__name {
+  min-width: 0;
+  font-weight: var(--fw-bold);
+}
+.lounge-gath-seat__name--empty {
+  flex: 1;
+  font-weight: var(--fw-regular);
+  color: var(--c-text-sub);
+}
+.lounge-gath-seat__chair {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3.6rem;
+  height: 3.6rem;
+  color: var(--c-text-muted);
+}
+.lounge-gath-seat__chair svg {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+.lounge-gath-seat__sit {
+  flex: 1 1 auto;
+}
+.lounge-gath-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-gath-reason svg {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+  margin-top: 0.2rem;
+}
+
+/* 평가 · 주최자 메뉴 */
+.lounge-gath-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-6);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+}
+.lounge-gath-panel--host {
+  background: var(--c-surface);
+}
+.lounge-gath-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+.lounge-gath-review__who {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.lounge-gath-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.lounge-gath-mark {
+  /* 글자는 줄바꿈하지 않고, 한 줄에 안 들어가면 버튼째로 다음 줄로 내려간다 (글자 150% 에서도 "보통이에요" 가 쪼개지지 않게) */
+  flex: 1 1 auto;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: var(--touch);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--r);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  line-height: 1.3;
+}
+.lounge-gath-mark svg {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+}
+.lounge-gath-mark:active {
+  background: var(--c-surface);
+}
+.lounge-gath-mark[aria-pressed='true'] {
+  padding: calc(var(--sp-2) - 1px) calc(var(--sp-3) - 1px);
+  border: 2px solid var(--c-action);
+  background: var(--c-action-bg);
+  color: var(--c-action-text);
+  font-weight: var(--fw-bold);
+}
+.lounge-gath-mark--noshow[aria-pressed='true'] {
+  border-color: var(--c-danger);
+  background: var(--c-danger-bg);
+  color: var(--c-danger-text);
+}
+.lounge-gath-mark[aria-busy='true'] {
+  color: var(--c-text-muted);
+}
+.lounge-gath-applicants {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+.lounge-gath-applicant {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+  background: var(--c-bg);
+}
+.lounge-gath-quote {
+  white-space: pre-wrap;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* ── 자리 만들기 · 프로필 폼 ───────────────────────────────── */
+.lounge-gath-form {
+  display: block;
+}
+.lounge-gath-disclosure {
+  margin-bottom: var(--sp-5);
+  border-top: 1px solid var(--c-divider);
+  border-bottom: 1px solid var(--c-divider);
+}
+.lounge-gath-disclosure__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: var(--h-md);
+  padding: 0 var(--sp-2);
+  border: 0;
+  background: none;
+  color: var(--c-text);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  text-align: left;
+}
+.lounge-gath-disclosure__hint {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
+  color: var(--c-text-sub);
+}
+.lounge-gath-disclosure__toggle > svg {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+}
+.lounge-gath-disclosure__panel {
+  padding-top: var(--sp-5);
+}
+.lounge-gath-autoline {
+  margin-top: calc(var(--sp-2) * -1);
+  margin-bottom: var(--sp-5);
+}
+
+.lounge-gath-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-6);
+  padding: var(--sp-5);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+  background: var(--c-surface);
+}
+.lounge-gath-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr));
+  gap: var(--sp-3);
+}
+.lounge-gath-pick {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: var(--touch);
+  min-height: 5.2rem;
+  padding: var(--sp-2);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+  background: var(--c-bg);
+}
+.lounge-gath-pick[aria-checked='true'] {
+  padding: calc(var(--sp-2) - 1px);
+  border: 2px solid var(--c-action);
+  background: var(--c-action-bg);
+}
+.lounge-gath-pick__check {
+  position: absolute;
+  top: -0.7rem;
+  right: -0.7rem;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: var(--r-pill);
+  background: var(--c-action);
+  color: var(--c-on-action);
+}
+.lounge-gath-pick__check svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+.lounge-gath-swatch {
+  display: block;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: var(--r-pill);
+  background: var(--swatch);
+}
+
+/* ── 사용자 카드 · 차단 목록 · 신고 ─────────────────────────── */
+.lounge-gath-user {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+.lounge-gath-user__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+}
+.lounge-gath-user__who {
+  min-width: 0;
+}
+.lounge-gath-user__name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  font-size: var(--fs-h2);
+  line-height: 1.3;
+}
+.lounge-gath-kv {
+  border-top: 1px solid var(--c-divider);
+  border-bottom: 1px solid var(--c-divider);
+}
+.lounge-gath-kv .kv:first-child {
+  border-top: 0;
+}
+.lounge-gath-kv .kv__key {
+  flex: none;
+  min-width: 8rem;
+}
+.lounge-gath-kv__note {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.lounge-gath-temp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+}
+.lounge-gath-temp__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.lounge-gath-temp__value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text);
+}
+.lounge-gath-temp__value--danger {
+  color: var(--c-danger-text);
+}
+.lounge-gath-temp__value--success {
+  color: var(--c-success-text);
+}
+.lounge-gath-temp__value--primary {
+  color: var(--c-action-text);
+}
+.lounge-gath-temp__level {
+  margin-left: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+.lounge-gath-gauge {
+  position: relative;
+  height: 1.2rem;
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r-pill);
+  background: var(--c-divider);
+}
+.lounge-gath-gauge__fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--c-text-muted);
+}
+.lounge-gath-gauge__fill--danger {
+  background: var(--c-danger);
+}
+.lounge-gath-gauge__fill--success {
+  background: var(--c-success);
+}
+.lounge-gath-gauge__fill--primary {
+  background: var(--c-action);
+}
+.lounge-gath-gauge__tick {
+  position: absolute;
+  top: -0.4rem;
+  bottom: -0.4rem;
+  width: 2px;
+  background: var(--c-text);
+}
+
+.lounge-gath-row {
+  padding: var(--sp-4) 0;
+}
+.lounge-gath-row .btn {
+  flex: none;
+}
+
+.lounge-gath-safety {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-7);
+}
+.lounge-gath-safety__block {
+  padding-top: var(--sp-6);
+  border-top: 1px solid var(--c-divider);
+}
+.lounge-gath-safety__lead {
+  margin: var(--sp-2) 0 var(--sp-5);
+}

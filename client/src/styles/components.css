@@ -866,10 +866,13 @@
   height: 2rem;
   border-width: 2px;
 }
+/* 채운 버튼 위의 스피너: 버튼 글자색(Primary 는 --c-on-action, 위험은 --gray-0)을 그대로 따라가
+   35% 로 옅게 한 것이 바퀴, 진한 것이 도는 부분이다. 색 값을 직접 쓰지 않으므로 버튼 글자색 토큰이
+   바뀌거나 선명한 화면 모드가 되어도 스피너가 배경과 어긋나지 않는다. */
 .btn--primary .spinner,
 .btn--danger-solid .spinner {
-  border-color: rgba(255, 255, 255, 0.35);
-  border-top-color: var(--gray-0);
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+  border-top-color: currentColor;
 }
 .btn:disabled .spinner,
 .btn[aria-disabled='true'] .spinner {

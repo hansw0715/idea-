@@ -38,11 +38,17 @@ export const ERROR_MESSAGES = {
   NOT_APPLICANT: '신청자가 아닙니다.',
   TOO_EARLY: '아직 모임 시작 전입니다.',
   INVALID: '입력값이 올바르지 않습니다.',
-  BANNED: '노쇼 경고가 쌓여 이용이 정지된 계정입니다.',
+  /** 정지 사유는 노쇼 경고일 수도, 신고 누적·관리자 정지일 수도 있다. 사유를 아는 호출자는 문장을 직접 넘기고, 이 값은 모를 때의 기본이다. */
+  BANNED: '이용이 정지된 계정입니다.',
   /** 라운지는 닉네임·학과 등 프로필을 만든 뒤에 쓸 수 있다. 클라이언트는 이 코드를 보면 프로필 시트를 연다. */
   PROFILE_REQUIRED: '라운지 프로필을 먼저 만들어 주세요.',
   /** 동시에 같은 모임을 고친 경우. 서버가 내부에서 다시 시도하고, 끝내 실패하면 이 코드를 돌려준다. */
   CONFLICT: '다른 사람이 먼저 바꿨어요. 잠시 후 다시 시도해 주세요.',
+  /**
+   * 속도 제한 초과(위치·메시지·모임 만들기·빠른 매칭·신고). 서버가 429 와 함께 돌려주고, 문장은 동작마다 다르게 써서 보낸다
+   * (이 값은 문장을 따로 주지 않았을 때의 기본). 클라이언트는 문자열 비교 대신 이 코드로 분기한다.
+   */
+  RATE_LIMITED: '요청이 너무 잦아요. 잠시 후 다시 시도해 주세요.',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_MESSAGES;
@@ -67,4 +73,5 @@ export const ERROR_STATUS: Record<ErrorCode, number> = {
   BANNED: 403,
   PROFILE_REQUIRED: 428,
   CONFLICT: 409,
+  RATE_LIMITED: 429,
 };

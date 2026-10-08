@@ -1,0 +1,76 @@
+/**
+ * 라운지 API 클라이언트 — 모든 화면이 이것만 부른다. 서버 계약은 docs/lounge/01-contract.md.
+ * 응답은 한 겹 벗겨서(unwrap) 돌려준다. 오류는 ApiError(status, message, code) — `code` 로 분기한다.
+ */
+import { api } from '../api';
+import type {
+  AdminStats,
+  CreateGatheringBody,
+  GatheringAction,
+  GatheringActionBody,
+  GatheringKind,
+  GatheringView,
+  MeResponse,
+  PresenceInput,
+  PresenceResponse,
+  Profile,
+  ProfileInput,
+  PublicUser,
+  QuickInput,
+  QuickPatchBody,
+  QuickState,
+  ReportAction,
+  ReportInput,
+  ReportView,
+  RoomView,
+} from '../../../shared/lounge';
+
+const L = '/lounge';
+
+export const loungeApi = {
+  // 프로필
+  me: () => api.get<MeResponse>(`${L}/me`),
+  saveProfile: (input: ProfileInput) => api.put<{ profile: Profile }>(`${L}/me`, input).then((r) => r.profile),
+  user: (id: string) => api.get<{ user: PublicUser }>(`${L}/users/${id}`).then((r) => r.user),
+
+  // 접속자
+  presence: () => api.get<PresenceResponse>(`${L}/presence`),
+  sendPresence: (input: PresenceInput) => api.post<{ ok: true }>(`${L}/presence`, input),
+
+  // 모임
+  gatherings: (kind?: GatheringKind) =>
+    api.get<{ gatherings: GatheringView[] }>(`${L}/gatherings${kind ? `?kind=${kind}` : ''}`).then((r) => r.gatherings),
+  /** 내가 주최·참여·신청한 모임 */
+  mine: () => api.get<{ gatherings: GatheringView[] }>(`${L}/mine`).then((r) => r.gatherings),
+  gathering: (id: string) => api.get<{ gathering: GatheringView }>(`${L}/gatherings/${id}`).then((r) => r.gathering),
+  createGathering: (body: CreateGatheringBody) =>
+    api.post<{ gathering: GatheringView }>(`${L}/gatherings`, body).then((r) => r.gathering),
+  act: (id: string, action: GatheringAction, body: GatheringActionBody = {}) =>
+    api.post<{ gathering: GatheringView }>(`${L}/gatherings/${id}/${action}`, body).then((r) => r.gathering),
+
+  // 단톡방
+  room: (id: string, after?: string) =>
+    api
+      .get<{ room: RoomView }>(`${L}/gatherings/${id}/messages${after ? `?after=${encodeURIComponent(after)}` : ''}`)
+      .then((r) => r.room),
+  sendMessage: (id: string, text: string) =>
+    api.post<{ room: RoomView }>(`${L}/gatherings/${id}/messages`, { text }).then((r) => r.room),
+
+  // 밥약 빠른 매칭
+  quick: () => api.get<{ state: QuickState }>(`${L}/meals/quick`).then((r) => r.state),
+  requestQuick: (input: QuickInput) => api.post<{ state: QuickState }>(`${L}/meals/quick`, input).then((r) => r.state),
+  patchQuick: (body: QuickPatchBody) => api.patch<{ state: QuickState }>(`${L}/meals/quick`, body).then((r) => r.state),
+  cancelQuick: () => api.del<{ state: QuickState }>(`${L}/meals/quick`).then((r) => r.state),
+
+  // 안전
+  blocks: () => api.get<{ blocked: PublicUser[] }>(`${L}/blocks`).then((r) => r.blocked),
+  block: (userId: string) => api.post<{ ok: true }>(`${L}/blocks`, { userId }),
+  unblock: (userId: string) => api.del<{ ok: true }>(`${L}/blocks`, { userId }),
+  report: (input: ReportInput) => api.post<{ ok: true }>(`${L}/reports`, input),
+
+  // 관리자
+  adminReports: () => api.get<{ reports: ReportView[] }>(`${L}/admin/reports`).then((r) => r.reports),
+  adminHandleReport: (reportId: string, action: ReportAction) =>
+    api.post<{ ok: true }>(`${L}/admin/reports`, { reportId, action }),
+  adminStats: () => api.get<AdminStats>(`${L}/admin/stats`),
+};

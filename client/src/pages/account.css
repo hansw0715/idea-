@@ -109,3 +109,81 @@
   margin-bottom: var(--sp-6);
   scroll-margin-top: calc(var(--header-h) + var(--safe-top) + var(--sp-6));
 }
+
+/* ───────────────────────────────────────────────────────────────
+   라운지 프로필 카드 · 학교 연동 자리 (접두사 lounge-acct-) — C4
+   ─────────────────────────────────────────────────────────────── */
+
+/* 정지 안내는 카드 맨 위에 두고, 아래 프로필과 간격을 둔다 */
+.lounge-acct-ban {
+  margin-bottom: var(--sp-6);
+}
+
+/* 아바타 + 닉네임·단과대·학번. 닉네임이 길거나 글자가 커져도 아바타는 줄지 않고 글이 줄바꿈된다. */
+.lounge-acct-who {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-6);
+}
+.lounge-acct-who__text {
+  flex: 1;
+  min-width: 0;
+}
+.lounge-acct-nick {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+}
+.lounge-acct-sub {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* 매너온도 · 노쇼 경고: 좁으면 위아래로 쌓인다 */
+.lounge-acct-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--sp-4) var(--sp-6);
+  margin: 0;
+  padding: var(--sp-5) 0;
+  border-top: 1px solid var(--c-divider);
+}
+.lounge-acct-stat {
+  min-width: 0;
+}
+.lounge-acct-stat__key {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-acct-stat__val {
+  display: flex;
+  align-items: center;
+  min-height: 2.8rem;
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+}
+/* TemperatureBadge 는 --fs-sm 이라 값 줄의 굵기를 이어받지 않는다 — 숫자를 또렷하게 */
+.lounge-acct-stat__val .lounge-temp {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.lounge-acct-stat__val .lounge-temp__label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
+}
+
+.lounge-acct-help {
+  margin: 0 0 var(--sp-6);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* 학교 연동 카드를 감싸는 자리: 카드가 아직 비어 있어도(null) 높이를 만들지 않는다 */
+.lounge-acct-school:empty {
+  display: none;
+}

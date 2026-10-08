@@ -61,3 +61,35 @@
 .home-page .section__head > .btn--text {
   margin-right: calc(var(--sp-3) * -1);
 }
+
+/* ───────────────────────────────────────────────────────────────
+   내 라운지 약속 구역 (접두사 lounge-home-) — C4
+   목록 틀(home-card--rows · home-ul)은 위 홈 공통 규칙을 그대로 쓴다.
+   ─────────────────────────────────────────────────────────────── */
+
+/* 미팅/밥약을 알려 주는 종류 아이콘 (글자 배지가 따로 있어 장식) */
+.lounge-home-kind {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--c-text-sub);
+}
+
+/* 종류 · 내 역할 · 상태 · 수업 겹침 배지: 좁으면 줄바꿈 */
+.lounge-home-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+/* 수업 이름이 길면 배지 한 줄로는 화면 폭을 넘는다(글자 150%에서 가로 넘침) — 이 구역의 배지만 줄바꿈을 허용 */
+.lounge-home-badges .badge {
+  max-width: 100%;
+  height: auto;
+  min-height: 2.4rem;
+  padding-top: var(--sp-1);
+  padding-bottom: var(--sp-1);
+  white-space: normal;
+  line-height: 1.3;
+}

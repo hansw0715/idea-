@@ -6,6 +6,9 @@ import { AppHeader } from '../shell/Shell';
 import TimetableGrid, { MEMBER_COLORS, WeekNav } from '../components/TimetableGrid';
 import type { GridEntry } from '../components/TimetableGrid';
 import BookingFlow from '../components/BookingFlow';
+import SchoolBookSheet from '../school/SchoolBookSheet';
+import SchoolLinkSheet from '../school/SchoolLinkSheet';
+import { useSchool } from '../school/SchoolContext';
 import {
   Alert,
   Badge,
@@ -37,11 +40,6 @@ const POLL_MS = 15000;
 interface LoadError {
   message: string;
   status: number;
-}
-
-interface BookingResult {
-  message: string;
-  guide: { systemLabel: string | null; reserveUrl: string | null; contact: string | null };
 }
 
 interface CheckNote {
@@ -88,10 +86,20 @@ export default function MeetingDetail() {
 
   const [bookingOpen, setBookingOpen] = useState(false);
   const [flowKey, setFlowKey] = useState(0);
-  const [bookingResult, setBookingResult] = useState<BookingResult | null>(null);
 
   const [checkingId, setCheckingId] = useState<number | null>(null);
   const [checkNote, setCheckNote] = useState<CheckNote | null>(null);
+
+  // 학교에 바로 신청하기: 시트는 행이 아니라 화면 맨 아래에 하나만 둔다
+  // (신청이 확인되면 그 행의 버튼이 사라지는데, 그래도 결과 화면은 남아 있어야 한다)
+  const school = useSchool();
+  const [bookTarget, setBookTarget] = useState<Reservation | null>(null);
+  const [bookSheetOpen, setBookSheetOpen] = useState(false);
+  // 학교 계정이 연동돼 있지 않으면 예약을 시작하지 않고 연동 시트를 먼저 연다
+  const [linkOpen, setLinkOpen] = useState(false);
+  // 이번에 막 만든 예약 계획(아직 학교에 보내기 전). 신청을 보내지 않고 닫으면 계획을 지운다 — 앱 안에만 있는 예약은 없다.
+  const freshBooking = useRef<number | null>(null);
+  const bookSent = useRef(false);
 
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const copyTimer = useRef<number | undefined>(undefined);
@@ -118,7 +126,6 @@ export default function MeetingDetail() {
     setReservations([]);
     setLoadError(null);
     setParticipants(null);
-    setBookingResult(null);
     setCheckNote(null);
     leaving.current = false;
   }, [id]);
@@ -271,6 +278,12 @@ export default function MeetingDetail() {
 
   function openBooking() {
     if (activeIds.length === 0) return;
+    // 시설 예약은 학교 계정 연동으로만 신청한다. 연동이 없거나 이 기기에서 쓸 수 없으면 먼저 연동한다.
+    if (school.loading) return;
+    if (!school.linked || !school.canUse) {
+      setLinkOpen(true);
+      return;
+    }
     setFlowKey((k) => k + 1);
     setBookingOpen(true);
   }
@@ -279,20 +292,13 @@ export default function MeetingDetail() {
     setBookingOpen(false);
   }
 
-  function handleBooked(created: Reservation, facility: Facility) {
-    setBookingResult({
-      message: `${created.facilityName}(${created.building})을 ${fmtDate(created.date)} ${fmtRange(
-        created.startMin,
-        created.endMin,
-      )}에 예약했습니다.`,
-      guide: {
-        systemLabel: facility.systemLabel ?? created.systemLabel ?? null,
-        reserveUrl: facility.reserveUrl ?? created.reserveUrl ?? null,
-        contact: facility.contact ?? created.contact ?? null,
-      },
-    });
+  // 4단계에서 "학교에 신청하기"를 누르면 예약 계획이 만들어지고, 곧바로 학교 신청 화면(미리보기 → 확인 → 제출)이 열린다.
+  function handleBooked(created: Reservation) {
     setCheckNote(null);
     setBookingOpen(false);
+    freshBooking.current = created.id;
+    bookSent.current = false;
+    openSchoolBook(created);
     loadAll();
   }
 
@@ -311,7 +317,6 @@ export default function MeetingDetail() {
     if (!ok) return;
     // 눌렀던 '예약 취소하기' 버튼은 목록에서 사라지므로, 포커스가 본문 맨 위로 떨어지지 않게 '예약 현황' 제목으로 옮긴다.
     resHeadingRef.current?.focus();
-    setBookingResult(null);
     setCheckNote(null);
     toast('예약을 취소했습니다.');
     loadAll();
@@ -346,6 +351,32 @@ export default function MeetingDetail() {
     } finally {
       if (alive.current) setCheckingId(null);
     }
+  }
+
+  function openSchoolBook(r: Reservation) {
+    setBookTarget(r);
+    setBookSheetOpen(true);
+  }
+
+  function closeSchoolBook() {
+    setBookSheetOpen(false);
+    const fresh = freshBooking.current;
+    freshBooking.current = null;
+    if (fresh !== null && !bookSent.current) {
+      // 학교에 보내지 않고 닫았다: 앱 안에만 남는 예약이 생기지 않게 방금 만든 계획을 지운다.
+      void api
+        .del(`/reservations/${fresh}`)
+        .then(() => toast('학교에 신청하지 않아 예약을 만들지 않았어요.'))
+        .catch(() => toast('만든 예약을 정리하지 못했어요. 아래 예약 현황에서 취소해 주세요.'))
+        .finally(() => {
+          if (alive.current) loadAll();
+        });
+    }
+    // 신청이 확인되면 눌렀던 버튼이 목록에서 사라지므로, 포커스가 본문 맨 위로 떨어지지 않게 '예약 현황' 제목으로 옮긴다.
+    window.setTimeout(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body) resHeadingRef.current?.focus();
+    }, 80);
   }
 
   async function leaveOrDelete() {
@@ -495,41 +526,23 @@ export default function MeetingDetail() {
           <p className="text-sub text-sm mtg-book-help" id="mtg-book-help">
             {noParticipants
               ? '참여할 팀원을 한 명 이상 선택하면 예약할 수 있습니다.'
-              : `참여 ${activeIds.length}명이 모두 비는 시간을 찾고, 날짜와 시설을 차례로 고릅니다.`}
+              : `참여 ${activeIds.length}명이 모두 비는 시간을 찾고, 날짜와 시설을 고른 뒤 학교에 바로 신청합니다.`}
           </p>
 
-          {bookingResult && (
-            <Alert
-              tone="success"
-              className="mtg-result"
-              actions={
-                <>
-                  {bookingResult.guide.reserveUrl && (
-                    <a
-                      className={btnClass({ variant: 'secondary', size: 'sm' })}
-                      href={bookingResult.guide.reserveUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {bookingResult.guide.systemLabel ?? '학교'} 예약 시스템 열기
-                      <Icon name="external" className="btn__icon" />
-                      <span className="sr-only">(새 창으로 열림)</span>
-                    </a>
-                  )}
-                  <Button variant="text" size="sm" onClick={() => setBookingResult(null)}>
-                    닫기
+          {!school.loading && (!school.linked || !school.canUse) && (
+            <div className="mtg-result">
+              <Alert
+                tone="info"
+                title={school.linked ? '이 기기에서는 학교 계정을 다시 연동해야 해요.' : '학교 계정을 연동해야 시설을 예약할 수 있어요.'}
+                actions={
+                  <Button variant="secondary" size="sm" onClick={() => setLinkOpen(true)}>
+                    {school.linked ? '다시 연동하기' : '학교 계정 연동하기'}
                   </Button>
-                </>
-              }
-            >
-              <p>{bookingResult.message}</p>
-              <p className="mtg-result__todo">
-                <strong>아직 학교 예약은 끝나지 않았습니다.</strong>{' '}
-                {bookingResult.guide.systemLabel ?? '학교'} 예약 시스템에서 같은 시간으로 신청을 완료해
-                주세요.
-                {bookingResult.guide.contact ? ` (문의 ${bookingResult.guide.contact})` : ''}
-              </p>
-            </Alert>
+                }
+              >
+                시설 예약은 학교에 바로 신청하는 방식으로만 할 수 있어요.
+              </Alert>
+            </div>
           )}
         </section>
 
@@ -696,6 +709,24 @@ export default function MeetingDetail() {
                       {fmtDate(r.date)} {fmtRange(r.startMin, r.endMin)} · 예약자 {r.userName}
                     </p>
                     <div className="mtg-res__actions">
+                      {!confirmed && school.linked && school.canUse && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            freshBooking.current = null;
+                            openSchoolBook(r);
+                          }}
+                          aria-label={`${r.facilityName} 학교에 바로 신청하기`}
+                        >
+                          학교에 바로 신청하기
+                        </Button>
+                      )}
+                      {!confirmed && !school.loading && !(school.linked && school.canUse) && (
+                        <Button variant="secondary" size="sm" onClick={() => setLinkOpen(true)}>
+                          학교 계정 연동하기
+                        </Button>
+                      )}
                       {!confirmed && (
                         <Button
                           variant="secondary"
@@ -707,18 +738,6 @@ export default function MeetingDetail() {
                         >
                           {checkingId === r.id ? '확인 중…' : '학교 예약 확인하기'}
                         </Button>
-                      )}
-                      {!confirmed && r.reserveUrl && (
-                        <a
-                          className={btnClass({ variant: 'tertiary', size: 'sm' })}
-                          href={r.reserveUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          학교 예약 사이트 열기
-                          <Icon name="external" className="btn__icon" />
-                          <span className="sr-only">(새 창으로 열림)</span>
-                        </a>
                       )}
                       <Button
                         variant="danger"
@@ -733,6 +752,18 @@ export default function MeetingDetail() {
                 );
               })}
             </ul>
+          )}
+
+          {/* 연동하지 않았거나 이 기기에서 쓸 수 없으면, 학교 사이트로 가는 기존 안내는 그대로 두고 연동을 권하는 한 줄만 붙인다 */}
+          {reservations.some((r) => r.schoolStatus !== 'confirmed') && !school.loading && !school.canUse && !school.error && (
+            <p className="text-sub text-sm school-hint">
+              {school.linked
+                ? '이 기기에서는 학교 계정을 다시 연동해야 여기서 바로 신청할 수 있습니다. '
+                : '학교 계정을 연동하면 여기서 학교에 바로 신청할 수 있습니다. '}
+              <Link to="/account" className="link">
+                {school.linked ? '내 정보에서 다시 연동하기' : '내 정보에서 연동하기'}
+              </Link>
+            </p>
           )}
         </section>
 
@@ -762,6 +793,19 @@ export default function MeetingDetail() {
         gridEntries={gridEntries}
         week={week}
         onBooked={handleBooked}
+      />
+
+      <SchoolLinkSheet open={linkOpen} onClose={() => setLinkOpen(false)} />
+
+      <SchoolBookSheet
+        open={bookSheetOpen}
+        onClose={closeSchoolBook}
+        reservation={bookTarget}
+        onResult={() => {
+          bookSent.current = true;
+          loadAll();
+        }}
+        onRelink={() => navigate('/account')}
       />
     </>
   );

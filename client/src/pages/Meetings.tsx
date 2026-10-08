@@ -19,11 +19,21 @@ const JOIN_CODE_ID = 'meet-join-code';
 
 type JoinResult = Meeting & { alreadyMember?: boolean; isOwner?: boolean };
 
-/** 전각 숫자(１２３４)도 받아 주고, 숫자가 아닌 글자는 버린다. 최대 4자리. */
+/** 서버가 만드는 회의 코드에 쓰이는 글자(server/meetings.ts 의 CODE_CHARS)와 같게 맞춘다. 지금은 숫자뿐이다. */
+const CODE_INVALID_CHARS = /[^0-9]/g;
+
+/**
+ * 입력·붙여넣기 값을 코드 모양으로 정리한다.
+ * 메신저에서 복사한 "9 6 3 9", "96-39" 처럼 공백·하이픈이 섞여도 받아야 하므로
+ * (입력칸의 maxLength 속성은 정리 전의 글자 수로 값을 잘라 버린다) 길이는 여기서 제한한다.
+ * 순서: 전각→반각 → 공백·하이픈 제거 → 대문자 → 허용 글자만 → 길이 제한.
+ */
 function sanitizeCode(value: string): string {
   return value
-    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
-    .replace(/\D/g, '')
+    .normalize('NFKC') // 전각 숫자(１２３４)와 전각 공백·하이픈을 반각으로
+    .replace(/[\s‐-―−-]/g, '') // 줄바꿈 포함 공백, 하이픈·여러 가지 대시, 빼기 기호
+    .toUpperCase()
+    .replace(CODE_INVALID_CHARS, '')
     .slice(0, CODE_LENGTH);
 }
 
@@ -361,7 +371,6 @@ export default function Meetings() {
             pattern="[0-9]*"
             autoComplete="off"
             enterKeyHint="go"
-            maxLength={CODE_LENGTH}
             placeholder="0000"
             className="code-chip meet-code"
             help="방장에게 받은 숫자 4자리를 모두 입력하면 참가할 수 있습니다."

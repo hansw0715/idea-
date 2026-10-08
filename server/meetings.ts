@@ -163,7 +163,7 @@ meetingsRouter.get(
     const meeting = await requireMemberMeeting(req.params.id, res);
     if (!meeting) return;
     const members = await all(
-      `SELECT u.id, u.name, u.email,
+      `SELECT u.id, u.name,
               CASE WHEN u.id = m.owner_id THEN 1 ELSE 0 END AS "isOwner"
        FROM meeting_members mm
        JOIN users u ON u.id = mm.user_id

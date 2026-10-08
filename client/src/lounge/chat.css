@@ -1,0 +1,287 @@
+/* 모임 단톡방 전용 스타일 — 접두사 lounge-chat-
+   색·간격은 tokens.css 변수만 쓴다. 입력은 밑줄형(.input), 버튼은 공용 .btn 을 그대로 쓴다. */
+
+/* 화면 껍데기: 불러오는 중·입장 불가일 때는 보통 화면처럼 흐르고, 대화가 열리면 아래 root 규칙이 붙는다 */
+.lounge-chat-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 대화 화면은 "보이는 화면 높이"에 딱 맞춘 한 덩어리다. 문서가 아니라 대화 영역만 스크롤하므로
+   모바일 키보드가 올라와도 입력창이 키보드 위에 붙어 있다.
+   --lounge-chat-vvh / --lounge-chat-vvtop 은 ChatRoomPage 가 visualViewport 에서 읽어 넣는다
+   (값이 없으면 100dvh). 키보드가 레이아웃 높이를 줄이지 않는 브라우저(iOS·Android 기본값)를 위한 것이다. */
+html:has(.lounge-chat-root) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.lounge-chat-root {
+  flex: none; /* flex: 1 이면 높이 값이 무시돼 키보드에 맞춰 줄어들지 않는다 */
+  height: var(--lounge-chat-vvh, 100dvh);
+  min-height: 0;
+  overflow: hidden;
+  transform: translateY(var(--lounge-chat-vvtop, 0px));
+  background: var(--c-bg);
+}
+.lounge-chat-root > .app-header {
+  flex: none;
+}
+
+.lounge-chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* 대화 영역 (여기만 스크롤) */
+.lounge-chat-viewport {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.lounge-chat-scroller {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sp-5) var(--gutter) var(--sp-4);
+}
+/* 가장자리가 잘리지 않게 키보드 포커스 표시는 안쪽으로 그린다 */
+.lounge-chat-scroller:focus-visible {
+  box-shadow: inset 0 0 0 3px var(--primary-50);
+}
+
+/* ── 방 정보 ─────────────────────────────────────────────────── */
+.lounge-chat-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--c-divider);
+}
+.lounge-chat-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-chat-meta li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+.lounge-chat-meta svg {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+  margin-top: 0.2rem;
+}
+.lounge-chat-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lounge-chat-person {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  max-width: 100%;
+  padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-2);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-sm);
+}
+.lounge-chat-person-text {
+  min-width: 0;
+}
+.lounge-chat-person-college {
+  margin-left: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.lounge-chat-safe {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.lounge-chat-safe svg {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+/* ── 말풍선 ──────────────────────────────────────────────────── */
+.lounge-chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.lounge-chat-empty {
+  padding: var(--sp-7) 0;
+  text-align: center;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-chat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 100%;
+  padding-right: var(--sp-9);
+}
+.lounge-chat-item--mine {
+  align-items: flex-end;
+  padding-right: 0;
+  padding-left: var(--sp-9);
+}
+.lounge-chat-item--first {
+  margin-top: var(--sp-4);
+}
+.lounge-chat-name {
+  margin-bottom: var(--sp-1);
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.lounge-chat-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  max-width: 100%;
+}
+.lounge-chat-item--mine .lounge-chat-row {
+  flex-direction: row-reverse;
+}
+.lounge-chat-bubble {
+  min-width: 0;
+  margin: 0;
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+  background: var(--c-surface);
+  color: var(--c-text);
+  line-height: 1.5;
+  /* 줄바꿈은 그대로 보이고, 공백 없는 긴 글도 화면 밖으로 나가지 않게 한다 */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.lounge-chat-bubble--mine {
+  background: var(--c-action-bg);
+  border-color: var(--c-action);
+}
+.lounge-chat-time {
+  flex: none;
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+  white-space: nowrap;
+}
+
+/* 가운데 칩: 시스템 안내·차단으로 가려진 메시지·날짜 */
+.lounge-chat-chip {
+  align-self: center;
+  max-width: 100%;
+  margin: var(--sp-3) 0;
+  padding: var(--sp-2) var(--sp-5);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r-pill);
+  background: var(--c-surface);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* 위를 읽는 중에 새 메시지가 오면 알려 주는 버튼 */
+.lounge-chat-jump {
+  position: absolute;
+  left: 50%;
+  bottom: var(--sp-4);
+  z-index: 2;
+  transform: translateX(-50%);
+}
+
+/* ── 입력창 (하단 고정) ───────────────────────────────────────── */
+.lounge-chat-composer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--gutter) calc(var(--sp-3) + var(--safe-bottom));
+  border-top: 1px solid var(--c-divider);
+  background: var(--c-bg);
+}
+.lounge-chat-compose-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-3);
+}
+.input.lounge-chat-input {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  padding: 1.2rem var(--sp-2);
+  max-height: 12rem;
+  overflow-y: auto;
+  line-height: 1.4;
+  resize: none;
+}
+.btn.lounge-chat-send {
+  flex: none;
+  width: var(--h-md);
+  min-width: var(--touch);
+  padding: 0;
+}
+.lounge-chat-foot-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+.lounge-chat-count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.lounge-chat-count.is-full {
+  color: var(--c-danger-text);
+  font-weight: var(--fw-bold);
+}
+.lounge-chat-weak {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+
+.lounge-chat-readonly {
+  flex: none;
+  padding: var(--sp-5) var(--gutter) calc(var(--sp-5) + var(--safe-bottom));
+  border-top: 1px solid var(--c-divider);
+  background: var(--c-surface);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  text-align: center;
+}
+
+/* ── 신고·차단 대상 고르기 ────────────────────────────────────── */
+.lounge-chat-pick-lead {
+  margin-bottom: var(--sp-4);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-chat-pick-item {
+  gap: var(--sp-4);
+}

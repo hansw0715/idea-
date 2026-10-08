@@ -10,6 +10,8 @@ import { reservationStatus } from '../reservationStatus';
 import { fmtDate, fmtDayHeader, fmtRange, fmtWeekLabel, isCurrentWeek, weekDates } from '../time';
 import { useWeek } from '../useWeek';
 import { Alert, Button, EmptyState, Icon, LoadingBlock, btnClass } from '../ui';
+import { LOUNGE_ENABLED } from '../features';
+import MyLoungeSection from '../lounge/home/MyLoungeSection';
 import type { Meeting, Reservation, TimetableEntry } from '../types';
 import './home.css';
 
@@ -236,7 +238,10 @@ export default function Dashboard() {
               )}
             </section>
 
-            {/* 3. 내 시간표 (미리보기) */}
+            {/* 3. 내 라운지 약속 — 자기 데이터를 따로 불러와서 위 구역의 로딩·오류와 서로 막지 않는다 */}
+            {LOUNGE_ENABLED && <MyLoungeSection />}
+
+            {/* 4. 내 시간표 (미리보기) */}
             <section className="section" aria-labelledby="home-tt-title">
               <div className="section__head">
                 <h2 className="section__title" id="home-tt-title">

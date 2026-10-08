@@ -4,6 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
 import { AppHeader } from '../shell/Shell';
+import { LOUNGE_ENABLED } from '../features';
+import LoungeProfileCard from '../lounge/account/LoungeProfileCard';
+import LoungeAccountRows from '../lounge/account/LoungeAccountRows';
+import SchoolLinkCard from '../school/SchoolLinkCard';
 import {
   Alert,
   Badge,
@@ -137,12 +141,18 @@ export default function Account() {
                 <dd className="account-info__val account-info__val--name">{user?.name}</dd>
               </div>
               <div className="account-info__row">
-                <dt className="account-info__key">학교 이메일</dt>
-                <dd className="account-info__val">{user?.email}</dd>
+                <dt className="account-info__key">아이디</dt>
+                <dd className="account-info__val">{user?.username}</dd>
               </div>
             </dl>
           </div>
         </section>
+
+        {/* 라운지 프로필 → 학교 계정 연동 (C4/C5). 학교 카드는 자기 안에서 제목·여백을 맡는다. */}
+        {LOUNGE_ENABLED && <LoungeProfileCard />}
+        <div className="section lounge-acct-school">
+          <SchoolLinkCard />
+        </div>
 
         <section className="section" aria-labelledby="account-settings-title">
           <div className="section__head">
@@ -162,6 +172,7 @@ export default function Account() {
                 </span>
                 <Icon name="chevron-right" className="list__chev" />
               </button>
+              {LOUNGE_ENABLED && <LoungeAccountRows />}
             </div>
           </div>
         </section>
