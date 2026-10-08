@@ -1,0 +1,53 @@
+/* 회의 목록 전용 스타일 — 접두사 meet- */
+
+/* 상단 행동: 한 줄에 들어가면 나란히, 글자가 커지면 한 줄씩 */
+.meet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.meet-actions > .btn {
+  flex: 1 1 auto;
+}
+
+/* 목록 카드: 행이 카드 가장자리까지 닿게 한다. */
+.card.meet-card--rows {
+  padding: 0;
+}
+
+.meet-ul > li {
+  border-bottom: 1px solid var(--c-divider);
+}
+
+.meet-ul > li:last-child {
+  border-bottom: 0;
+}
+
+.meet-ul .list__item {
+  padding: var(--sp-5) var(--sp-6);
+  border-bottom: 0;
+}
+
+@media (hover: hover) {
+  .meet-ul .list__item--link:hover {
+    background: var(--c-surface);
+  }
+}
+
+/* 시트 안 오류·안내 */
+.meet-alert {
+  margin-bottom: var(--sp-6);
+}
+
+/* 코드 입력: 큰 글자 · 넓은 자간 · 가운데 정렬 */
+.input.meet-code {
+  font-size: var(--fs-display);
+  letter-spacing: 0.4em;
+  text-indent: 0.4em; /* 끝의 자간만큼 밀려 보이는 것을 보정 */
+  text-align: center;
+}
+
+.input.meet-code::placeholder {
+  font-weight: var(--fw-regular);
+}

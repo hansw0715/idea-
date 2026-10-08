@@ -1,0 +1,63 @@
+/* 홈(대시보드) 전용 스타일 — 접두사 home- */
+
+/* 목록 카드: 행이 카드 가장자리까지 닿아 눌렀을 때 면이 끝까지 보이게 한다. */
+.card.home-card--rows {
+  padding: 0;
+}
+
+.home-ul > li {
+  border-bottom: 1px solid var(--c-divider);
+}
+
+.home-ul > li:last-child {
+  border-bottom: 0;
+}
+
+.home-ul .list__item {
+  padding: var(--sp-5) var(--sp-6);
+  border-bottom: 0;
+}
+
+@media (hover: hover) {
+  .home-ul .list__item--link:hover {
+    background: var(--c-surface);
+  }
+}
+
+.home-badge {
+  margin-top: var(--sp-3);
+}
+
+.home-more {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.home-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.home-empty-actions .btn {
+  margin-top: var(--sp-3);
+}
+
+/* 시간표 미리보기: 격자가 자기 테두리를 가지므로 바깥 카드는 두지 않는다. */
+/* "이번 주로"는 이동 바 밖에 둔다. 나타나도 ‹ › 버튼 위치가 움직이지 않아 연달아 누르기 편하다. */
+.home-tt .home-today {
+  display: flex;
+  justify-content: center;
+  margin: calc(var(--sp-3) * -1) 0 var(--sp-2);
+}
+
+.home-tt .home-grid-alert {
+  margin-bottom: var(--sp-3);
+}
+
+/* 구역 제목 오른쪽 링크: 글자가 거터 끝에 맞도록 버튼 안쪽 여백만큼 당긴다. */
+.home-page .section__head > .btn--text {
+  margin-right: calc(var(--sp-3) * -1);
+}

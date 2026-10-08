@@ -1,0 +1,16 @@
+node_modules/
+data/
+client/dist/
+.env
+.env.local
+
+# Local Netlify folder
+.netlify
+
+# 화면 캡처 결과물
+shots/
+.tmp/
+
+.vercel
+.env*
+!.env.example

@@ -1,0 +1,111 @@
+/* ───────────────────────────────────────────────────────────────
+   내 정보 전용 스타일 (접두사 account-)
+   색·간격·글자 크기는 styles/tokens.css 의 변수만 쓴다.
+   ─────────────────────────────────────────────────────────────── */
+
+/* 가입 정보 카드: 제목 줄(제목 + 관리자 배지) */
+.account-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.account-card-head .card__title {
+  margin-bottom: 0;
+}
+
+/* 이름 / 학교 이메일 */
+.account-info {
+  margin: 0;
+}
+.account-info__row {
+  padding: var(--sp-5) 0;
+  border-bottom: 1px solid var(--c-divider);
+}
+.account-info__row:first-child {
+  padding-top: 0;
+}
+.account-info__row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.account-info__key {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.account-info__val {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-md);
+  color: var(--c-text);
+}
+.account-info__val--name {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+
+/* 설정 행: 카드 안쪽 여백 없이 행 전체가 눌리도록 한다.
+   overflow:hidden 을 두면 키보드 포커스 링(행 바깥으로 그려짐)이 카드 안에서 잘리므로 쓰지 않는다.
+   대신 첫·끝 행의 모서리를 카드 안쪽 라운드(카드 4px − 보더 1px)에 맞춰 눌림 배경이 모서리를 넘지 않게 한다.
+   .card 와 같은 우선순위로 겹치므로 클래스 두 개로 써서 css 불러오는 순서와 상관없이 여백 0 을 지킨다. */
+.card.account-menu {
+  padding: 0;
+}
+.account-menu .list__item {
+  padding-left: var(--sp-6);
+  padding-right: var(--sp-6);
+}
+.account-menu .list__item:first-child {
+  border-top-left-radius: calc(var(--r) - 1px);
+  border-top-right-radius: calc(var(--r) - 1px);
+}
+.account-menu .list__item:last-child {
+  border-bottom-left-radius: calc(var(--r) - 1px);
+  border-bottom-right-radius: calc(var(--r) - 1px);
+}
+.account-menu .list__main,
+.account-menu .list__sub {
+  display: block;
+}
+.account-menu__icon {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--c-text-sub);
+}
+
+/* 로그아웃 */
+.account-logout .btn__icon {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* 회원 탈퇴 구역: 위험 동작이므로 위와 선으로 갈라 둔다 */
+.account-danger {
+  margin-top: var(--sp-10);
+  padding-top: var(--sp-8);
+  border-top: 1px solid var(--c-border-strong);
+}
+.account-danger__text {
+  color: var(--c-text-sub);
+}
+.account-danger__text + .account-danger__text {
+  margin-top: var(--sp-4);
+}
+.account-danger__text strong {
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+}
+.account-danger__open {
+  margin-top: var(--sp-7);
+}
+.account-danger__form {
+  margin-top: var(--sp-7);
+}
+.account-danger__hint {
+  margin-bottom: var(--sp-4);
+}
+.account-alert {
+  margin-bottom: var(--sp-6);
+  scroll-margin-top: calc(var(--header-h) + var(--safe-top) + var(--sp-6));
+}

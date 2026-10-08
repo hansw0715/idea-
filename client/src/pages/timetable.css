@@ -1,0 +1,62 @@
+/* 시간표 화면 (접두사 tt-page / tt-sheet / tt-time)
+   전역 클래스(.page-head 등)를 덮어쓰는 규칙은 부모 클래스를 하나 더 붙여 우선순위를 높인다. */
+
+/* 제목 + 일정 추가 버튼 */
+.tt-page .tt-page__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+.tt-page .tt-page__head .grow {
+  flex: 1 1 14rem;
+}
+
+.tt-page__panel {
+  padding-top: var(--sp-6);
+}
+
+.tt-page__alert {
+  margin-bottom: var(--sp-6);
+}
+
+.tt-page__empty {
+  margin-bottom: var(--sp-5);
+}
+
+.tt-page__legend {
+  margin: var(--sp-5) 0 var(--sp-4);
+}
+
+.tt-page__guide {
+  margin-top: var(--sp-5);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* 일정 추가 시트 */
+.tt-sheet__alert {
+  margin-bottom: var(--sp-6);
+}
+
+.tt-time {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.tt-time legend {
+  padding: 0;
+  margin-bottom: var(--sp-3);
+}
+
+/* 요일·시작·종료: 3칸, 좁거나 글자가 커지면 2칸/1칸으로 */
+.tt-time .tt-time__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  column-gap: var(--sp-5);
+}

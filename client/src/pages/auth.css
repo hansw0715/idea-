@@ -1,0 +1,138 @@
+/* ───────────────────────────────────────────────────────────────
+   로그인 · 회원가입 전용 스타일 (접두사 auth-)
+   색·간격·글자 크기는 styles/tokens.css 의 변수만 쓴다.
+   ─────────────────────────────────────────────────────────────── */
+
+/* 로그인: 로고(위) → 입력 카드(화면 가운데) → 가입 링크(아래). 입력 카드가 화면 세로 가운데쯤에 놓인다. */
+.auth-main {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  min-height: calc(100dvh - var(--header-h) - var(--safe-top));
+  padding-top: var(--sp-3);
+  padding-bottom: var(--sp-8);
+  row-gap: var(--sp-6);
+}
+
+.auth-hero {
+  align-self: end;
+  display: flex;
+  justify-content: center;
+}
+
+.auth-logo {
+  display: block;
+  width: min(100%, 28rem);
+  height: auto;
+  /* 로고 이미지의 흰 배경이 페이지 흰색과 섞여 사각 테두리가 보이지 않게 한다 */
+  mix-blend-mode: multiply;
+}
+
+/* 회원가입 상단의 작은 로고 */
+.auth-logo--sm {
+  width: min(60%, 16rem);
+  margin: 0 auto var(--sp-6);
+}
+
+.auth-card {
+  padding: var(--sp-8) var(--sp-6) var(--sp-6);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+}
+
+.auth-card__title {
+  margin-bottom: var(--sp-6);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  text-align: center;
+}
+
+.auth-main .auth-foot {
+  align-self: start;
+  margin-top: 0;
+}
+
+/* 키보드가 올라오거나 화면이 낮으면 가운데 정렬 대신 위에서부터 쌓는다 */
+@media (max-height: 640px) {
+  .auth-main {
+    display: block;
+    min-height: 0;
+  }
+  .auth-logo {
+    width: min(70%, 20rem);
+    margin: 0 auto var(--sp-6);
+  }
+  .auth-main .auth-foot {
+    margin-top: var(--sp-6);
+  }
+}
+
+/* 단계 표시기 (회원가입) */
+.auth-steps {
+  margin-bottom: var(--sp-8);
+}
+
+/* 안내·오류 패널: 제출 뒤 화면 안으로 스크롤될 때 상단 헤더에 가려지지 않게 한다 */
+.auth-alert {
+  margin-bottom: var(--sp-6);
+  scroll-margin-top: calc(var(--header-h) + var(--safe-top) + var(--sp-6));
+}
+
+/* 하단 링크 줄: "아직 계정이 없나요? 회원가입" */
+.auth-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  column-gap: var(--sp-2);
+  margin-top: var(--sp-8);
+  color: var(--c-text-sub);
+  font-size: var(--fs-md);
+  text-align: center;
+}
+
+/* 인증코드 입력 + 남은 시간 + 다시 받기 */
+.auth-code {
+  margin-bottom: var(--sp-6);
+}
+.auth-code .field {
+  margin-bottom: var(--sp-3);
+}
+.auth-code__input::placeholder {
+  letter-spacing: 0;
+  font-weight: var(--fw-regular);
+}
+.auth-code__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.auth-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-md);
+  color: var(--c-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+.auth-timer svg {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+}
+.auth-timer--expired {
+  color: var(--c-danger-text);
+  font-weight: var(--fw-bold);
+}
+
+/* 가입 단계의 하단 버튼 묶음 (가입하기 / 이메일 다시 입력) */
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-top: var(--sp-8);
+}

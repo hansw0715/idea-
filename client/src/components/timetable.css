@@ -1,0 +1,717 @@
+/* ───────────────────────────────────────────────────────────────
+   시간표 격자(TimetableGrid) · 주 이동 바 · 범례 · 정보 시트 · 과목 검색(CourseSearch)
+   접두사: tt-   (색은 tokens.css 의 변수만, 크기는 rem)
+
+   주의: 이 파일은 전역 css(.btn 등)보다 먼저 읽히므로, 전역 클래스를 덮어쓰는 규칙은
+   부모 클래스를 하나 더 붙여 우선순위를 높여 둔다.
+   ─────────────────────────────────────────────────────────────── */
+
+/* ── 격자 ─────────────────────────────────────────────────────── */
+.tt {
+  --tt-axis: 3.9rem; /* 시각 축 폭 ("10:00" 이 13px 에서 33px 라 3.6rem 에서는 보더에 닿는다) */
+  --tt-hour: 4.6rem; /* 1시간 높이 */
+  --tt-hours: 13; /* 09:00 ~ 22:00 (JS 에서 덮어쓴다) */
+
+  --tt-line: var(--c-divider);
+  --tt-line-soft: var(--gray-5);
+  --tt-head-bg: var(--c-surface);
+  --tt-today-bg: var(--primary-5);
+  --tt-today-bar: var(--c-action);
+
+  /* 내 수업·일정: 인디고 틴트 + 왼쪽 막대 */
+  --tt-class-bg: var(--primary-10);
+  --tt-class-bar: var(--primary-50);
+  --tt-class-line: var(--primary-30);
+  /* 회의 예약: 초록 틴트 + 막대 + 빗금 + "예약" 글자 */
+  --tt-res-bg: var(--success-5);
+  --tt-res-bar: var(--success-50);
+  --tt-res-line: var(--success-50);
+  --tt-res-text: var(--success-70);
+  --tt-res-hatch: var(--success-5);
+  --tt-res-hatch: color-mix(in srgb, var(--success-50) 20%, var(--c-bg));
+  /* 팀원 모두 비는 시간 */
+  --tt-free-bg: var(--primary-10);
+  /* 선택한 범위 */
+  --tt-pending-bg: var(--primary-10);
+
+  position: relative;
+  width: 100%;
+  min-width: 0;
+
+  /* 칸 폭을 글자 크기(rem)로 재서, 글자가 안 들어갈 만큼 좁으면 아래 @container 규칙이 글자를 숨기고 목록을 보여 준다. */
+  container: tt / inline-size;
+}
+
+/* 줄인 격자(홈·회의): 정각 1시간 블록이 터치 대상 최소 높이(44px)를 채운다. */
+.tt.tt--compact {
+  --tt-hour: var(--touch);
+}
+
+:root[data-contrast='high'] .tt {
+  --tt-line: var(--gray-60);
+  --tt-line-soft: var(--gray-20);
+  --tt-head-bg: var(--gray-0);
+  --tt-today-bg: var(--primary-10);
+  --tt-today-bar: var(--gray-100);
+  --tt-class-bg: var(--gray-0);
+  --tt-class-bar: var(--primary-80);
+  --tt-class-line: var(--gray-100);
+  --tt-res-bg: var(--gray-0);
+  --tt-res-bar: var(--success-70);
+  --tt-res-line: var(--gray-100);
+  --tt-free-bg: var(--primary-10);
+  --tt-pending-bg: var(--primary-10);
+}
+
+/* 주를 넘길 때 옆에서 들어오는 모션 (400ms 이하, reduced-motion 이면 즉시) */
+.tt .tt-clip {
+  overflow: hidden;
+  /* clip 은 스크롤 영역을 만들지 않아, 머리글이 화면 위에 붙어 따라오는 것(sticky)을 막지 않는다. */
+  overflow: clip;
+}
+
+@keyframes tt-slide-next {
+  from {
+    opacity: 0;
+    transform: translateX(3.2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes tt-slide-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-3.2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.tt .tt-slide[data-dir='next'] {
+  animation: tt-slide-next var(--t-base) both;
+}
+.tt .tt-slide[data-dir='prev'] {
+  animation: tt-slide-prev var(--t-base) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt .tt-slide[data-dir] {
+    animation: none;
+  }
+}
+
+.tt .tt-grid {
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  background: var(--c-bg);
+  overflow: hidden;
+  overflow: clip;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+:root[data-contrast='high'] .tt .tt-grid {
+  border-color: var(--gray-100);
+  border-width: 2px;
+}
+
+/* 머리글: 요일 (날짜가 있으면 날짜 + 요일 두 줄) */
+.tt .tt-head {
+  /* 시간표를 아래로 넘겨도 요일이 보이도록 앱 헤더 아래에 붙는다. */
+  position: sticky;
+  top: calc(var(--header-h) + var(--safe-top));
+  z-index: 6;
+  display: grid;
+  grid-template-columns: var(--tt-axis) repeat(5, minmax(0, 1fr));
+  background: var(--tt-head-bg);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.tt .tt-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0.6rem 0;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+  line-height: 1.3;
+  color: var(--c-text-sub);
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+/* 오늘: 굵게 + 배경 + 아래 막대 (색만으로 구분하지 않는다) */
+.tt .tt-day.is-today {
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+  background: var(--tt-today-bg);
+  box-shadow: inset 0 -0.3rem 0 0 var(--tt-today-bar);
+}
+
+/* 본문 */
+.tt .tt-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--tt-axis) repeat(5, minmax(0, 1fr));
+  height: calc(var(--tt-hour) * var(--tt-hours));
+}
+
+.tt .tt-times {
+  position: relative;
+}
+
+.tt .tt-time-label {
+  position: absolute;
+  right: 0.3rem;
+  transform: translateY(-50%);
+  font-size: var(--fs-xs);
+  line-height: 1;
+  color: var(--c-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tt .tt-time-label.is-first {
+  transform: none;
+  top: 0.4rem;
+}
+/* 맨 끝 시각은 절반이 아래로 넘어가 잘리므로 통째로 위로 올린다. */
+.tt .tt-time-label.is-last {
+  transform: translateY(-100%);
+}
+
+.tt .tt-col {
+  position: relative;
+  min-width: 0;
+  border-left: 1px solid var(--tt-line);
+  /* 정각 눈금선 */
+  background-image: linear-gradient(to bottom, var(--tt-line) 1px, transparent 1px);
+  background-size: 100% calc(100% / var(--tt-hours));
+  background-repeat: repeat-y;
+}
+
+/* 30분 단위로 고를 수 있을 때만 30분 보조선을 옅게 그린다. */
+.tt.tt--half .tt-col {
+  background-image:
+    linear-gradient(to bottom, var(--tt-line) 1px, transparent 1px),
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 0.5px),
+      var(--tt-line-soft) calc(50% - 0.5px),
+      var(--tt-line-soft) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
+    );
+  background-size:
+    100% calc(100% / var(--tt-hours)),
+    100% calc(100% / var(--tt-hours));
+}
+
+/* 세로 스크롤은 그대로 두고, 길게 눌러 끌 때만 범위를 고른다. */
+.tt .tt-col.is-selectable {
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+@media (hover: hover) {
+  .tt .tt-col.is-selectable:hover {
+    background-color: var(--primary-5);
+  }
+}
+
+/* 팀원 모두 비는 시간 */
+.tt .tt-free {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: var(--tt-free-bg);
+  pointer-events: none;
+}
+
+/* 선택한(또는 끌고 있는) 시간 범위 */
+.tt .tt-pending {
+  position: absolute;
+  left: 0.2rem;
+  right: 0.2rem;
+  z-index: 4;
+  border: 2px dashed var(--c-action);
+  border-radius: var(--r);
+  background: var(--tt-pending-bg);
+  background: color-mix(in srgb, var(--primary-50) 16%, transparent);
+  pointer-events: none;
+}
+:root[data-contrast='high'] .tt .tt-pending {
+  background: var(--tt-pending-bg);
+}
+
+/* 시간 글자: 칸이 좁으므로 범위 위(처음 한 시간 안이면 아래)에 말풍선으로 붙인다. */
+.tt .tt-pending__label {
+  position: absolute;
+  bottom: calc(100% + 0.3rem);
+  padding: 0.2rem 0.8rem;
+  border-radius: var(--r);
+  background: var(--c-action);
+  color: var(--c-on-action);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.tt .tt-pending[data-valign='below'] .tt-pending__label {
+  bottom: auto;
+  top: calc(100% + 0.3rem);
+}
+.tt .tt-pending[data-align='start'] .tt-pending__label {
+  left: -0.2rem;
+}
+.tt .tt-pending[data-align='end'] .tt-pending__label {
+  right: -0.2rem;
+}
+.tt .tt-pending[data-align='mid'] .tt-pending__label {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 항목 블록 */
+.tt .tt-entry {
+  position: absolute;
+  left: 0.2rem;
+  right: 0.2rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0.1rem 0.3rem 0.1rem 0.4rem;
+  border: 0;
+  border-left: 0.3rem solid var(--tt-class-bar);
+  border-radius: var(--r);
+  background: var(--tt-class-bg);
+  box-shadow: inset 0 0 0 1px var(--tt-class-line);
+  color: var(--c-text);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  touch-action: pan-y;
+}
+
+/* 짧은 블록도 손가락으로 누를 수 있도록 눌리는 영역을 위아래로 넓힌다. */
+.tt .tt-entry::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: max(100%, var(--touch));
+  transform: translateY(-50%);
+}
+
+@media (hover: hover) {
+  .tt .tt-entry:hover {
+    background: var(--primary-20);
+  }
+  .tt .tt-entry--res:hover {
+    background-color: var(--success-5);
+  }
+}
+
+/* 회의 예약: 초록 + 빗금 + 막대 + "예약" 글자 */
+.tt .tt-entry--res {
+  z-index: 1;
+  border-left-color: var(--tt-res-bar);
+  box-shadow: inset 0 0 0 1px var(--tt-res-line);
+  background-color: var(--tt-res-bg);
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--tt-res-bg) 0,
+    var(--tt-res-bg) 0.5rem,
+    var(--tt-res-hatch) 0.5rem,
+    var(--tt-res-hatch) 0.7rem
+  );
+}
+.tt .tt-entry--res .tt-entry__title {
+  color: var(--tt-res-text);
+}
+.tt .tt-entry--res .tt-entry__sub {
+  color: var(--tt-res-text);
+}
+
+/* 팀원 시간표: 사람마다 세로 레인 + 사람 색 (글자 없이 색 블록) */
+.tt .tt-entry--lane {
+  z-index: 2;
+  --lane: var(--m-1);
+  padding: 0;
+  border-left: 0.3rem solid var(--lane);
+  background: var(--tt-class-bg);
+  background: color-mix(in srgb, var(--lane) 22%, var(--c-bg));
+  box-shadow: inset 0 0 0 1px var(--lane);
+}
+
+/* 레인 블록은 폭이 20px 안팎이다. 눌리는 영역을 자기 레인 칸(좌우 여백 0.2rem 씩)까지 넓혀 빈틈을 없애되
+   옆 사람의 칸은 침범하지 않는다. 44px 에 못 미치는 폭은 "일정 목록"이 같은 일을 큰 버튼으로 대신한다. */
+.tt .tt-entry--lane::after {
+  left: -0.2rem;
+  right: -0.2rem;
+}
+@media (hover: hover) {
+  .tt .tt-entry--lane:hover {
+    background: color-mix(in srgb, var(--lane) 34%, var(--c-bg));
+  }
+}
+
+/* 키보드 포커스: 격자 가장자리에서 잘리지 않도록 안쪽으로 그린다. */
+.tt .tt-entry:focus-visible {
+  z-index: 5;
+  box-shadow:
+    inset 0 0 0 2px var(--gray-0),
+    inset 0 0 0 4px var(--primary-50);
+}
+:root[data-contrast='high'] .tt .tt-entry:focus-visible {
+  box-shadow:
+    inset 0 0 0 2px var(--gray-0),
+    inset 0 0 0 4px var(--gray-100);
+}
+
+.tt .tt-entry__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-width: 0;
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.tt .tt-entry__tag {
+  margin-right: 0.3rem;
+  color: var(--tt-res-text);
+}
+
+.tt .tt-entry__sub {
+  display: block;
+  overflow: hidden;
+  min-width: 0;
+  color: var(--c-text-sub);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── 일정 목록 (격자의 대체 보기) ─────────────────────────────── */
+.tt .tt-list {
+  margin: var(--sp-4) 0 var(--sp-5);
+}
+
+/* 개인 시간표의 목록은 칸이 좁을 때만 쓴다. */
+.tt .tt-list.tt-list--narrow {
+  display: none;
+}
+
+.tt .tt-list__hint {
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.tt .tt-list__body {
+  margin-top: var(--sp-3);
+  padding: 0 var(--sp-6);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  background: var(--c-bg);
+}
+
+.tt .tt-list__group + .tt-list__group {
+  border-top: 1px solid var(--c-border);
+}
+
+.tt .tt-list__title {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-5) 0 var(--sp-2);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+}
+
+.tt .tt-list__title .tt-dot {
+  flex: none;
+}
+
+.tt .tt-list__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tt .tt-list__rows > li + li {
+  border-top: 1px solid var(--c-divider);
+}
+
+/* 목록 행: 공통 .list__item--link (56px 이상, 통째로 누르기) */
+.tt .tt-list__row {
+  font: inherit;
+  border-bottom: 0;
+}
+
+.tt .tt-list__main,
+.tt .tt-list__sub {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+/* 칸 하나에 글자 3자가 안 들어가는 폭(= 격자 폭 약 29rem 미만, 글자 130% 이상의 좁은 화면)이면
+   칸 안 글자를 숨기고(눌러서 시트로 확인) 일정 목록을 보여 준다.
+   색 막대·빗금(예약)으로 종류는 구분된다. 칸 이름은 aria-label 로 읽힌다. */
+@container tt (max-width: 29rem) {
+  .tt .tt-list.tt-list--narrow {
+    display: block;
+  }
+  .tt .tt-entry .tt-entry__title,
+  .tt .tt-entry .tt-entry__sub {
+    display: none;
+  }
+}
+
+/* ── 주 이동 바 ───────────────────────────────────────────────── */
+.tt-weeknav {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+.tt-weeknav .tt-weeknav__btn {
+  flex: none;
+  min-width: var(--h-md);
+  padding: 0;
+}
+
+.tt-weeknav__center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--h-md);
+  text-align: center;
+}
+
+.tt-weeknav__line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.tt-weeknav__label {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+}
+
+.tt-weeknav__sub {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.3;
+}
+
+/* 격자 안쪽에 붙는 작은 이동 바 (홈·회의 화면) */
+.tt-weeknav.tt-weeknav--compact {
+  align-items: center;
+  margin-bottom: var(--sp-3);
+}
+.tt-weeknav--compact .tt-weeknav__btn {
+  min-width: var(--touch);
+  min-height: var(--touch);
+}
+.tt-weeknav--compact .tt-weeknav__center {
+  min-height: var(--touch);
+}
+
+/* ── 범례 ─────────────────────────────────────────────────────── */
+.tt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-6);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.tt-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.tt-swatch {
+  flex: none;
+  width: 2rem;
+  height: 1.4rem;
+  border-radius: var(--r-xs);
+  border-left: 0.3rem solid var(--primary-50);
+  background: var(--primary-10);
+  box-shadow: inset 0 0 0 1px var(--primary-30);
+}
+.tt-swatch--res {
+  --tt-res-hatch: var(--success-5);
+  --tt-res-hatch: color-mix(in srgb, var(--success-50) 20%, var(--c-bg));
+  border-left-color: var(--success-50);
+  box-shadow: inset 0 0 0 1px var(--success-50);
+  background-color: var(--success-5);
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--success-5) 0,
+    var(--success-5) 0.3rem,
+    var(--tt-res-hatch, var(--success-5)) 0.3rem,
+    var(--tt-res-hatch, var(--success-5)) 0.5rem
+  );
+}
+.tt-swatch--free {
+  border-left-width: 0;
+  background: var(--primary-10);
+  box-shadow: none;
+  outline: 1px solid var(--primary-30);
+  outline-offset: -1px;
+}
+.tt-swatch--pending {
+  border-left-width: 0;
+  border: 2px dashed var(--c-action);
+  background: var(--primary-10);
+  box-shadow: none;
+}
+:root[data-contrast='high'] .tt-swatch {
+  background-color: var(--gray-0);
+  border-left-color: var(--primary-80);
+  box-shadow: inset 0 0 0 1px var(--gray-100);
+}
+:root[data-contrast='high'] .tt-swatch--res {
+  border-left-color: var(--success-70);
+}
+:root[data-contrast='high'] .tt-swatch--free {
+  background-color: var(--primary-10);
+  border-left-width: 0;
+}
+
+/* ── 항목 정보 시트 ───────────────────────────────────────────── */
+.tt-info__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.tt-info .kv {
+  align-items: flex-start;
+}
+.tt-info .tt-info__key {
+  flex: 0 0 6rem;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.tt-info .tt-info__val {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-md);
+  color: var(--c-text);
+}
+
+.tt-dot {
+  display: inline-block;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-right: var(--sp-3);
+  border-radius: 50%;
+  vertical-align: baseline;
+}
+
+.tt-info > .alert {
+  margin-top: var(--sp-5);
+}
+
+/* ── 과목 검색 ────────────────────────────────────────────────── */
+.tt-cs__intro {
+  margin-bottom: var(--sp-6);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.tt-cs__alert {
+  margin-bottom: var(--sp-6);
+}
+
+.tt-cs__pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  column-gap: var(--sp-5);
+}
+
+.tt-cs__count {
+  margin: var(--sp-2) 0 var(--sp-2);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+
+.tt-cs__list {
+  border-top: 1px solid var(--c-border);
+  transition: opacity var(--t-fade);
+}
+.tt-cs__list.is-loading {
+  opacity: 0.5;
+}
+
+.tt-cs__row {
+  border-bottom: 1px solid var(--c-divider);
+}
+.tt-cs__row .list__item {
+  border-bottom: 0;
+  align-items: flex-start;
+}
+
+.tt-cs__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+
+.tt-cs__item .btn.tt-cs__add {
+  flex: none;
+  min-height: var(--touch);
+  min-width: var(--touch);
+}
+
+.tt-cs__online {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  color: var(--c-text-muted);
+  font-size: var(--fs-xs);
+}
+.tt-cs__online svg {
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-top: 0.1rem;
+}
+
+.tt-cs__row .alert {
+  margin-bottom: var(--sp-4);
+}
+
+.tt-cs__more {
+  padding: var(--sp-5) 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
