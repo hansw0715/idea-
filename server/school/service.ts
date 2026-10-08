@@ -9,8 +9,10 @@
  */
 import crypto from 'node:crypto';
 import { get, insert, run } from '../db.js';
+import { ensureSchoolProfile } from '../lounge/services/schoolProfile.js';
 import { isStudentId, studentIdHint } from '../../shared/school/types.js';
 import type {
+  BookCancelResult,
   BookPreview,
   BookResult,
   BookSubmitRequest,
@@ -348,6 +350,8 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
     }
     // 학교 로그인 중에 계정이 지워졌다면 아무것도 저장되지 않았다 — 성공이라고 알리지 않는다
     if (saved.changes !== 1) throw sessionGone();
+    // 라운지 프로필(이름을 가린 닉네임·학과·입학년도)을 학교 계정 정보로 채운다 — 재연동이면 학과·입학년도도 갱신된다
+    await ensureSchoolProfile(uid);
     if (!owner) await clearLinkProbe(uid, linkHash).catch(() => undefined);
     return { linked: true, hint, profile };
   }
@@ -372,7 +376,8 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
     await run(
       `UPDATE users
           SET school_cipher = NULL, school_hint = NULL, school_student_hash = NULL, school_linked_at = NULL,
-              school_department = NULL, school_admission_year = NULL
+              school_department = NULL, school_admission_year = NULL,
+              profile_done = FALSE
         WHERE id = ?`,
       [uid],
     );
@@ -773,7 +778,56 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
     };
   }
 
-  return { getLink, link, verifyStudent, unlink, timetablePreview, timetableImport, myReservations, bookPreview, bookSubmit };
+  /**
+   * 학교에 보낸 신청 취소. 이 예약에 '확인됨/불명' 신청 기록이 없으면 학교에는 아무것도 없으니 그대로 돌려준다.
+   * 있으면 학교 로그인 → 신청내역에서 그 신청의 "취소" 컨트롤을 따라간다(resve.cancelMine). 어떤 경우에도 자동 재시도는 없다.
+   */
+  async function bookCancel(uid: number, body: unknown): Promise<BookCancelResult> {
+    const o = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
+    const creds = parseCredentials(o.creds);
+    const reservationId = parseReservationId(o.reservationId);
+    hitLimiter(schoolCallLimiter, uid);
+    await requireLinked(uid, creds);
+
+    const r = await get<ReservationRow>(
+      `SELECT r.id, r.meeting_id AS "meetingId", r.date, r.start_min AS "startMin", r.end_min AS "endMin",
+              r.school_status AS "schoolStatus", f.name AS "facilityName",
+              f.system_key AS "systemKey", f.campus_name AS "campusName"
+         FROM reservations r JOIN facilities f ON f.id = r.facility_id
+        WHERE r.id = ?`,
+      [reservationId],
+    );
+    if (!r) throw new ApiInputError('NOT_FOUND', '예약을 찾을 수 없어요.');
+    const member = await get('SELECT 1 AS x FROM meeting_members WHERE meeting_id = ? AND user_id = ?', [r.meetingId, uid]);
+    if (!member) throw new ApiInputError('FORBIDDEN', '이 회의의 멤버만 학교 신청을 취소할 수 있어요.');
+
+    const booking = await get<{ id: number; status: string }>(
+      `SELECT id, status FROM school_bookings WHERE reservation_id = ? AND status IN ('confirmed', 'unknown') ORDER BY id DESC LIMIT 1`,
+      [reservationId],
+    );
+    if (!booking && r.schoolStatus !== 'confirmed') {
+      return { status: 'nothing-to-cancel', message: '학교에 보낸 신청이 없어서 앱의 예약만 지우면 돼요.' };
+    }
+
+    const system = systemForFacility(r.systemKey);
+    if (!system || !r.campusName) {
+      throw new SchoolUnavailable('이 시설은 학교 예약 시스템과 연결되어 있지 않아서 앱이 취소할 수 없어요. 학교 사이트에서 직접 취소해 주세요.');
+    }
+    const client = newResve();
+    const spaces = await client.spaces(system.key);
+    const space = findSpace(spaces, r.campusName);
+    if (!space) throw new SchoolUnavailable('학교 예약 시스템에서 이 공간을 찾지 못해서 앱이 취소할 수 없어요. 학교 사이트에서 직접 취소해 주세요.');
+
+    await loginResve(client, system.site, system.verified, creds);
+    const result = await client.cancelMine(system.key, { date: r.date, space: space.name, startHm: fmtHm(r.startMin) });
+    if (booking) await setBookingStatus(booking.id, 'cancelled');
+    await run("UPDATE reservations SET school_status = 'planned' WHERE id = ?", [reservationId]);
+    return result === 'cancelled'
+      ? { status: 'cancelled', message: '학교 신청을 취소했어요.' }
+      : { status: 'nothing-to-cancel', message: '학교 신청내역에 이 신청이 없어요. 앱의 예약만 지우면 돼요.' };
+  }
+
+  return { getLink, link, verifyStudent, unlink, timetablePreview, timetableImport, myReservations, bookPreview, bookSubmit, bookCancel };
 }
 
 export type SchoolService = ReturnType<typeof createSchoolService>;

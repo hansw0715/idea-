@@ -187,3 +187,15 @@
 .lounge-acct-school:empty {
   display: none;
 }
+
+/* 라운지 프로필: 학과·학번 글자와 매너온도를 같은 줄에, 같은 크기로 */
+.lounge-acct-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+}
+.lounge-acct-line .lounge-temp {
+  font-size: inherit;
+  font-weight: var(--fw-bold);
+}

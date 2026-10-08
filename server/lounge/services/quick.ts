@@ -9,30 +9,40 @@
  *     확정한 요청만 모임을 만든다. 재시도·동시 수락에도 모임 id 는 하나다.
  *  3) 모든 부수효과(모임 저장, 단톡방 열기, 대기표 복귀, 재매칭)는 요청 안에서 끝낸다 — 서버리스는 응답 뒤에 멈출 수 있다.
  *  4) 읽을 때마다 `sweep` 이 만료된 방을 정리한다 (별도 스케줄러 없음).
+ *
+ * 택시식 즉시 매칭(위치만 보냄)도 같은 틀을 쓴다: 대기표에 위치를 얹어 두고, 새 대기표가 들어오면 반경 안에서
+ * 가장 가까운 대기자를 같은 방식으로 선점해 2명짜리 후보 방을 만든다. 위치는 선점·취소·만료와 같은 UPDATE 에서 지워진다.
  */
 import { randomUUID } from 'node:crypto';
-import { MEAL_SLOT } from '../../../shared/lounge/constants.js';
+import { BAND_KEYS, MEAL_SLOT, QUICK_WAIT_MIN } from '../../../shared/lounge/constants.js';
 import { fail, ok } from '../../../shared/lounge/types.js';
 import type { ISODateTime, Result } from '../../../shared/lounge/types.js';
-import type { QuickInput, QuickState } from '../../../shared/lounge/view.js';
+import type { QuickLegacyInput, QuickState } from '../../../shared/lounge/view.js';
 import { createGathering, isFull, join } from '../domain/gathering.js';
 import {
   DEPT_TAG_PREFIX,
   answer,
   confirmedMeetAt,
+  countNearby,
+  createInstantRoom,
   createRoom,
   dropPastBands,
   findGroup,
+  findNearest,
   futureBands,
   hasBlockedPair,
   isExpired,
   isFinishedRoom,
+  isInstantBody,
+  kstDate,
+  parseInstantInput,
   parseQuickInput,
   toRequestView,
   vote,
 } from '../domain/quickMatch.js';
-import type { Answer, QuickRequest, QuickRoom } from '../domain/quickMatch.js';
-import { findGathering, insertGathering } from '../repo/gatherings.js';
+import type { Answer, QuickLocation, QuickRequest, QuickRoom } from '../domain/quickMatch.js';
+import { run } from '../../db.js';
+import { findGathering, insertGathering, mutateGathering } from '../repo/gatherings.js';
 import * as repo from '../repo/quick.js';
 import { banReason, loadUsers, toPublicUser, unknownUser } from '../users.js';
 import type { LoungeUser } from '../users.js';
@@ -96,7 +106,10 @@ export async function sweep(now: ISODateTime = nowISO()): Promise<void> {
   await repo.releaseDeadRoomTickets();
 
   await repo.cancelBannedWaiting();
-  const stale = (await repo.listWaiting()).filter((r) => futureBands(r.date, r.bands, now).length === 0);
+  // 즉시 매칭: 대기 시간(QUICK_WAIT_MIN)이 지난 대기표는 만료로 닫는다. 위치도 같은 UPDATE 에서 지워진다.
+  await repo.expireInstantWaiting(new Date(Date.parse(now) - QUICK_WAIT_MIN * 60_000).toISOString());
+  // (즉시 대기표는 시간대가 없으니 이 정리에서 뺀다)
+  const stale = (await repo.listWaiting()).filter((r) => !r.instant && futureBands(r.date, r.bands, now).length === 0);
   await repo.cancelWaiting(stale.map((r) => r.id));
 }
 
@@ -120,11 +133,32 @@ type Ticket = { request: QuickRequest; room: QuickRoom | null };
  * 내 현재 대기표(취소되지 않은 가장 최근 것)와 붙어 있는 방.
  * 확정된 약속이 이미 끝났으면 그 대기표를 닫아서, 한 번 매칭된 사람이 영영 새로 신청하지 못하는 일이 없게 한다.
  */
+/**
+ * 확정된 방의 모임이 "끝난 일"인가 — 모임이 취소·종료됐거나, 참여자가 탈퇴했거나, 즉시 밥약인데 한 사람이 나갔다.
+ * 그렇다면 모임을 닫고(아직 열려 있으면 취소) 즉시 밥약의 단톡방 대화를 비운다(초기화) — 사라진 사람의 흔적만 남은 방을 더 보여 주지 않는다.
+ * true 이면 호출한 쪽이 그 대기표를 끝내서 다음 밥약을 잡을 수 있게 한다.
+ */
+async function retireIfDead(room: QuickRoom): Promise<boolean> {
+  if (room.status !== 'confirmed' || !room.gatheringId) return false;
+  const g = await findGathering(room.gatheringId);
+  const users = await loadUsers(room.memberIds);
+  const someoneGone = room.memberIds.some((id) => !users.has(id));
+  const seated = new Set(g ? g.slots.flatMap((s) => s.memberIds) : []);
+  const someoneLeft = !!g && room.instant === true && room.memberIds.some((id) => !seated.has(id));
+  const ended = !!g && (g.status === 'cancelled' || g.status === 'done');
+  if (!ended && !someoneGone && !someoneLeft) return false;
+  if (g && !ended) await mutateGathering(g.id, (cur) => ok(cur.status === 'cancelled' ? cur : { ...cur, status: 'cancelled' }));
+  if (room.instant === true && room.gatheringId) {
+    await run('DELETE FROM lounge_messages WHERE room_id = ?', [room.gatheringId]);
+  }
+  return true;
+}
+
 async function currentTicket(userId: string, now: ISODateTime): Promise<Ticket | null> {
   for (const request of await repo.listActiveByUser(userId)) {
     const found = request.roomId ? await repo.findRoom(request.roomId) : undefined;
     const room = found?.room ?? null;
-    if (room && isFinishedRoom(room, now)) {
+    if (room && (isFinishedRoom(room, now) || (await retireIfDead(room)))) {
       await repo.cancelRequest(request.id);
       continue;
     }
@@ -155,15 +189,33 @@ async function buildState(userId: string, now: ISODateTime): Promise<QuickState>
         })
       : [],
     gatheringId: room?.gatheringId ?? null,
-    waitingCount: await repo.countWaiting(),
+    waitingCount: await waitingCountFor(ticket?.request ?? null, now),
     meId: userId,
   };
 }
 
+/**
+ * 대기 인원. 즉시 대기 중이면 **내 반경 안**의 다른 대기자 수(나는 뺀다), 즉시 대기가 아닌 즉시 표는 0,
+ * 그 밖에는 옛 방식 대기 인원이다. 위치를 아는 건 서버뿐이고, 응답에는 숫자만 나간다.
+ */
+async function waitingCountFor(request: QuickRequest | null, now: ISODateTime): Promise<number> {
+  if (!request?.instant) return repo.countWaiting();
+  if (request.status !== 'waiting' || !request.loc) return 0;
+  return countNearby(await repo.listWaiting(), request, await blockChecker(), now);
+}
+
 // ───────────── 신청 ─────────────
 
-/** 검증을 통과한 신청. `bands` 는 이미 시작한 시간대를 뺀 것이고, `now` 는 검증한 시각이다. */
-export type PreparedQuickMatch = { input: QuickInput; bands: string[]; now: ISODateTime };
+/**
+ * 검증을 통과한 신청. `bands` 는 이미 시작한 시간대를 뺀 것이고, `now` 는 검증한 시각이다.
+ * 즉시 매칭이면 `loc`(받은 위치)이 있고, input 은 서버가 채운 "오늘·학식·2명·전 시간대"다.
+ */
+export type PreparedQuickMatch = {
+  input: QuickLegacyInput;
+  bands: string[];
+  now: ISODateTime;
+  loc?: { lat: number; lng: number };
+};
 
 /**
  * 신청 검증만 한다 (DB 를 건드리지 않는 동기 함수). `raw` 는 요청 본문 그대로(unknown).
@@ -175,6 +227,15 @@ export function prepareQuickMatch(
   raw: unknown,
   now: ISODateTime = nowISO(),
 ): Result<PreparedQuickMatch> {
+  if (isInstantBody(raw)) {
+    // 택시식 즉시 매칭: 위치만 받고 나머지는 서버가 정한다. 시간대 지난 칩 검사는 하지 않는다 (시간대가 없다).
+    const loc = parseInstantInput(raw);
+    if (!loc.ok) return loc;
+    if (user.banned) return fail('BANNED', banReason(user) ?? undefined);
+    const input: QuickLegacyInput = { date: kstDate(now), placeType: '학식', size: 2, bands: [...BAND_KEYS], tags: [] };
+    return ok({ input, bands: [...BAND_KEYS], now, loc: loc.value });
+  }
+
   const parsed = parseQuickInput(raw);
   if (!parsed.ok) return parsed;
   if (user.banned) return fail('BANNED', banReason(user) ?? undefined);
@@ -208,7 +269,9 @@ export async function submitQuickMatch(user: LoungeUser, prepared: PreparedQuick
   return withUserLock(user.id, async () => {
     await sweep(now);
     const existing = await currentTicket(user.id, now);
-    if (existing) return fail('ALREADY_JOINED', alreadyMessage(existing));
+    // 만료된(expired) 대기표는 "끝난 일"이라 새 신청을 막지 않는다. 치우고 새로 만든다.
+    if (existing?.request.status === 'expired') await repo.cancelRequest(existing.request.id);
+    else if (existing) return fail('ALREADY_JOINED', alreadyMessage(existing));
 
     const request: QuickRequest = {
       id: randomUUID(),
@@ -221,6 +284,7 @@ export async function submitQuickMatch(user: LoungeUser, prepared: PreparedQuick
       status: 'waiting',
       roomId: null,
       createdAt: now,
+      ...(prepared.loc ? { instant: true, loc: { lat: prepared.loc.lat, lng: prepared.loc.lng, at: now } } : {}),
     };
     try {
       await repo.insertRequest(request);
@@ -230,7 +294,7 @@ export async function submitQuickMatch(user: LoungeUser, prepared: PreparedQuick
     }
 
     // 다른 인스턴스에서 거의 동시에 신청이 들어와 대기표가 둘 생겼다면, 먼저 만든 쪽만 남긴다.
-    const mine = await repo.listActiveByUser(user.id);
+    const mine = (await repo.listActiveByUser(user.id)).filter((r) => r.status !== 'expired');
     if (mine.length > 1) {
       const first = [...mine].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))[0];
       if (first.id !== request.id) {
@@ -239,7 +303,8 @@ export async function submitQuickMatch(user: LoungeUser, prepared: PreparedQuick
       }
     }
 
-    await tryMatch(request.id, now);
+    if (request.instant) await tryMatchInstant(request.id, now);
+    else await tryMatch(request.id, now);
     return ok(await buildState(user.id, now));
   });
 }
@@ -299,6 +364,42 @@ async function tryMatch(requestId: string, now: ISODateTime): Promise<boolean> {
     if (won) return true;
 
     for (const id of claimed) await repo.releaseClaim(id, room.id);
+    await repo.deleteRoom(room.id);
+  }
+  return false;
+}
+
+/**
+ * 즉시 대기표 하나를 기준으로 반경 안에서 가장 가까운 대기자와 짝을 지어 2명짜리 방을 만든다. 만들었으면 true.
+ * 방 저장 → 오래된 순 선점 → 하나라도 놓치면 되돌리고 다시 — 위 tryMatch 와 같은 순서다.
+ * 선점(claimWaiting)은 위치를 지우므로, 되돌릴 때는 우리가 들고 있던 위치를 함께 돌려놓는다.
+ * 짝이 없으면 대기표는 waiting 으로 남고, QUICK_WAIT_MIN 이 지나면 sweep 이 expired 로 닫는다.
+ */
+async function tryMatchInstant(requestId: string, now: ISODateTime): Promise<boolean> {
+  const hidden = await blockChecker();
+  for (let attempt = 0; attempt < MATCH_ATTEMPTS; attempt++) {
+    const waiting = (await repo.listWaiting()).filter((r) => r.instant);
+    const target = waiting.find((r) => r.id === requestId);
+    if (!target) return false; // 이미 다른 방에 들어갔거나 취소·만료됐다
+    const found = findNearest(waiting, target, hidden, now);
+    if (!found) return false;
+
+    const group = [target, found.partner];
+    const room = createInstantRoom(randomUUID(), group, found.distanceM, now);
+    await repo.insertRoom(room);
+
+    const claimed: { id: string; loc: QuickLocation | undefined }[] = [];
+    let won = true;
+    for (const r of [...group].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))) {
+      if (await repo.claimWaiting(r.id, room.id)) claimed.push({ id: r.id, loc: r.loc });
+      else {
+        won = false;
+        break;
+      }
+    }
+    if (won) return true;
+
+    for (const c of claimed) await repo.releaseClaim(c.id, room.id, c.loc);
     await repo.deleteRoom(room.id);
   }
   return false;
@@ -409,15 +510,17 @@ export async function answerRoom(
   const { before, after } = result.value;
   if (before.status === 'pending' && after.status === 'cancelled') {
     await releaseAndRematch(roomId, now);
-    if (value === 'accepted') return fail('NOT_OPEN', MATCH_NOT_CONFIRMED);
+    if (value === 'accepted') return fail('NOT_OPEN', notConfirmedMessage(before));
   } else if (before.status === 'pending' && after.status === 'confirmed') {
     const made = await materialize(after, now);
-    if (!made.ok) return fail('NOT_OPEN', MATCH_NOT_CONFIRMED);
+    if (!made.ok) return fail('NOT_OPEN', notConfirmedMessage(after));
   }
   return ok(await buildState(userId, now));
 }
 
 const MATCH_NOT_CONFIRMED = '매칭을 확정하지 못했어요. 다시 짝을 찾고 있어요.';
+const INSTANT_NOT_CONFIRMED = '매칭을 확정하지 못했어요. 위치를 다시 보내 주세요.'; // 즉시 대기표는 위치가 지워져 자동 재매칭이 안 된다
+const notConfirmedMessage = (room: QuickRoom): string => (room.instant ? INSTANT_NOT_CONFIRMED : MATCH_NOT_CONFIRMED);
 
 // ───────────── 확정 → 진짜 밥약 ─────────────
 
@@ -474,19 +577,22 @@ async function ensureGathering(room: QuickRoom, now: ISODateTime): Promise<Resul
   const meetMs = Date.parse(meetAt);
   const joinDeadline = new Date(Math.min(meetMs, Math.max(meetMs - 10 * 60_000, Date.parse(now) + 1000))).toISOString();
 
+  const instant = room.instant === true;
   const created = createGathering(
     {
       id: gatheringId,
       kind: 'meal',
       hostId: members[0].id,
-      title: `${room.placeType}에서 같이 밥 (빠른 매칭)`,
-      body: '빠른 매칭으로 잡힌 약속이에요. 시간·장소는 서로 확인해 주세요.',
-      place: room.placeType,
+      title: instant ? '바로 밥약' : `${room.placeType}에서 같이 밥 (빠른 매칭)`,
+      body: instant
+        ? '바로 밥약으로 잡힌 약속이에요. 만날 곳은 채팅방에서 정해 주세요.'
+        : '빠른 매칭으로 잡힌 약속이에요. 시간·장소는 서로 확인해 주세요.',
+      place: instant ? '학식(만나서 정해요)' : room.placeType,
       meetAt,
       joinDeadline,
       joinPolicy: 'auto',
       slots: [{ key: MEAL_SLOT, label: '같이 먹을 사람', capacity: members.length }],
-      meta: { placeType: room.placeType, tags: ['빠른 매칭'] },
+      meta: { placeType: room.placeType, tags: [instant ? '바로 밥약' : '빠른 매칭'] },
     },
     now,
   );

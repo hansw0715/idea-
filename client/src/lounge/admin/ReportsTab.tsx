@@ -257,12 +257,6 @@ function ReportCard({ report: r, onAction }: { report: ReportView; onAction: (a:
           </dd>
         </div>
         <div className="lounge-admin-target__item">
-          <dt className="lounge-admin-target__key">노쇼 경고</dt>
-          <dd className="lounge-admin-target__val tabular">
-            {r.target.warnings} / {WARNINGS_TO_BAN}회
-          </dd>
-        </div>
-        <div className="lounge-admin-target__item">
           <dt className="lounge-admin-target__key">이용 상태</dt>
           <dd className="lounge-admin-target__val">
             {r.target.banned ? <Badge tone="danger">이용 정지</Badge> : <Badge tone="success">정상</Badge>}

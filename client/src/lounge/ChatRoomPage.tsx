@@ -16,6 +16,7 @@ import { Alert, Button, EmptyState, Icon, LoadingBlock, Sheet, btnClass } from '
 import { loungeApi } from './api';
 import { useLounge } from './LoungeContext';
 import Avatar from './parts/Avatar';
+import { factLine } from './parts/fact';
 import UserSheet from './sheets/UserSheet';
 import './chat.css';
 
@@ -332,7 +333,7 @@ function ChatRoom({ roomId }: { roomId: string }) {
   const myId = profile?.id ?? null;
   const entries = useMemo(() => buildEntries(messages), [messages]);
   const others = useMemo(
-    () => (room ? room.members.filter((m) => m.id !== myId && m.admissionYear > 0) : []),
+    () => (room ? room.members.filter((m) => m.id !== myId && (m.admissionYear ?? 0) > 0) : []),
     [room, myId],
   );
 
@@ -426,7 +427,7 @@ function ChatRoom({ roomId }: { roomId: string }) {
                           {m.nickname}
                           {m.id === myId && ' (나)'}
                         </span>
-                        {m.admissionYear > 0 && <span className="lounge-chat-person-college">{m.college}</span>}
+                        {(m.admissionYear ?? 0) > 0 && <span className="lounge-chat-person-college">{factLine(m)}</span>}
                       </span>
                     </li>
                   ))}
@@ -589,7 +590,7 @@ function ChatRoom({ roomId }: { roomId: string }) {
                 <Avatar user={m} size="md" />
                 <span className="list__body">
                   <span className="list__main">{m.nickname}</span>
-                  <span className="list__sub">{m.college}</span>
+                  <span className="list__sub">{factLine(m)}</span>
                 </span>
                 <Icon name="chevron-right" className="list__chev" />
               </button>

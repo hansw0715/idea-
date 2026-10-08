@@ -35,7 +35,8 @@ const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !
 
 const KINDS: readonly GatheringKind[] = ['meetup', 'meal', 'team'];
 const POLICIES: readonly JoinPolicy[] = ['auto', 'approval'];
-const MARKS: readonly ReviewMark[] = ['good', 'soso', 'noshow'];
+// 노쇼(안 왔어요) 평가는 없앴다 — 약속을 어기거나 불쾌한 일은 신고로 알린다. (도메인의 옛 노쇼 계산은 더는 이 경로로 닿지 않는다)
+const MARKS: readonly ReviewMark[] = ['good', 'soso'];
 export const ACTIONS: readonly GatheringAction[] = ['join', 'apply', 'approve', 'reject', 'leave', 'cancel', 'review'];
 
 const invalid = (message: string) => fail('INVALID', message);

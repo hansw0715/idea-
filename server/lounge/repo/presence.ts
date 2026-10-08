@@ -13,10 +13,11 @@ export type PresenceRow = {
   emote: string | null;
   emoteAt: Date | null;
   seenAt: Date;
-  // 사용자 조인 (공개 필드만 — 실명·이메일·학과는 읽지도 않는다)
+  // 사용자 조인 (공개 필드만 — 실명·이메일은 읽지도 않는다)
   nickname: string;
   college: string;
-  admissionYear: number;
+  department: string;
+  admissionYear: number | null;
   avatar: string | null;
   avatarColor: string | null;
   temperature: number;
@@ -32,6 +33,7 @@ interface RawRow {
   seen_at: Date | string;
   nickname: string | null;
   college: string | null;
+  department: string | null;
   admission_year: number | null;
   avatar: string | null;
   avatar_color: string | null;
@@ -88,7 +90,7 @@ export async function listPresent(opts: {
   const rows = await all<RawRow>(
     `${purge}
      SELECT p.user_id, p.x, p.y, p.zone, p.emote, p.emote_at, p.seen_at,
-            u.nickname, u.college, u.admission_year, u.avatar, u.avatar_color, u.temperature
+            u.nickname, u.college, u.department, u.admission_year, u.avatar, u.avatar_color, u.temperature
        FROM lounge_presence p
        JOIN users u ON u.id = p.user_id
       WHERE p.seen_at > ?::timestamptz
@@ -109,7 +111,8 @@ export async function listPresent(opts: {
     seenAt: toDate(r.seen_at),
     nickname: r.nickname ?? '',
     college: r.college ?? '',
-    admissionYear: r.admission_year ?? 0,
+    department: r.department ?? '',
+    admissionYear: r.admission_year ?? null,
     avatar: r.avatar,
     avatarColor: r.avatar_color,
     temperature: r.temperature ?? 0,

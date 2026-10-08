@@ -3,7 +3,7 @@
  * 다시 켜려면 true 로 바꾸고 빌드한다 — 탭, 라우트, 내 정보·홈의 라운지 구역이 한꺼번에 나타난다.
  * (서버의 /api/lounge 는 로그인한 사용자만 쓸 수 있어 켜져 있어도 화면에서 닿지 않는다)
  */
-export const LOUNGE_ENABLED = false;
+export const LOUNGE_ENABLED = true;
 
 /**
  * 학교 메일 인증코드로 가입하는 옛 방식(pages/SignupEmail.tsx, 서버 EMAIL_SIGNUP_ENABLED=1)은 코드만 남기고 꺼 둔다.

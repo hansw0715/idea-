@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { DEFAULT_TEMPERATURE, MAX_TEMPERATURE, WARNINGS_TO_BAN, admissionLabel, temperatureFace } from '../../../../shared/lounge';
+import { DEFAULT_TEMPERATURE, MAX_TEMPERATURE, temperatureFace } from '../../../../shared/lounge';
 import type { PublicUser } from '../../../../shared/lounge';
 import { ApiError } from '../../api';
 import { Alert, Badge, Button, EmptyState, LoadingBlock, Sheet, useToast } from '../../ui';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
+import { factLine } from '../parts/fact';
 import Avatar from '../parts/Avatar';
 import SafetyForm from '../parts/SafetyForm';
 import BlockListSheet from './BlockListSheet';
@@ -149,7 +150,7 @@ export default function UserSheet({
                   {isMe && <Badge tone="primary">나</Badge>}
                 </h3>
                 <p className="text-sub">
-                  {user.college} · {admissionLabel(user.admissionYear)}
+                  {factLine(user)}
                 </p>
               </div>
             </div>
@@ -168,19 +169,11 @@ export default function UserSheet({
                     <dt className="kv__key">학과</dt>
                     <dd className="kv__val grow">
                       {profile.department}
-                      <span className="lounge-gath-kv__note">나에게만 보여요</span>
                     </dd>
                   </div>
-                  <div className="kv">
-                    <dt className="kv__key">노쇼 경고</dt>
-                    <dd className="kv__val grow">
-                      {profile.warnings}회
-                      <span className="lounge-gath-kv__note">{WARNINGS_TO_BAN}회가 쌓이면 이용이 정지돼요</span>
-                    </dd>
-                  </div>
-                </dl>
+</dl>
                 <Button variant="secondary" block onClick={openProfileSheet}>
-                  프로필 고치기
+                  프로필 이미지 바꾸기
                 </Button>
               </>
             )}
@@ -227,7 +220,7 @@ function TemperaturePanel({ value }: { value: number }) {
           매너온도
         </h3>
         <p className={`lounge-gath-temp__value lounge-gath-temp__value--${face.tone}`}>
-          <span aria-hidden="true">{face.emoji}</span> {value.toFixed(1)}°
+          {value.toFixed(1)}°
           <span className="lounge-gath-temp__level">{face.label}</span>
         </p>
       </div>
@@ -236,7 +229,7 @@ function TemperaturePanel({ value }: { value: number }) {
         <span className="lounge-gath-gauge__tick" style={{ left: `${basePct}%` }} />
       </div>
       <p className="text-xs text-sub">
-        {DEFAULT_TEMPERATURE}°에서 시작해요. 모임 뒤에 좋은 평가를 받으면 오르고, 노쇼가 확정되면 내려가요.
+        {DEFAULT_TEMPERATURE}°에서 시작해요. 모임 뒤에 좋은 평가를 받으면 올라요.
       </p>
     </section>
   );

@@ -16,7 +16,7 @@ export type GatheringListItemProps = {
 // ───────────── 표시용 공용 값 (TableSheet 도 같이 쓴다) ─────────────
 
 export const KIND_LABEL: Record<GatheringKind, string> = { meetup: '미팅', meal: '밥약', team: '팀빌딩' };
-export const KIND_ICON: Record<GatheringKind, IconName> = { meetup: 'heart', meal: 'utensils', team: 'users' };
+export const KIND_ICON: Record<GatheringKind, IconName> = { meetup: 'smile', meal: 'utensils', team: 'users' };
 
 type BadgeTone = 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'point' | 'gray';
 

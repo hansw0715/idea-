@@ -160,6 +160,14 @@ export type BookResult = {
   found: SchoolReservation[];
 };
 
+/**
+ * `POST /api/school/book/cancel` {creds, reservationId} — 학교에 보낸 신청을 학교 신청내역의 "취소"로 취소한다.
+ *  - 'cancelled': 학교에서 취소된 것을 신청내역으로 확인했다.
+ *  - 'nothing-to-cancel': 이 예약은 학교에 보낸 신청이 없거나 학교 신청내역에 이미 없다 (앱의 기록만 지우면 된다).
+ * 앱이 쓸 수 있는 취소 방법을 못 찾거나 확인하지 못하면 502 SCHOOL_UNAVAILABLE 로 학교 사이트에서 직접 취소하라고 안내한다.
+ */
+export type BookCancelResult = { status: 'cancelled' | 'nothing-to-cancel'; message: string };
+
 /** 서버가 돌려주는 학교 관련 오류 코드 (ApiError.code) */
 export type SchoolErrorCode =
   | 'SCHOOL_NOT_LINKED' // 연동 안 됨

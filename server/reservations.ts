@@ -383,7 +383,20 @@ reservationsRouter.delete(
       res.status(403).json({ error: '이 회의의 멤버만 예약을 취소할 수 있습니다.' });
       return;
     }
-    // 앱에 잡아 둔 계획만 지운다. 학교에 이미 신청했다면 학교 사이트에서 따로 취소해야 한다.
+    // 학교에 신청한(또는 학교에서 확인된) 예약은 앱에서 기록만 지울 수 없다 — 학교 신청내역에서 실제로 취소된 뒤
+    // (POST /api/school/book/cancel 이 성공하면 신청 기록이 'cancelled', 예약이 'planned' 로 돌아온다)에만 지운다.
+    const sent = await get<{ x: number }>(
+      `SELECT 1 AS x FROM school_bookings WHERE reservation_id = ? AND status IN ('submitted', 'confirmed', 'unknown')
+       UNION ALL SELECT 1 AS x FROM reservations WHERE id = ? AND school_status = 'confirmed'`,
+      [id, id],
+    );
+    if (sent) {
+      res.status(409).json({
+        error: '학교에 신청한 예약이에요. 학교 계정을 연동한 뒤 취소하면 학교 신청도 함께 취소돼요. 앱에서 기록만 지울 수는 없어요.',
+        code: 'SCHOOL_SUBMITTED',
+      });
+      return;
+    }
     await run('DELETE FROM reservations WHERE id = ?', [id]);
     res.json({ ok: true });
   }),

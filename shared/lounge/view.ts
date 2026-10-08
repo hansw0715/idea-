@@ -4,7 +4,7 @@
  * 도메인 모델(Gathering)은 userId 만 들고 있어서 화면에 그대로 못 쓴다.
  * 서버가 닉네임·아바타를 붙이고, "내가 지금 참여할 수 있나?" 같은 판단까지 끝내서
  * 클라이언트가 규칙을 다시 구현하지 않게 한다. (규칙이 두 군데 있으면 반드시 어긋난다)
- * 실명·이메일·학과는 절대 내려보내지 않는다 (학과는 서버 안에서만 비교한다).
+ * 실명·이메일은 절대 내려보내지 않는다. 닉네임은 실명을 가린 표기("박○○")이고, 학과·입학년도는 학교 계정에서 읽은 사실이다.
  */
 import type { ISODateTime } from './types.js';
 import type { AvatarColor, AvatarKey, EmoteKey, PlaceType, ReportReason, ReportStatus, Zone } from './constants.js';
@@ -16,18 +16,20 @@ import type { GatheringKind, GatheringMeta, GatheringStatusView, JoinPolicy, Rev
 export type PublicUser = {
   id: string;
   nickname: string;
+  /** 호환용 — 학교 계정에서는 단과대를 읽을 수 없어 항상 '' */
   college: string;
-  /** 입학년도(4자리). 화면에는 "26학번"처럼 보인다. */
-  admissionYear: number;
+  /** 학교 계정에서 읽은 학과. 없으면 '' */
+  department: string;
+  /** 입학년도(4자리). 화면에는 "26학번"처럼 보인다. 학교에서 읽지 못했으면 null */
+  admissionYear: number | null;
   avatar: AvatarKey;
   avatarColor: AvatarColor;
   /** 매너온도 */
   temperature: number;
 };
 
-/** 내 라운지 프로필. `needsProfile` 이 true 이면 프로필 만들기 시트를 먼저 연다. */
+/** 내 라운지 프로필. 학교 계정을 연동하면 자동으로 만들어진다. `needsProfile` 이 true 면 학교 계정 연동이 필요하다. */
 export type Profile = PublicUser & {
-  department: string;
   warnings: number;
   banned: boolean;
   /** 정지 사유 문구 (banned 일 때만) */
@@ -41,12 +43,11 @@ export type MeResponse = {
   isAdmin: boolean;
 };
 
-/** `PUT /api/lounge/me` 본문 */
+/**
+ * `PUT /api/lounge/me` 본문 — 고칠 수 있는 것은 표정(avatar)과 색(avatarColor)뿐이다.
+ * nickname·college·department·admissionYear 를 보내면 400 INVALID (학교 계정 정보로 자동으로 정해진다).
+ */
 export type ProfileInput = {
-  nickname: string;
-  college: string;
-  department: string;
-  admissionYear: number;
   avatar: AvatarKey;
   avatarColor: AvatarColor;
 };
@@ -153,7 +154,14 @@ export type RoomView = {
 
 // ───────────── 밥약 빠른 매칭 ─────────────
 
-export type QuickInput = {
+/**
+ * 택시식 즉시 매칭: 내 위치만 보낸다. 날짜·시간·장소 종류·인원은 서버가 "지금, 학식, 2명"으로 정한다.
+ * 위치는 매칭에만 쓰고, 매칭·취소·만료가 되면 서버가 지운다. 다른 사람에게는 거리(50m 단위)만 보인다.
+ */
+export type QuickInstantInput = { lat: number; lng: number };
+
+/** (옛 방식) 날짜·시간대를 직접 고르는 빠른 매칭 입력. 지금 화면은 쓰지 않는다. */
+export type QuickLegacyInput = {
   /** YYYY-MM-DD (한국 날짜) */
   date: string;
   placeType: PlaceType;
@@ -163,6 +171,8 @@ export type QuickInput = {
   tags: string[];
 };
 
+export type QuickInput = QuickInstantInput | QuickLegacyInput;
+
 export type QuickRequestView = {
   id: string;
   date: string;
@@ -170,7 +180,8 @@ export type QuickRequestView = {
   size: number;
   bands: string[];
   tags: string[];
-  status: 'waiting' | 'matched' | 'cancelled';
+  /** expired: 즉시 매칭이 QUICK_WAIT_MIN 안에 짝을 못 찾았거나 후보 방이 깨져 대기가 끝남 (다시 위치를 보내면 된다) */
+  status: 'waiting' | 'matched' | 'cancelled' | 'expired';
   roomId: string | null;
   createdAt: ISODateTime;
 };
@@ -191,6 +202,12 @@ export type QuickRoomView = {
   gatheringId: string | null;
   createdAt: ISODateTime;
   expiresAt: ISODateTime;
+  /** 즉시 매칭에서 두 사람 사이의 거리(m, 50m 단위로 올림). 옛 방식 방에는 없다 */
+  distanceM?: number;
+  /** 즉시 매칭 방인가 (시간 투표 없이 수락·거절만) */
+  instant?: boolean;
+  /** 즉시 방이 확정되면 정해지는 약속 시각 (확정 시각 + QUICK_MEET_AFTER_MIN분) */
+  meetAt?: ISODateTime;
 };
 
 export type QuickState = {

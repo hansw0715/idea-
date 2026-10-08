@@ -9,6 +9,7 @@ import { get, run, insert, isServerless, resolveDataDir } from './db.js';
 import { createRateLimiter } from './rateLimit.js';
 import { sendVerificationCode } from './mailer.js';
 import { releaseLoungeForWithdrawal } from './lounge/services/withdraw.js';
+import { schoolProfileValues } from './lounge/services/schoolProfile.js';
 import { ApiInputError, errorResponseOf } from './school/http.js';
 import {
   cipherLooksLikePlaintext,
@@ -302,21 +303,28 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
 
       // ④ 계정 만들기. 동시에 같은 아이디·학번으로 들어온 요청은 유니크 인덱스가 한 건만 통과시키고 나머지는 409 로 바꾼다.
       const hash = await bcrypt.hash(password, 12);
+      const realName = ticket.name.trim().slice(0, 30) || username;
+      const profile = schoolProfileValues({ name: realName, department: ticket.department, admissionYear: ticket.admissionYear });
       let id: number;
       try {
         id = await insert(
           `INSERT INTO users (username, name, password_hash, school_cipher, school_hint, school_student_hash,
-                              school_linked_at, school_department, school_admission_year)
-           VALUES (?, ?, ?, ?, ?, ?, now(), ?, ?) RETURNING id`,
+                              school_linked_at, school_department, school_admission_year,
+                              nickname, college, department, admission_year, profile_done)
+           VALUES (?, ?, ?, ?, ?, ?, now(), ?, ?, ?, '', ?, ?, TRUE) RETURNING id`,
           [
             username,
-            ticket.name.trim().slice(0, 30) || username,
+            realName,
             hash,
             JSON.stringify({ v: cipher.v, iv: cipher.iv, ct: cipher.ct }),
             ticket.hint,
             ticket.sh,
             ticket.department,
             ticket.admissionYear,
+            // 라운지 프로필 = 학교 계정 정보 (실명을 가린 닉네임·학과·입학년도)
+            profile.nickname,
+            profile.department,
+            profile.admissionYear,
           ],
         );
       } catch (err) {
@@ -328,7 +336,7 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
 
       issueToken(res, id);
       res.status(201).json({
-        ...publicUser({ id, username, email: null, name: ticket.name.trim().slice(0, 30) || username, is_admin: false }),
+        ...publicUser({ id, username, email: null, name: realName, is_admin: false }),
         school: { hint: ticket.hint, department: ticket.department, admissionYear: ticket.admissionYear },
       });
     }),

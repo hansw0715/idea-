@@ -14,6 +14,7 @@ import { ApiError } from '../../api';
 import { Alert, Badge, Button, EmptyState, Icon, LoadingBlock, SelectField, Sheet, useConfirm, useToast } from '../../ui';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
+import { factLine } from '../parts/fact';
 import Avatar, { TemperatureBadge } from '../parts/Avatar';
 import InlineNotice from '../parts/InlineNotice';
 import { KIND_ICON, KIND_LABEL, STATUS_BADGE, relationBadge } from '../parts/GatheringListItem';
@@ -48,7 +49,7 @@ export type TableSheetProps = {
 
 const POLL_MS = 5000;
 const NOTICE_MS = 6000;
-const MARKS: ReviewMark[] = ['good', 'soso', 'noshow'];
+const MARKS: ReviewMark[] = ['good', 'soso'];
 const APPLY_MAX = 200;
 
 type Phase = 'loading' | 'ready' | 'missing' | 'error';
@@ -568,7 +569,7 @@ export default function TableSheet({
                       <Badge tone="gray">주최</Badge>
                     </span>
                     <span className="lounge-gath-person__sub">
-                      {g.host.college} · {admissionLabel(g.host.admissionYear)}
+                      {factLine(g.host)}
                     </span>
                     <TemperatureBadge value={g.host.temperature} />
                   </span>
@@ -657,7 +658,17 @@ export default function TableSheet({
               )}
 
               {/* 모임 후 평가 */}
-              {v.canReview && <ReviewSection g={g} busy={busy} onMark={review} />}
+              {v.canReview && (
+                <ReviewSection
+                  g={g}
+                  busy={busy}
+                  onMark={review}
+                  onReport={(p) => {
+                    setSafetyTargetId(p.id);
+                    setSafetyOpen(true);
+                  }}
+                />
+              )}
 
               {/* 주최자 메뉴 */}
               {v.isHost && (
@@ -675,7 +686,7 @@ export default function TableSheet({
             <SelectField label="대상" value={safetyTarget.id} onChange={(e) => setSafetyTargetId(e.target.value)}>
               {safetyTargets.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.nickname} · {p.college} · {admissionLabel(p.admissionYear)}
+                  {p.nickname} · {factLine(p)}
                 </option>
               ))}
             </SelectField>
@@ -769,7 +780,6 @@ function SlotBox({
                 <span className="lounge-gath-seat__name">{m.nickname}</span>
                 {isHost && <Badge tone="gray">주최</Badge>}
                 {isMe && <Badge tone="primary">나</Badge>}
-                {g.noshowIds.includes(m.id) && <Badge tone="danger">노쇼 확정</Badge>}
               </button>
             </li>
           );
@@ -805,17 +815,18 @@ function SlotBox({
 }
 
 /**
- * 같이 간 사람마다 좋았어요 / 보통이에요 / 안 왔어요.
- * 노쇼는 나머지 전원이 눌러야 확정되므로 "혼자 누른다고 경고가 되는 게 아니다"를 안내한다.
+ * 같이 간 사람마다 좋았어요 / 보통이에요. 불쾌한 일이나 약속을 어긴 사람은 "신고"로 알린다(노쇼 경고는 없다).
  */
 function ReviewSection({
   g,
   busy,
   onMark,
+  onReport,
 }: {
   g: GatheringView;
   busy: string | null;
   onMark: (target: PublicUser, mark: ReviewMark) => void;
+  onReport: (target: PublicUser) => void;
 }) {
   const everyone = uniquePeople(g.slots.flatMap((s) => s.members));
   const others = everyone.filter((m) => m.id !== g.viewer.userId);
@@ -825,12 +836,7 @@ function ReviewSection({
       <h3 className="lounge-gath-h3" id="lounge-gath-review-title">
         오늘 어땠어요?
       </h3>
-      <p className="text-sub text-sm">같이 간 사람 전원이 &lsquo;안 왔어요&rsquo;를 누르면 노쇼 경고가 들어가요.</p>
-      {everyone.length < 3 && (
-        <p className="text-sub text-sm">
-          둘뿐인 모임에서는 &lsquo;안 왔어요&rsquo;만으로 경고가 확정되지 않아요. 불쾌한 일이 있었다면 신고해 주세요.
-        </p>
-      )}
+      <p className="text-sub text-sm">좋았어요를 받으면 매너온도가 올라가요. 약속을 어기거나 불쾌한 일이 있었다면 신고해 주세요.</p>
       <ul className="lounge-gath-reviews">
         {others.map((m) => {
           const mine = g.myReviews[m.id];
@@ -839,7 +845,6 @@ function ReviewSection({
               <div className="lounge-gath-review__who">
                 <Avatar user={m} size="md" />
                 <span className="lounge-gath-seat__name">{m.nickname}</span>
-                {g.noshowIds.includes(m.id) && <Badge tone="danger">노쇼 확정</Badge>}
               </div>
               <div className="lounge-gath-marks" role="group" aria-label={`${m.nickname} 님 평가`}>
                 {MARKS.map((mark) => (
@@ -855,6 +860,9 @@ function ReviewSection({
                     {REVIEW_LABEL[mark]}
                   </button>
                 ))}
+                <button type="button" className="lounge-gath-mark lounge-gath-mark--report" onClick={() => onReport(m)}>
+                  신고
+                </button>
               </div>
             </li>
           );
@@ -904,7 +912,7 @@ function HostSection({
                       <Avatar user={a.user} size="md" />
                       <span className="lounge-gath-person__text">
                         <span className="lounge-gath-person__name">{a.user.nickname}</span>
-                        <span className="lounge-gath-person__sub">{a.user.college}</span>
+                        <span className="lounge-gath-person__sub">{factLine(a.user)}</span>
                         <TemperatureBadge value={a.user.temperature} />
                       </span>
                     </button>

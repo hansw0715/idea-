@@ -18,6 +18,7 @@ import { LoungeProvider } from './lounge/LoungeContext';
 import { LOUNGE_ENABLED } from './features';
 import { SchoolProvider } from './school/SchoolContext';
 import LoungePage from './lounge/LoungePage';
+import MeetupPage from './lounge/MeetupPage';
 import ChatRoomPage from './lounge/ChatRoomPage';
 import AdminPage from './lounge/AdminPage';
 
@@ -135,6 +136,7 @@ export default function App() {
                   {LOUNGE_ENABLED && (
                     <>
                       <Route path="/lounge" element={<Protected><LoungePage /></Protected>} />
+                      <Route path="/lounge/meetup" element={<Protected><MeetupPage /></Protected>} />
                       <Route path="/lounge/rooms/:id" element={<Protected><ChatRoomPage /></Protected>} />
                       <Route path="/admin" element={<Protected><AdminPage /></Protected>} />
                     </>

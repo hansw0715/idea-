@@ -380,10 +380,9 @@
   color: var(--c-action-text);
   font-weight: var(--fw-bold);
 }
-.lounge-gath-mark--noshow[aria-pressed='true'] {
-  border-color: var(--c-danger);
-  background: var(--c-danger-bg);
+.lounge-gath-mark--report {
   color: var(--c-danger-text);
+  border-color: var(--c-danger);
 }
 .lounge-gath-mark[aria-busy='true'] {
   color: var(--c-text-muted);

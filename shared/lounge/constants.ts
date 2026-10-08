@@ -16,21 +16,39 @@ export const COLLEGES = [
 ] as const;
 export type College = (typeof COLLEGES)[number];
 
-/** 아바타 얼굴. 키는 DB 에 저장되고, 화면은 같은 키로 이모지를 그린다. */
-export const AVATARS = [
-  { key: 'bear', emoji: '🐻', label: '곰' },
-  { key: 'rabbit', emoji: '🐰', label: '토끼' },
-  { key: 'fox', emoji: '🦊', label: '여우' },
-  { key: 'cat', emoji: '🐱', label: '고양이' },
-  { key: 'dog', emoji: '🐶', label: '강아지' },
-  { key: 'panda', emoji: '🐼', label: '판다' },
-  { key: 'lion', emoji: '🦁', label: '사자' },
-  { key: 'frog', emoji: '🐸', label: '개구리' },
-  { key: 'penguin', emoji: '🐧', label: '펭귄' },
-  { key: 'owl', emoji: '🦉', label: '부엉이' },
-  { key: 'tiger', emoji: '🐯', label: '호랑이' },
-  { key: 'koala', emoji: '🐨', label: '코알라' },
+/** 아바타 캐릭터 (같은 캐릭터끼리 이어서 보여 준다) */
+export const AVATAR_CHARACTERS = [
+  { key: 'turtle', label: '거북이' },
+  { key: 'cat', label: '고양이' },
+  { key: 'frog', label: '개구리' },
+  { key: 'chick', label: '병아리' },
 ] as const;
+export type AvatarCharacter = (typeof AVATAR_CHARACTERS)[number]['key'];
+
+/**
+ * 아바타(프로필 이미지). 키는 DB 에 저장되는 값이고, 화면은 `/avatars/<키>.webp` 이미지를 그린다.
+ * 배열 순서가 곧 고르는 화면의 순서다: 캐릭터별로 묶고, 캐릭터 안에서는 감정이 비슷한 것끼리 이어 둔다.
+ */
+export const AVATARS = [
+  { key: 'turtle-smile', character: 'turtle', label: '거북이 · 미소' },
+  { key: 'turtle-laugh', character: 'turtle', label: '거북이 · 활짝 웃음' },
+  { key: 'turtle-cool', character: 'turtle', label: '거북이 · 멋짐' },
+  { key: 'turtle-love', character: 'turtle', label: '거북이 · 설렘' },
+  { key: 'turtle-shy', character: 'turtle', label: '거북이 · 부끄러움' },
+  { key: 'turtle-proud', character: 'turtle', label: '거북이 · 뿌듯함' },
+  { key: 'turtle-cry', character: 'turtle', label: '거북이 · 울음' },
+  { key: 'turtle-angry', character: 'turtle', label: '거북이 · 화남' },
+  { key: 'turtle-sleep', character: 'turtle', label: '거북이 · 졸림' },
+  { key: 'turtle-dizzy', character: 'turtle', label: '거북이 · 어지러움' },
+  { key: 'cat-surprised', character: 'cat', label: '고양이 · 놀람' },
+  { key: 'cat-think', character: 'cat', label: '고양이 · 고민' },
+  { key: 'cat-excited', character: 'cat', label: '고양이 · 신남' },
+  { key: 'cat-angry', character: 'cat', label: '고양이 · 화남' },
+  { key: 'cat-sleepy', character: 'cat', label: '고양이 · 졸림' },
+  { key: 'frog-tongue', character: 'frog', label: '개구리 · 메롱' },
+  { key: 'chick-love', character: 'chick', label: '병아리 · 하트' },
+] as const;
+export const DEFAULT_AVATAR = AVATARS[0].key;
 export type AvatarKey = (typeof AVATARS)[number]['key'];
 
 /** 아바타 색. 키 m1~m8 은 CSS 변수 --m-1 ~ --m-8 (tokens.css 의 범주 색)에 대응한다. */
@@ -177,3 +195,12 @@ export const REPORT_DETAIL_MAX = 500;
 export const MAX_MESSAGE_LENGTH = 500;
 export const CHAT_POLL_MS = 3000;
 export const SYSTEM_OPEN_MESSAGE = '자리가 다 찼어요! 여기서 만날 시간과 장소를 정해 보세요. 연락처는 공개되지 않아요.';
+
+// ───────────── 밥약 즉시 매칭 (택시식) ─────────────
+
+/** 이 거리 안에 있는 대기자끼리만 이어 준다 */
+export const QUICK_RADIUS_M = 1000;
+/** 대기하다가 아무도 없으면 이 시간(분) 뒤에 대기가 끝난다 */
+export const QUICK_WAIT_MIN = 10;
+/** 즉시 매칭이 확정되면 만들어지는 밥약의 약속 시각 = 확정 시각 + 이 시간(분) */
+export const QUICK_MEET_AFTER_MIN = 20;

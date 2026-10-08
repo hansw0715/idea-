@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { COLLEGES, AVATARS, AVATAR_COLORS } from '../../../shared/lounge/constants.js';
 import { currentStatus, isFull, memberIds, totalSeatsLeft } from '../domain/gathering.js';
-import { validateProfileInput } from '../services/profile.js';
 import {
   DEMO_PASSWORD,
   DEMO_USERS,
@@ -40,20 +39,14 @@ describe('DEMO_USERS', () => {
     expect(new Set(DEMO_USERS.map((u) => u.nickname)).size).toBe(8);
   });
 
-  it('모든 프로필이 PUT /me 와 같은 검증을 통과한다', () => {
+  it('모든 데모 프로필에 학과가 있고(상대에게 보인다) 닉네임은 2~8자, 입학년도는 범위 안이다', () => {
     for (const u of DEMO_USERS) {
-      const r = validateProfileInput(
-        {
-          nickname: u.nickname,
-          college: u.college,
-          department: u.department,
-          admissionYear: demoAdmissionYear(u, NOW),
-          avatar: u.avatar,
-          avatarColor: u.avatarColor,
-        },
-        NOW,
-      );
-      expect(r.ok, u.email).toBe(true);
+      expect(u.department.length, u.email).toBeGreaterThan(0);
+      expect([...u.nickname].length, u.email).toBeGreaterThanOrEqual(2);
+      expect([...u.nickname].length, u.email).toBeLessThanOrEqual(8);
+      const year = demoAdmissionYear(u, NOW);
+      expect(year, u.email).toBeGreaterThanOrEqual(2015);
+      expect(year, u.email).toBeLessThanOrEqual(2026);
     }
   });
 

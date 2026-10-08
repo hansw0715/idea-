@@ -120,7 +120,7 @@ async function makeUser(over: { department?: string; banned?: boolean } = {}): P
   seq += 1;
   const id = await db.insert(
     `INSERT INTO users (email, name, password_hash, nickname, college, department, admission_year, avatar, avatar_color, profile_done, banned)
-     VALUES (?, ?, 'x', ?, 'IT공과대학', ?, 2022, 'bear', 'm1', TRUE, ?) RETURNING id`,
+     VALUES (?, ?, 'x', ?, 'IT공과대학', ?, 2022, 'turtle-smile', 'm1', TRUE, ?) RETURNING id`,
     [`quick${seq}-${Date.now()}@hansung.ac.kr`, `실명${seq}`, `닉${seq}`, over.department ?? '컴퓨터공학부', over.banned ?? false],
   );
   const u = await users.findUser(id);
@@ -194,7 +194,7 @@ describe('조건 일치', () => {
     expect(await roomRows(date)).toHaveLength(1);
   });
 
-  it('응답에 실명·이메일·학과·내부 태그가 없고, 남의 대기표 내용도 없다', async () => {
+  it('응답에 실명·이메일·내부 태그가 없고, 남의 대기표 내용도 없다', async () => {
     const [a, b, c] = await makeUsers(3);
     const date = dateAfter(2);
     must(await quick.requestQuickMatch(a, input(date, { bands: ['b11'], tags: ['같은 과만'] })));
@@ -210,7 +210,7 @@ describe('조건 일치', () => {
     must(await quick.requestQuickMatch(c, input(date, { bands: ['b19'] }))); // b 와 짝이 된다
     const stateA = await stateOf(a);
     const text = JSON.stringify([stateA, await stateOf(b), await stateOf(c)]);
-    for (const secret of ['실명', '@hansung.ac.kr', '컴퓨터공학부', 'dept:', 'password']) expect(text).not.toContain(secret);
+    for (const secret of ['실명', '@hansung.ac.kr', 'dept:', 'password']) expect(text).not.toContain(secret);
     expect(stateA.request?.tags).toEqual(['같은 과만']); // 내가 고른 태그는 보이되 내부 태그는 없다
     expect(stateA.request?.id).toBe(aTicketId);
     expect(stateA.room).toBeNull();
@@ -1006,7 +1006,7 @@ describe('후보 방의 멤버가 탈퇴하거나 정지되면', () => {
     expect(rooms.find((r) => r.id === two.roomId)?.status).toBe('cancelled');
   });
 
-  it('이미 확정된 방은 건드리지 않는다 (모임은 모임 쪽 규칙을 따른다)', async () => {
+  it('확정된 방의 멤버가 탈퇴하면 그 약속은 끝난 일이라 남은 사람은 다음 밥약을 잡을 수 있다', async () => {
     const date = dateAfter(115);
     const { people, roomId } = await pairUp(date);
     for (const p of people) must(await quick.answerRoom(p.id, roomId, 'accepted'));
@@ -1015,8 +1015,8 @@ describe('후보 방의 멤버가 탈퇴하거나 정지되면', () => {
     await removeUser(leaves);
 
     const s = await stateOf(stays);
-    expect(s.room?.status).toBe('confirmed');
-    expect(s.gatheringId).toBeTruthy();
-    expect(await allGatherings()).toHaveLength(1);
+    expect(s.room).toBeNull();
+    expect(s.gatheringId).toBeNull();
+    expect((await allGatherings())[0].data.status).toBe('cancelled');
   });
 });

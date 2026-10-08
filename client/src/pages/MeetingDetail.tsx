@@ -8,6 +8,8 @@ import type { GridEntry } from '../components/TimetableGrid';
 import BookingFlow from '../components/BookingFlow';
 import SchoolBookSheet from '../school/SchoolBookSheet';
 import SchoolLinkSheet from '../school/SchoolLinkSheet';
+import { schoolApi } from '../school/api';
+import { schoolErrorMessage } from '../school/errors';
 import { useSchool } from '../school/SchoolContext';
 import {
   Alert,
@@ -89,6 +91,8 @@ export default function MeetingDetail() {
 
   const [checkingId, setCheckingId] = useState<number | null>(null);
   const [checkNote, setCheckNote] = useState<CheckNote | null>(null);
+  // 학교 쪽 취소가 안 됐을 때: 앱의 예약만 지울지 묻는 안내
+  const [cancelFail, setCancelFail] = useState<{ r: Reservation; text: string } | null>(null);
 
   // 학교에 바로 신청하기: 시트는 행이 아니라 화면 맨 아래에 하나만 둔다
   // (신청이 확인되면 그 행의 버튼이 사라지는데, 그래도 결과 화면은 남아 있어야 한다)
@@ -302,22 +306,44 @@ export default function MeetingDetail() {
     loadAll();
   }
 
+  /**
+   * 예약 취소 = 실제 취소. 학교에 신청한 예약은 학교 신청내역에서 취소가 확인될 때만 지워진다.
+   * 학교 쪽이 안 되면(연동 없음·취소 방법을 못 찾음·확인 실패) 아무것도 지우지 않고 이유를 알린다 — 앱에서만 지우는 길은 없다.
+   * (학교에 보낸 신청이 없는 예약 계획은 서버가 "취소할 것이 없다"고 답해 그대로 정리된다.)
+   */
   async function cancelReservation(r: Reservation) {
+    let schoolError: unknown = null;
     const ok = await confirm({
       title: `${fmtDate(r.date)} ${r.facilityName} 예약을 취소할까요?`,
-      message:
-        '우리 앱에 잡아 둔 예약 계획만 삭제됩니다. 학교 사이트에 이미 신청한 예약은 취소되지 않으니, 학교 사이트에서 따로 취소해 주세요.',
+      message: '학교에 신청한 예약이면 학교 신청내역에서 실제로 취소해요. 취소하면 되돌릴 수 없어요.',
       tone: 'danger',
       confirmLabel: '예약 취소하기',
       cancelLabel: '돌아가기',
       run: async () => {
-        await api.del(`/reservations/${r.id}`);
+        try {
+          if (school.linked && school.canUse) {
+            // 확인창에서 직접 누른 한 번만 학교에 취소를 보낸다. 실패해도 자동으로 다시 보내지 않는다.
+            await school.withCredentials((creds) => schoolApi.bookCancel(creds, r.id));
+          }
+          // 학교에 신청한 예약은 위에서 실제 취소가 끝난 뒤에만 서버가 지워 준다(연동이 없으면 서버가 거절한다).
+          await api.del(`/reservations/${r.id}`);
+        } catch (err) {
+          schoolError = err;
+        }
       },
     });
     if (!ok) return;
+    if (schoolError) {
+      // 서버가 준 문장(취소 방법을 못 찾음·확인 못 함 등)이 가장 정확하다. 없으면 일반 학교 오류 문장.
+      const raw = schoolError instanceof Error ? schoolError.message : '';
+      setCancelFail({ r, text: raw || schoolErrorMessage(schoolError) });
+      loadAll();
+      return;
+    }
     // 눌렀던 '예약 취소하기' 버튼은 목록에서 사라지므로, 포커스가 본문 맨 위로 떨어지지 않게 '예약 현황' 제목으로 옮긴다.
     resHeadingRef.current?.focus();
     setCheckNote(null);
+    setCancelFail(null);
     toast('예약을 취소했습니다.');
     loadAll();
   }
@@ -660,6 +686,28 @@ export default function MeetingDetail() {
               예약 현황
             </h2>
           </div>
+
+          {cancelFail && (
+            <Alert
+              tone="danger"
+              title="예약을 취소하지 못했어요"
+              className="mtg-res-note"
+              actions={
+                <>
+                  {!(school.linked && school.canUse) && (
+                    <Button variant="secondary" size="sm" onClick={() => setLinkOpen(true)}>
+                      학교 계정 연동하기
+                    </Button>
+                  )}
+                  <Button variant="text" size="sm" onClick={() => setCancelFail(null)}>
+                    닫기
+                  </Button>
+                </>
+              }
+            >
+              {cancelFail.text}
+            </Alert>
+          )}
 
           {checkNote && (
             <Alert

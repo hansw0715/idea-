@@ -22,7 +22,9 @@ import {
   normalizeInfo,
   normalizeItems,
   normalizeSetup,
+  findCancelControl,
   parseMine,
+  parseMineRaw,
   parseServerCheck,
   parseSpaces,
   validationPayload,
@@ -198,6 +200,74 @@ export class ResveClient {
       out.push(...rows);
     }
     return out;
+  }
+
+  // ── 신청 취소 ──────────────────────────────────────────────────
+
+  /** 내 신청내역의 원본 행들 (취소 컨트롤을 찾으려고 HTML 을 함께 가진다) */
+  private async mineRaw(key: string): Promise<{ row: MineRow; html: string }[]> {
+    const system = requireSystem(key);
+    this.requireLogin(system);
+    const out: { row: MineRow; html: string }[] = [];
+    const seen = new Set<string>();
+    for (let page = 1; page <= MINE_MAX_PAGES; page++) {
+      const res = await this.http.post(`/resve/${system.site}/${system.fn}/artclView.do`, [
+        ['page', String(page)],
+        ['prgrsCd', ''],
+      ]);
+      assertReachable(res);
+      const rows = parseMineRaw(res.text);
+      if (rows.length === 0 || seen.has(rows[0].row.no)) break;
+      seen.add(rows[0].row.no);
+      out.push(...rows);
+    }
+    return out;
+  }
+
+  /**
+   * 내 신청내역에서 (날짜·공간·시작 시각)이 맞고 아직 취소·거절되지 않은 행을 찾아, 학교가 그 행에 보여 주는 "취소" 컨트롤을 따라간다.
+   * 앱이 알아볼 수 있는 방식(주소가 있는 링크·폼)일 때만 보내고, 주소는 `/resve/` 아래로만 허용한다.
+   * 어떤 요청인지 알 수 없는 경우(스크립트뿐)나 취소 컨트롤이 없으면 아무것도 보내지 않고 SchoolUnavailable.
+   * 보낸 뒤 신청내역을 다시 읽어 취소된 것이 확인될 때만 성공이다. 자동 재시도는 없다.
+   * 반환: 'cancelled' | 'not-found'(학교 신청내역에 그 신청이 없다)
+   */
+  async cancelMine(key: string, want: { date: string; space: string; startHm: string }): Promise<'cancelled' | 'not-found'> {
+    const system = requireSystem(key);
+    const matches = (r: MineRow) =>
+      r.date.includes(want.date) && r.space.includes(want.space) && r.time.includes(want.startHm) && !/취소|거절|반려/.test(r.status);
+    const rows = await this.mineRaw(key);
+    const hit = rows.find((r) => matches(r.row));
+    if (!hit) return 'not-found';
+
+    const control = findCancelControl(hit.html);
+    if (!control || control.kind === 'script') {
+      throw new SchoolUnavailable(
+        '학교 신청내역에서 앱이 쓸 수 있는 취소 방법을 찾지 못했어요. 학교 사이트의 내 신청내역에서 직접 취소해 주세요.',
+      );
+    }
+    const base = `/resve/${system.site}/${system.fn}/`;
+    const toPath = (raw: string): string => {
+      const path = raw.startsWith('/') ? raw : base + raw.replace(/^\.\//, '');
+      if (!path.startsWith('/resve/') || path.includes('..') || /^[a-z]+:/i.test(raw)) {
+        throw new SchoolUnavailable('학교 취소 주소를 확인하지 못해서 보내지 않았어요. 학교 사이트에서 직접 취소해 주세요.');
+      }
+      return path;
+    };
+    const res =
+      control.kind === 'link'
+        ? await this.http.get(toPath(control.href))
+        : control.method === 'get'
+          ? await this.http.get(`${toPath(control.action)}?${new URLSearchParams(control.fields).toString()}`)
+          : await this.http.post(toPath(control.action), control.fields);
+    assertReachable(res);
+    const alerts = extractAlerts(res.text);
+    if (alerts.length > 0 && /불가|실패|오류|없습니다|할 수 없/.test(alerts.join(' '))) throw new SchoolRejected(alerts.join(' / '));
+
+    const after = (await this.mineRaw(key)).find((r) => r.row.no === hit.row.no);
+    if (after && !/취소/.test(after.row.status)) {
+      throw new SchoolUnavailable('취소 요청을 보냈지만 학교 신청내역에서 취소된 것을 확인하지 못했어요. 학교 사이트의 내 신청내역을 확인해 주세요.');
+    }
+    return 'cancelled';
   }
 
   // ── 신청 ───────────────────────────────────────────────────────

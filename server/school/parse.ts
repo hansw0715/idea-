@@ -709,3 +709,59 @@ export function extractAlerts(text: string): string[] {
   }
   return out.slice(0, 3);
 }
+
+
+// ── 신청 취소 (학교 신청내역 행에서 "취소" 컨트롤 찾기) ───────────────
+
+/** 내 신청내역의 한 행: 읽은 값 + 그 행의 원본 HTML(취소 컨트롤을 찾는 데만 쓴다. 응답·로그에 내보내지 않는다) */
+export type MineRowRaw = { row: MineRow; html: string };
+
+export function parseMineRaw(html: string): MineRowRaw[] {
+  const out: MineRowRaw[] = [];
+  for (const tr of blocks(html, 'tr')) {
+    if (tr.includes('no-data')) continue;
+    const cells = [...blocks(tr, 'td')].map((c) => truncate(cleanText(c.slice(0, CELL_RAW_MAX)), CELL_MAX));
+    if (cells.length >= 8) {
+      out.push({ row: { no: cells[0], space: cells[1], date: cells[2], time: cells[3], applied: cells[6], status: cells[7] }, html: tr });
+    }
+  }
+  return out;
+}
+
+/** 학교가 그 행에 보여 주는 "취소" 컨트롤. 앱이 알아볼 수 있는 방식(주소가 있는 링크·폼)만 따라간다. */
+export type CancelControl =
+  | { kind: 'link'; href: string }
+  | { kind: 'form'; action: string; method: 'get' | 'post'; fields: [string, string][] }
+  | { kind: 'script' }; // onclick 스크립트뿐이라 어떤 요청인지 알 수 없다 → 앱이 대신 보내지 않는다
+
+const attr = (tag: string, name: string): string | null => {
+  const m = new RegExp(String.raw`\b${name}\s*=\s*("([^"]*)"|'([^']*)')`, 'i').exec(tag);
+  return m ? unescapeHtml(m[2] ?? m[3] ?? '') : null;
+};
+
+export function findCancelControl(rowHtml: string): CancelControl | null {
+  // ① 취소라고 적힌 폼(숨은 입력값 포함)
+  for (const m of rowHtml.matchAll(/(<form\b[^>]*>)([\s\S]*?)<\/form>/gi)) {
+    const tag = m[1];
+    const body = m[2];
+    if (!/취소/.test(body)) continue;
+    const action = attr(tag, 'action');
+    if (!action) continue;
+    const fields: [string, string][] = [];
+    for (const inp of body.matchAll(/<input\b[^>]*>/gi)) {
+      const name = attr(inp[0], 'name');
+      if (name && (attr(inp[0], 'type') ?? 'text').toLowerCase() === 'hidden') fields.push([name, attr(inp[0], 'value') ?? '']);
+    }
+    return { kind: 'form', action, method: (attr(tag, 'method') ?? 'post').toLowerCase() === 'get' ? 'get' : 'post', fields };
+  }
+  // ② 취소라고 적힌 링크·버튼
+  for (const m of rowHtml.matchAll(/<(a|button|input)\b([^>]*)>([\s\S]*?)(?:<\/\1>|(?=<))/gi)) {
+    const tag = m[2];
+    const label = `${cleanText(m[3] ?? '')} ${attr(tag, 'title') ?? ''} ${attr(tag, 'value') ?? ''} ${attr(tag, 'aria-label') ?? ''}`;
+    if (!/취소/.test(label)) continue;
+    const href = attr(tag, 'href');
+    if (m[1].toLowerCase() === 'a' && href && !/^(javascript:|#)/i.test(href.trim())) return { kind: 'link', href: href.trim() };
+    return { kind: 'script' };
+  }
+  return null;
+}

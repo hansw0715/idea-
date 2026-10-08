@@ -65,7 +65,7 @@ async function makeUser(over: { banned?: boolean; admin?: boolean } = {}): Promi
   const id = await insert(
     `INSERT INTO users (email, username, name, password_hash, nickname, college, department, admission_year,
                         avatar, avatar_color, profile_done, banned, is_admin)
-     VALUES (?, ?, ?, ?, ?, 'IT공과대학', ?, 2024, 'bear', 'm1', TRUE, ?, ?) RETURNING id`,
+     VALUES (?, ?, ?, ?, ?, 'IT공과대학', ?, 2024, 'turtle-smile', 'm1', TRUE, ?, ?) RETURNING id`,
     [email, email.split('@')[0], `실명${seq}`, HASH, `닉${seq}`, `학과${seq}`, over.banned ?? false, over.admin ?? false],
   );
   const user = await findUser(id);
@@ -175,7 +175,7 @@ describe('주최자 탈퇴 — 다른 참여자가 있는 모임', () => {
     expect(view.host.id).toBe(a.id);
     expect(view.status).toBe('full');
     expect(view.roomOpen).toBe(true);
-    // 탈퇴자의 자리는 unknownUser 로 남는다 (계약 §3.4).
+    // 3명 이상 모임은 그대로 둔다: 탈퇴자의 자리는 unknownUser 로 남는다 (계약 §3.4).
     const names = view.slots.flatMap((s) => s.members.map((m) => m.nickname));
     expect(names).toContain('(탈퇴한 사용자)');
     expect((await mineViews(c)).map((v) => v.id)).toContain(g.id);

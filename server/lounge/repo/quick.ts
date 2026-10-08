@@ -10,13 +10,22 @@
  * 대기표의 status·room_id·user_id 는 **컬럼이 진실**이다(위 UPDATE 가 컬럼만 바꾸므로).
  * data(JSONB)에는 바뀌지 않는 조건만 넣고, 읽을 때 컬럼 값을 합쳐서 돌려준다 — 두 군데가 어긋날 수 없다.
  * 방은 문서 전체를 매번 다시 쓰므로 data 안에 status 가 있고, 같은 UPDATE 에서 컬럼도 함께 맞춘다.
+ *
+ * 즉시 매칭의 위치(data.loc)는 대기 중에만 있다. 대기표가 waiting 을 벗어나는 모든 UPDATE 는
+ * `data = data - 'loc'` 를 **같은 문장에서** 함께 해서, 위치가 남은 채로 matched·cancelled·expired 가 되는 순간이 없다.
  */
 import { all, get, run } from '../../db.js';
-import type { QuickRequest, QuickRoom } from '../domain/quickMatch.js';
+import type { QuickLocation, QuickRequest, QuickRoom } from '../domain/quickMatch.js';
 
 // ───────────── 행 ↔ 문서 ─────────────
 
-type RequestDoc = Pick<QuickRequest, 'id' | 'date' | 'placeType' | 'size' | 'bands' | 'tags' | 'createdAt'>;
+type RequestDoc = Pick<QuickRequest, 'id' | 'date' | 'placeType' | 'size' | 'bands' | 'tags' | 'createdAt'> & {
+  instant?: boolean;
+  loc?: QuickLocation;
+};
+
+/** 위치를 지우는 SET 조각 (대기표가 waiting 을 벗어나는 UPDATE 마다 붙인다) */
+const DROP_LOC = `data = data - 'loc'`;
 
 interface RequestRow {
   id: string;
@@ -63,6 +72,8 @@ export async function insertRequest(r: QuickRequest): Promise<void> {
     bands: r.bands,
     tags: r.tags,
     createdAt: r.createdAt,
+    ...(r.instant ? { instant: true } : {}),
+    ...(r.instant && r.loc ? { loc: r.loc } : {}),
   };
   await run(
     `INSERT INTO lounge_quick_requests (id, user_id, data, status, room_id, created_at)
@@ -83,9 +94,11 @@ export async function listWaiting(): Promise<QuickRequest[]> {
   return rows.map(requestFromRow);
 }
 
+/** 옛 방식 대기 인원 (즉시 대기표는 위치 반경으로 따로 센다) */
 export async function countWaiting(): Promise<number> {
   const row = await get<{ c: number }>(
-    `SELECT COUNT(*)::int AS c FROM lounge_quick_requests WHERE status = 'waiting' AND ${NOT_BANNED}`,
+    `SELECT COUNT(*)::int AS c FROM lounge_quick_requests
+      WHERE status = 'waiting' AND data->>'instant' IS DISTINCT FROM 'true' AND ${NOT_BANNED}`,
   );
   return Number(row?.c ?? 0);
 }
@@ -107,18 +120,22 @@ export async function listActiveByUser(userId: string): Promise<QuickRequest[]> 
  */
 export async function claimWaiting(requestId: string, roomId: string): Promise<boolean> {
   const { changes } = await run(
-    `UPDATE lounge_quick_requests SET status = 'matched', room_id = ? WHERE id = ? AND status = 'waiting'`,
+    `UPDATE lounge_quick_requests SET status = 'matched', room_id = ?, ${DROP_LOC} WHERE id = ? AND status = 'waiting'`,
     [roomId, requestId],
   );
   return changes === 1;
 }
 
-/** 내가 선점했던 대기표만 waiting 으로 되돌린다 (다른 방에 붙은 것은 건드리지 않는다). */
-export async function releaseClaim(requestId: string, roomId: string): Promise<void> {
+/**
+ * 내가 선점했던 대기표만 waiting 으로 되돌린다 (다른 방에 붙은 것은 건드리지 않는다).
+ * 즉시 대기표는 선점할 때 위치가 지워졌으므로, 호출한 쪽이 갖고 있던 위치(loc)를 함께 돌려놓는다.
+ */
+export async function releaseClaim(requestId: string, roomId: string, loc?: QuickLocation): Promise<void> {
   await run(
-    `UPDATE lounge_quick_requests SET status = 'waiting', room_id = NULL
-      WHERE id = ? AND room_id = ? AND status = 'matched'`,
-    [requestId, roomId],
+    `UPDATE lounge_quick_requests SET status = 'waiting', room_id = NULL${
+      loc ? `, data = data || jsonb_build_object('loc', ?::jsonb)` : ''
+    } WHERE id = ? AND room_id = ? AND status = 'matched'`,
+    loc ? [JSON.stringify(loc), requestId, roomId] : [requestId, roomId],
   );
 }
 
@@ -130,7 +147,7 @@ export async function releaseClaim(requestId: string, roomId: string): Promise<v
  */
 export async function cancelRequest(requestId: string): Promise<{ roomId: string | null } | null> {
   const row = await get<{ room_id: string | null }>(
-    `UPDATE lounge_quick_requests SET status = 'cancelled'
+    `UPDATE lounge_quick_requests SET status = 'cancelled', ${DROP_LOC}
       WHERE id = ? AND status <> 'cancelled' RETURNING room_id`,
     [requestId],
   );
@@ -140,7 +157,7 @@ export async function cancelRequest(requestId: string): Promise<{ roomId: string
 /** 정지된 사용자가 기다리고 있던 대기표를 닫는다. */
 export async function cancelBannedWaiting(): Promise<void> {
   await run(
-    `UPDATE lounge_quick_requests SET status = 'cancelled'
+    `UPDATE lounge_quick_requests SET status = 'cancelled', ${DROP_LOC}
       WHERE status = 'waiting' AND user_id IN (SELECT id FROM users WHERE banned)`,
   );
 }
@@ -148,7 +165,7 @@ export async function cancelBannedWaiting(): Promise<void> {
 /** 방에 붙어 있는 한 사람의 대기표만 닫는다 (확정 직전에 탈퇴·정지된 참여자 처리용). */
 export async function cancelRoomTicket(roomId: string, userId: string): Promise<void> {
   await run(
-    `UPDATE lounge_quick_requests SET status = 'cancelled' WHERE room_id = ? AND user_id = ? AND status = 'matched'`,
+    `UPDATE lounge_quick_requests SET status = 'cancelled', ${DROP_LOC} WHERE room_id = ? AND user_id = ? AND status = 'matched'`,
     [roomId, Number(userId)],
   );
 }
@@ -157,8 +174,20 @@ export async function cancelRoomTicket(roomId: string, userId: string): Promise<
 export async function cancelWaiting(requestIds: string[]): Promise<void> {
   if (requestIds.length === 0) return;
   await run(
-    `UPDATE lounge_quick_requests SET status = 'cancelled' WHERE id = ANY(?::text[]) AND status = 'waiting'`,
+    `UPDATE lounge_quick_requests SET status = 'cancelled', ${DROP_LOC} WHERE id = ANY(?::text[]) AND status = 'waiting'`,
     [requestIds],
+  );
+}
+
+/**
+ * 즉시 매칭 대기표 중 `cutoff` 이전에 만들어졌는데 아직 waiting 인 것을 만료로 닫는다 (위치도 같은 UPDATE 에서 지운다).
+ * 선점(claimWaiting)도 `status='waiting'` 일 때만 되므로, 만료와 선점이 겹쳐도 어느 한 쪽만 이긴다.
+ */
+export async function expireInstantWaiting(cutoff: string): Promise<void> {
+  await run(
+    `UPDATE lounge_quick_requests SET status = 'expired', ${DROP_LOC}
+      WHERE status = 'waiting' AND data->>'instant' = 'true' AND created_at <= ?::timestamptz`,
+    [cutoff],
   );
 }
 
@@ -166,14 +195,17 @@ export async function cancelWaiting(requestIds: string[]): Promise<void> {
  * 깨졌거나 사라진 방에 붙어 있는 대기표를 정리한다. (roomId 를 주면 그 방만)
  *  - 방에서 '거절'한 사람의 대기표는 cancelled (거절 = 이 매칭을 안 하겠다는 뜻)
  *  - 나머지는 waiting 으로 복귀 (다시 짝을 찾는다)
+ *  - 단, 즉시 매칭 대기표는 위치가 이미 지워졌으니 다시 찾을 수 없다 → expired (클라이언트가 다시 위치를 보낸다)
  * 한 문장으로 끝나서 두 요청이 동시에 불러도 같은 결과가 된다. 돌려주는 값은 waiting 으로 돌아간 대기표 id.
  */
 export async function releaseDeadRoomTickets(roomId?: string): Promise<string[]> {
+  const instant = `(q.data->>'instant') = 'true'`;
   const declined = `(SELECT r.data->'answers'->>(q.user_id::text) FROM lounge_quick_rooms r WHERE r.id = q.room_id) = 'declined'`;
   const rows = await all<{ id: string; status: string }>(
     `UPDATE lounge_quick_requests q
-        SET status = CASE WHEN ${declined} THEN 'cancelled' ELSE 'waiting' END,
-            room_id = CASE WHEN ${declined} THEN q.room_id ELSE NULL END
+        SET status = CASE WHEN ${declined} THEN 'cancelled' WHEN ${instant} THEN 'expired' ELSE 'waiting' END,
+            room_id = CASE WHEN ${declined} THEN q.room_id ELSE NULL END,
+            ${DROP_LOC}
       WHERE q.status = 'matched' AND q.room_id IS NOT NULL
         ${roomId ? 'AND q.room_id = ?' : ''}
         AND NOT EXISTS (SELECT 1 FROM lounge_quick_rooms r WHERE r.id = q.room_id AND r.status <> 'cancelled')

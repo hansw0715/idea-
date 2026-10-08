@@ -82,6 +82,43 @@ async function releaseHosted(gatheringId: string, leavingId: string): Promise<Ou
   throw new Error(`모임 ${gatheringId} 의 주최자를 넘기지 못했습니다 (동시에 계속 바뀌었습니다).`);
 }
 
+/** 혼자뿐인 모임은 지우고, 정원 2명짜리 밥약은 취소하고 대화를 비운다. 그 밖의 모임은 건드리지 않는다. */
+async function dropSeat(gatheringId: string, leavingId: string): Promise<void> {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const row = await get<{ data: unknown; version: number }>(
+      'SELECT data, version FROM lounge_gatherings WHERE id = ?',
+      [gatheringId],
+    );
+    if (!row) return;
+    const g = parse(row.data);
+    if (!g.slots.some((s) => s.memberIds.includes(leavingId))) return;
+    const slots = g.slots.map((s) => ({ ...s, memberIds: s.memberIds.filter((m) => m !== leavingId) }));
+    const remaining = new Set(slots.flatMap((s) => s.memberIds));
+    const capacity = g.slots.reduce((n, s) => n + s.capacity, 0);
+    if (remaining.size === 0) {
+      const { changes } = await run('DELETE FROM lounge_gatherings WHERE id = ? AND version = ?', [gatheringId, row.version]);
+      if (changes === 1) {
+        await run('DELETE FROM lounge_messages WHERE room_id = ?', [gatheringId]);
+        return;
+      }
+    } else {
+      // 3명 이상이 모이는 일반 모임은 그대로 둔다 — 이미 열린 단톡방을 남은 사람들이 계속 쓴다(탈퇴자는 "탈퇴한 사용자"로 보인다).
+      // 정원이 2명뿐인 밥약만 취소하고 대화를 비운다: 둘 중 하나가 사라진 약속과 방은 의미가 없고, 다음 밥약을 막으면 안 된다.
+      if (!(g.kind === 'meal' && capacity === 2)) return;
+      const { changes } = await run(
+        "UPDATE lounge_gatherings SET data = ?::jsonb, status = 'cancelled', version = version + 1 WHERE id = ? AND version = ?",
+        [JSON.stringify({ ...g, slots, status: 'cancelled' }), gatheringId, row.version],
+      );
+      if (changes === 1) {
+        await run('DELETE FROM lounge_messages WHERE room_id = ?', [gatheringId]);
+        return;
+      }
+    }
+    await sleep(10 + Math.random() * 30);
+  }
+  throw new Error(`모임 ${gatheringId} 에서 자리를 빼지 못했습니다 (동시에 계속 바뀌었습니다).`);
+}
+
 /** 다른 모임에 걸어 둔 내 승인 대기 신청을 지운다. */
 async function dropApplications(gatheringId: string, leavingId: string): Promise<boolean> {
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -131,6 +168,13 @@ export async function releaseLoungeForWithdrawal(userId: string): Promise<Withdr
     if (outcome === 'transferred') report.transferred += 1;
     if (outcome === 'deleted') report.deleted += 1;
   }
+
+  // 1-2) 앉아 있던 자리 정리: 주최를 넘긴 모임을 포함해 내가 앉은 모든 모임에서 자리를 뺀다.
+  //      그대로 두면 탈퇴한 사용자가 자리에 남아 "탈퇴한 사용자"로만 보이는 방이 생긴다. 둘뿐인 밥약은 통째로 취소하고 대화를 비운다.
+  const seatedIn = await all<{ id: string }>('SELECT id FROM lounge_gatherings WHERE data @> ?::jsonb', [
+    JSON.stringify({ slots: [{ memberIds: [userId] }] }),
+  ]);
+  for (const { id } of seatedIn) await dropSeat(id, userId);
 
   // 2) 남의 모임에 걸어 둔 신청. 값은 JSON 문자열로 바인딩된다 (repo/gatherings.ts 의 listMine 과 같은 포함 연산자).
   const applied = await all<{ id: string }>(

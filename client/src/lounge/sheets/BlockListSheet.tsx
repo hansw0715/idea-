@@ -3,6 +3,7 @@ import { admissionLabel } from '../../../../shared/lounge';
 import type { PublicUser } from '../../../../shared/lounge';
 import { Alert, Button, EmptyState, LoadingBlock, Sheet, useConfirm, useToast } from '../../ui';
 import { loungeApi } from '../api';
+import { factLine } from '../parts/fact';
 import Avatar from '../parts/Avatar';
 import InlineNotice from '../parts/InlineNotice';
 import '../gathering.css';
@@ -108,7 +109,7 @@ export default function BlockListSheet({ open, onClose, onChanged }: BlockListSh
                 <div className="list__body">
                   <div className="list__main truncate">{u.nickname}</div>
                   <div className="list__sub">
-                    {u.college} · {admissionLabel(u.admissionYear)}
+                    {factLine(u)}
                   </div>
                 </div>
                 <Button variant="secondary" aria-label={`${u.nickname} 차단 해제`} onClick={() => unblock(u)}>

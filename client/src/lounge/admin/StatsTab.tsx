@@ -114,7 +114,7 @@ function Body({ stats: s }: { stats: AdminStats }) {
           <dt className="lounge-admin-stat__label">평균 매너온도</dt>
           <dd className="lounge-admin-stat__value">{noTemp ? '집계 전' : `${s.users.averageTemperature.toFixed(1)}°`}</dd>
           <dd className="lounge-admin-stat__note">
-            {noTemp ? '프로필을 만든 사용자가 아직 없어요' : `${face.emoji} ${face.label} · 프로필 만든 ${s.users.profiled}명 기준`}
+            {noTemp ? '프로필을 만든 사용자가 아직 없어요' : `${face.label} · 프로필 만든 ${s.users.profiled}명 기준`}
           </dd>
         </div>
         <div className="card lounge-admin-stat">

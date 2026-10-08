@@ -76,6 +76,7 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/timetable', label: '시간표', icon: 'calendar' },
   { to: '/meetings', label: '회의', icon: 'users' },
   ...(LOUNGE_ENABLED ? [{ to: '/lounge', label: '라운지', icon: 'lounge' as IconName }] : []),
+  { to: '/account', label: '내 정보', icon: 'user' },
 ];
 
 export function TabBar() {
@@ -163,11 +164,6 @@ export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppH
       )}
       <div className="app-header__actions">
         {actions}
-        {!hasBack && !bare && (
-          <Link to="/account" className="btn btn--icon" aria-label="내 정보">
-            <Icon name="user" className="btn__icon" />
-          </Link>
-        )}
         <button
           type="button"
           className="btn btn--icon"

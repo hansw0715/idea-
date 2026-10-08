@@ -1,0 +1,70 @@
+/* 라운지 첫 화면: 밥약(위) · 미팅(아래) 큰 버튼 두 개 (접두사 lounge-hub-) */
+.lounge-hub {
+  display: grid;
+  gap: var(--sp-4);
+  margin-top: var(--sp-2);
+}
+
+.lounge-hub-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  min-height: 17rem;
+  padding: var(--sp-6);
+  text-align: left;
+  color: var(--c-text);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  text-decoration: none;
+  cursor: pointer;
+}
+.lounge-hub-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.lounge-hub-btn--meal {
+  background: var(--c-success-bg);
+  border-color: var(--c-success);
+}
+.lounge-hub-btn--meetup {
+  background: var(--c-action-bg);
+  border-color: var(--c-action);
+}
+.lounge-hub-btn__icon {
+  width: 4rem;
+  height: 4rem;
+  stroke-width: 1.6;
+}
+.lounge-hub-btn--meal .lounge-hub-btn__icon {
+  color: var(--c-success);
+}
+.lounge-hub-btn--meetup .lounge-hub-btn__icon {
+  color: var(--c-action);
+}
+.lounge-hub-btn__title {
+  display: block;
+  font-size: var(--fs-display);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+}
+.lounge-hub-btn__sub {
+  display: block;
+  margin-top: var(--sp-2);
+  font-size: var(--fs-md);
+  color: var(--c-text-sub);
+}
+.lounge-hub-btn__go {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lounge-hub-mine {
+  margin-top: var(--sp-8);
+}
+
+.lounge-hub-lead {
+  margin-bottom: var(--sp-4);
+}

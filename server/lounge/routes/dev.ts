@@ -67,14 +67,14 @@ export type DemoUser = {
  * 단과대·학년·온도도 일부러 고르게 흩었다.
  */
 export const DEMO_USERS: DemoUser[] = [
-  { email: 'demo1@hansung.ac.kr', name: '데모1', nickname: '하늘', college: 'IT공과대학', department: '컴퓨터공학부', yearsAgo: 0, avatar: 'bear', avatarColor: 'm1', temperature: 36.5 },
-  { email: 'demo2@hansung.ac.kr', name: '데모2', nickname: '보리', college: 'IT공과대학', department: '컴퓨터공학부', yearsAgo: 1, avatar: 'rabbit', avatarColor: 'm2', temperature: 37.4 },
-  { email: 'demo3@hansung.ac.kr', name: '데모3', nickname: '모찌', college: '사회과학대학', department: '경영학부', yearsAgo: 1, avatar: 'cat', avatarColor: 'm3', temperature: 39.1 },
-  { email: 'demo4@hansung.ac.kr', name: '데모4', nickname: '도토리', college: '디자인대학', department: '패션디자인트랙', yearsAgo: 2, avatar: 'fox', avatarColor: 'm4', temperature: 36.5 },
-  { email: 'demo5@hansung.ac.kr', name: '데모5', nickname: '구름', college: '크리에이티브인문예술대학', department: '영미문화콘텐츠트랙', yearsAgo: 1, avatar: 'koala', avatarColor: 'm5', temperature: 41 },
-  { email: 'demo6@hansung.ac.kr', name: '데모6', nickname: '콩이', college: '미래융합사회과학대학', department: '융합행정학부', yearsAgo: 3, avatar: 'dog', avatarColor: 'm6', temperature: 35.2 },
-  { email: 'demo7@hansung.ac.kr', name: '데모7', nickname: '새봄', college: 'IT공과대학', department: 'AI응용학과', yearsAgo: 2, avatar: 'panda', avatarColor: 'm7', temperature: 38 },
-  { email: 'demo8@hansung.ac.kr', name: '데모8', nickname: '다람', college: '디자인대학', department: '인터랙션디자인트랙', yearsAgo: 0, avatar: 'penguin', avatarColor: 'm8', temperature: 36.5 },
+  { email: 'demo1@hansung.ac.kr', name: '데모1', nickname: '하늘', college: 'IT공과대학', department: '컴퓨터공학부', yearsAgo: 0, avatar: 'turtle-smile', avatarColor: 'm1', temperature: 36.5 },
+  { email: 'demo2@hansung.ac.kr', name: '데모2', nickname: '보리', college: 'IT공과대학', department: '컴퓨터공학부', yearsAgo: 1, avatar: 'turtle-laugh', avatarColor: 'm2', temperature: 37.4 },
+  { email: 'demo3@hansung.ac.kr', name: '데모3', nickname: '모찌', college: '사회과학대학', department: '경영학부', yearsAgo: 1, avatar: 'cat-surprised', avatarColor: 'm3', temperature: 39.1 },
+  { email: 'demo4@hansung.ac.kr', name: '데모4', nickname: '도토리', college: '디자인대학', department: '패션디자인트랙', yearsAgo: 2, avatar: 'cat-think', avatarColor: 'm4', temperature: 36.5 },
+  { email: 'demo5@hansung.ac.kr', name: '데모5', nickname: '구름', college: '크리에이티브인문예술대학', department: '영미문화콘텐츠트랙', yearsAgo: 1, avatar: 'turtle-cool', avatarColor: 'm5', temperature: 41 },
+  { email: 'demo6@hansung.ac.kr', name: '데모6', nickname: '콩이', college: '미래융합사회과학대학', department: '융합행정학부', yearsAgo: 3, avatar: 'frog-tongue', avatarColor: 'm6', temperature: 35.2 },
+  { email: 'demo7@hansung.ac.kr', name: '데모7', nickname: '새봄', college: 'IT공과대학', department: 'AI응용학과', yearsAgo: 2, avatar: 'chick-love', avatarColor: 'm7', temperature: 38 },
+  { email: 'demo8@hansung.ac.kr', name: '데모8', nickname: '다람', college: '디자인대학', department: '인터랙션디자인트랙', yearsAgo: 0, avatar: 'turtle-shy', avatarColor: 'm8', temperature: 36.5 },
 ];
 
 export const demoAdmissionYear = (u: DemoUser, now: Date): number =>

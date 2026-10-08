@@ -65,7 +65,7 @@ async function makeUser(
   const id = await insert(
     `INSERT INTO users (email, name, password_hash, nickname, college, department, admission_year,
                         avatar, avatar_color, profile_done, banned, warnings, temperature)
-     VALUES (?, ?, 'x', ?, 'IT공과대학', ?, 2024, 'bear', 'm1', ?, ?, ?, ?) RETURNING id`,
+     VALUES (?, ?, 'x', ?, 'IT공과대학', ?, 2024, 'turtle-smile', 'm1', ?, ?, ?, ?) RETURNING id`,
     [
       `t${n}-${randomUUID().slice(0, 6)}@hansung.ac.kr`,
       `실명${n}`,
@@ -814,7 +814,7 @@ describe('차단', () => {
     const list = await myBlocks(a.id);
     expect(list.map((u) => u.id)).toEqual([b.id]);
     expect(Object.keys(list[0]).sort()).toEqual(
-      ['admissionYear', 'avatar', 'avatarColor', 'college', 'id', 'nickname', 'temperature'].sort(),
+      ['admissionYear', 'avatar', 'avatarColor', 'college', 'department', 'id', 'nickname', 'temperature'].sort(),
     );
     expect(await myBlocks(b.id)).toEqual([]); // 차단당한 사람의 목록에는 드러나지 않는다
 
@@ -1053,11 +1053,11 @@ describe('참여 자격', () => {
     // 이미 앉은 사람과 같은 학과도 막는다
     expect(errCode(await svc.joinGathering(otherSameAsOther, g.id, 'guest'))).toBe('FORBIDDEN');
 
-    // 화면에서도 미리 알 수 있다 (버튼 옆 사유) — 학과 이름 자체는 내려가지 않는다
+    // 화면에서도 미리 알 수 있다 (버튼 옆 사유)
     const view = await svc.viewOf(sameDept, (await findGathering(g.id))!);
     expect(view.viewer.canJoin).toBe(false);
     expect(view.viewer.blockedReason).toBe('같은 학과는 참여할 수 없는 미팅이에요.');
-    expect(JSON.stringify(view)).not.toContain('컴퓨터공학부');
+    expect(view.host.department).toBe('컴퓨터공학부'); // 학과는 학교 계정에서 읽은 사실이라 상대에게 보인다
   });
 
   it('같은 과 제외가 아닌 미팅은 학과가 같아도 앉을 수 있다', async () => {
@@ -1650,32 +1650,14 @@ describe('HTTP — 실제 라우터 체인', () => {
     }
   });
 
-  it('1:1 미팅과 정원 2 밥약에서 상대 한 명의 noshow 로는 벌점도 정지도 없다 (악의적인 주최자가 두 건으로 정지시키던 경로)', async () => {
+  it('노쇼(안 왔어요) 평가는 라우터에서 거절한다 — 약속을 어긴 사람은 신고로 알린다', async () => {
     const attacker = await makeUser();
     const victim = await makeUser();
-    const pairs = [await seedPast(attacker.id, [victim.id]), await seedPast(attacker.id, [victim.id], 'meal')];
-
-    for (const g of pairs) {
-      const r = await call(attacker, 'POST', `/gatherings/${g.id}/review`, { userId: victim.id, mark: 'noshow' });
-      expect(r.status).toBe(200); // 평가는 기록된다
-      expect((r.json as unknown as { gathering: { noshowIds: string[] } }).gathering.noshowIds).toEqual([]);
-    }
+    const g = await seedPast(attacker.id, [victim.id]);
+    const r = await call(attacker, 'POST', `/gatherings/${g.id}/review`, { userId: victim.id, mark: 'noshow' });
+    expect(r.status).toBe(400);
     const me = await call(victim, 'GET', '/me');
-    expect((me.json as unknown as { profile: { warnings: number; banned: boolean; temperature: number } }).profile).toMatchObject({
-      warnings: 0,
-      banned: false,
-      temperature: 36.5,
-    });
-    // 정지당하지 않았으니 모임을 만들 수 있다
-    expect((await call(victim, 'POST', '/gatherings', meetupBody())).status).toBe(201);
-
-    // 셋이면 나머지 둘이 모두 눌러야 확정된다
-    const b = await makeUser();
-    const trio = await seedPast(attacker.id, [victim.id, b.id]);
-    await call(attacker, 'POST', `/gatherings/${trio.id}/review`, { userId: victim.id, mark: 'noshow' });
-    expect(((await call(victim, 'GET', '/me')).json as unknown as { profile: { warnings: number } }).profile.warnings).toBe(0);
-    await call(b, 'POST', `/gatherings/${trio.id}/review`, { userId: victim.id, mark: 'noshow' });
-    expect(((await call(victim, 'GET', '/me')).json as unknown as { profile: { warnings: number } }).profile.warnings).toBe(1);
+    expect((me.json as unknown as { profile: { warnings: number; temperature: number } }).profile).toMatchObject({ warnings: 0, temperature: 36.5 });
   });
 
   it('나를 차단한 사람의 모임은 없는 모임과 똑같이 404 이고, 내가 차단한 사람의 모임은 403 으로 사유를 듣는다', async () => {

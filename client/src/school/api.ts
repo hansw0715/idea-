@@ -7,6 +7,7 @@
  */
 import { api } from '../api';
 import type {
+  BookCancelResult,
   BookPreview,
   BookResult,
   BookSubmitRequest,
@@ -37,4 +38,7 @@ export const schoolApi = {
     api.post<BookPreview>(`${S}/book/preview`, { creds, reservationId }),
   /** 사용자가 미리보기를 보고 명시적으로 누른 한 번에만 부른다. 자동 재전송 금지 */
   bookSubmit: (body: BookSubmitRequest) => api.post<BookResult>(`${S}/book/submit`, body),
+  /** 학교에 보낸 신청을 학교 신청내역의 취소로 취소한다. 사용자가 확인창에서 명시적으로 누른 한 번에만 부른다 */
+  bookCancel: (creds: SchoolCredentials, reservationId: number) =>
+    api.post<BookCancelResult>(`${S}/book/cancel`, { creds, reservationId }),
 };

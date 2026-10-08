@@ -31,7 +31,8 @@ vi.mock('../../db.js', async (importOriginal) => {
 import { all, get, ready, run } from '../../db.js';
 import { findUser } from '../users.js';
 import type { LoungeUser } from '../users.js';
-import { getPublicUserFor, saveProfile, toMeResponse } from './profile.js';
+import { getPublicUserFor, toMeResponse, updateProfile } from './profile.js';
+import { maskName } from './schoolProfile.js';
 import { PRESENCE_LIMIT, readPresence, writePresence } from './presence.js';
 import { hiddenFor } from './safety.js';
 
@@ -60,7 +61,7 @@ async function addUser(opts: NewUser = {}): Promise<LoungeUser> {
   const row = await get<{ id: number }>(
     `INSERT INTO users (email, name, password_hash, is_admin, nickname, college, department, admission_year,
                         avatar, avatar_color, temperature, warnings, banned, profile_done)
-     VALUES (?, ?, 'x', ?, ?, ?, ?, ?, 'cat', 'm2', ?, ?, ?, ?) RETURNING id`,
+     VALUES (?, ?, 'x', ?, ?, ?, ?, ?, 'cat-think', 'm2', ?, ?, ?, ?) RETURNING id`,
     [
       `t${seq}@hansung.ac.kr`,
       `실명${seq}`,
@@ -87,102 +88,62 @@ const NOW = new Date('2026-10-08T05:00:00Z');
 const at = (sec: number) => new Date(NOW.getTime() + sec * 1000);
 const pos = { x: 0.4, y: 0.6, zone: 'plaza' };
 
-const profileBody = {
-  nickname: '하늘',
-  college: 'IT공과대학',
-  department: '컴퓨터공학부',
-  admissionYear: 2024,
-  avatar: 'bear',
-  avatarColor: 'm1',
-};
+/** 학교 연동이 있는 것으로 만든다 (users.school_* 를 직접 채움) */
+const linkSchool = (id: string, department = '컴퓨터공학부', year: number | null = 2024) =>
+  run(
+    "UPDATE users SET school_cipher = 'x', school_hint = '***', school_student_hash = ?, school_department = ?, school_admission_year = ? WHERE id = ?",
+    [`hash-${id}`, department, year, Number(id)],
+  );
 
-describe('프로필 저장 (PUT /me)', () => {
-  it('프로필이 없던 사용자가 저장하면 profile_done 이 켜지고 /me 가 프로필을 돌려준다', async () => {
+describe('프로필 고치기 (PUT /me) — 아바타 색만', () => {
+  it('학교 연동이 없으면 INVALID, 아무것도 저장하지 않는다', async () => {
     const u = await addUser({ profile: false });
     expect(toMeResponse(u)).toEqual({ profile: null, needsProfile: true, isAdmin: false });
-
-    const saved = await saveProfile(u.id, profileBody, NOW);
-    expect(saved.ok).toBe(true);
-    if (!saved.ok) return;
-    expect(saved.value).toMatchObject({ nickname: '하늘', department: '컴퓨터공학부', admissionYear: 2024, warnings: 0, banned: false });
-
-    const after = (await findUser(u.id))!;
-    expect(after.profileDone).toBe(true);
-    const me = toMeResponse(after);
-    expect(me.needsProfile).toBe(false);
-    expect(me.profile?.nickname).toBe('하늘');
+    const r = await updateProfile(u.id, { avatarColor: 'm5' });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatchObject({ code: 'INVALID', message: '학교 계정을 연동하면 라운지를 쓸 수 있어요.' });
+    expect((await findUser(u.id))!.profileDone).toBe(false);
   });
 
-  it('프로필을 고쳐도 temperature·warnings·banned 와 계정 정보는 바뀌지 않는다', async () => {
-    const u = await addUser({ temperature: 31.2, warnings: 1, banned: true });
+  it('연동이 있으면 색이 바뀌고 평판·계정 정보는 그대로다 (프로필이 없던 옛 계정은 함께 만들어진다)', async () => {
+    const u = await addUser({ profile: false, temperature: 31.2, warnings: 1, banned: true });
+    await linkSchool(u.id, '컴퓨터공학부', 2022);
     const before = await get<Record<string, unknown>>('SELECT * FROM users WHERE id = ?', [u.id]);
 
-    const saved = await saveProfile(
-      u.id,
-      {
-        ...profileBody,
-        nickname: '새닉네임',
-        admissionYear: 2022,
-        // 평판·권한을 덮어쓰려는 시도 — 무시돼야 한다
-        temperature: 99,
-        warnings: 0,
-        banned: false,
-        isAdmin: true,
-        is_admin: true,
-        profile_done: false,
-      },
-      NOW,
-    );
+    const saved = await updateProfile(u.id, { avatarColor: 'm5', temperature: 99, warnings: 0, banned: false, isAdmin: true });
     expect(saved.ok).toBe(true);
     if (saved.ok) {
-      expect(saved.value.temperature).toBe(31.2);
-      expect(saved.value.warnings).toBe(1);
-      expect(saved.value.banned).toBe(true);
-      expect(saved.value.nickname).toBe('새닉네임');
+      expect(saved.value).toMatchObject({ avatarColor: 'm5', department: '컴퓨터공학부', admissionYear: 2022, temperature: 31.2, warnings: 1, banned: true });
+      expect(saved.value.nickname).toBe(maskName(u.name)); // '실명12' → '실○○○'
     }
 
     const after = await get<Record<string, unknown>>('SELECT * FROM users WHERE id = ?', [u.id]);
     for (const col of ['temperature', 'warnings', 'banned', 'is_admin', 'email', 'name', 'password_hash', 'created_at']) {
       expect(after![col], col).toEqual(before![col]);
     }
-    expect(after!.nickname).toBe('새닉네임');
-    expect(after!.admission_year).toBe(2022);
+    expect(after!.avatar_color).toBe('m5');
     expect(after!.profile_done).toBe(true);
+    expect(toMeResponse((await findUser(u.id))!).needsProfile).toBe(false);
   });
 
-  it('이미 만든 프로필을 같은 API 로 다시 고칠 수 있다', async () => {
-    const u = await addUser();
-    expect((await saveProfile(u.id, { ...profileBody, nickname: '첫번째' }, NOW)).ok).toBe(true);
-    expect((await saveProfile(u.id, { ...profileBody, nickname: '두번째', avatar: 'owl', avatarColor: 'm5' }, NOW)).ok).toBe(true);
-    const after = (await findUser(u.id))!;
-    expect(after).toMatchObject({ nickname: '두번째', avatar: 'owl', avatarColor: 'm5' });
-  });
-
-  it('검증에 실패하면 DB 를 건드리지 않는다', async () => {
+  it('이름·학과·학번을 보내면 INVALID 이고 DB 를 건드리지 않는다', async () => {
     const u = await addUser({ profile: false });
-    const bad = await saveProfile(u.id, { ...profileBody, nickname: '가' }, NOW);
+    await linkSchool(u.id);
+    const bad = await updateProfile(u.id, { avatarColor: 'm2', nickname: '하늘' });
     expect(bad.ok).toBe(false);
     if (!bad.ok) expect(bad.error.code).toBe('INVALID');
     expect((await findUser(u.id))!.profileDone).toBe(false);
   });
 
-  it('닉네임은 NFC 로, 학과는 공백을 정리해 저장한다', async () => {
-    const u = await addUser();
-    await saveProfile(u.id, { ...profileBody, nickname: '하늘'.normalize('NFD'), department: '  AI   응용학과 ' }, NOW);
-    const after = (await findUser(u.id))!;
-    expect(after.nickname).toBe('하늘');
-    expect(after.department).toBe('AI 응용학과');
-  });
-
   it('없는 사용자 id 는 NOT_FOUND', async () => {
-    const r = await saveProfile('2000000000', profileBody, NOW);
+    const r = await updateProfile('2000000000', { avatarColor: 'm1' });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe('NOT_FOUND');
   });
 });
 
 describe('다른 사용자 카드 (GET /users/:id)', () => {
-  it('프로필이 있는 사용자는 공개 필드만 보인다', async () => {
+  it('프로필이 있는 사용자는 공개 필드(학과·입학년도 포함)만 보인다', async () => {
     const me = await addUser();
     const other = await addUser({ temperature: 40 });
     const r = await getPublicUserFor(me.id, other.id);
@@ -192,15 +153,15 @@ describe('다른 사용자 카드 (GET /users/:id)', () => {
       id: other.id,
       nickname: other.nickname,
       college: 'IT공과대학',
+      department: other.department, // 학교 계정에서 읽은 학과 — 상대에게 보인다
       admissionYear: 2024,
-      avatar: 'cat',
+      avatar: 'cat-think',
       avatarColor: 'm2',
       temperature: 40,
     });
     const json = JSON.stringify(r.value);
     expect(json).not.toContain(other.name); // 실명
     expect(json).not.toContain('hansung.ac.kr'); // 이메일
-    expect(json).not.toContain(other.department); // 학과
   });
 
   it('나 자신도 볼 수 있다', async () => {
@@ -306,7 +267,7 @@ describe('접속자 읽기 (GET /presence)', () => {
     expect(forB.users.some((p) => p.user.id === b.id)).toBe(false);
   });
 
-  it('응답에 실명·이메일·학과·경고가 들어가지 않는다', async () => {
+  it('응답에 실명·이메일·경고가 들어가지 않는다 (학과는 공개 사실)', async () => {
     const a = await addUser();
     const b = await addUser({ warnings: 1 });
     await writePresence(b, pos, NOW);
@@ -314,7 +275,7 @@ describe('접속자 읽기 (GET /presence)', () => {
     const text = JSON.stringify(res);
     expect(text).not.toContain(b.name);
     expect(text).not.toContain('hansung.ac.kr');
-    expect(text).not.toContain(b.department);
+    expect(text).toContain(b.department);
     expect(text).not.toContain('warnings');
     expect(text).not.toContain('banned');
   });

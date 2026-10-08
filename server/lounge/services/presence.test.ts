@@ -79,16 +79,17 @@ describe('toPresenceUser', () => {
     seenAt: new Date(now.getTime() - 2000),
     nickname: '하늘',
     college: 'IT공과대학',
+    department: '컴퓨터공학부',
     admissionYear: 2024,
-    avatar: 'fox',
+    avatar: 'cat-think',
     avatarColor: 'm3',
     temperature: 37.2,
   };
 
-  it('공개 프로필 필드만 담는다 (학과·실명·이메일은 없다)', () => {
+  it('공개 프로필 필드만 담는다 (실명·이메일은 없고, 학과·입학년도는 학교 계정에서 읽은 사실이라 있다)', () => {
     const u = toPresenceUser(row, now);
     expect(u).toEqual({
-      user: { id: '12', nickname: '하늘', college: 'IT공과대학', admissionYear: 2024, avatar: 'fox', avatarColor: 'm3', temperature: 37.2 },
+      user: { id: '12', nickname: '하늘', college: 'IT공과대학', department: '컴퓨터공학부', admissionYear: 2024, avatar: 'cat-think', avatarColor: 'm3', temperature: 37.2 },
       x: 0.3,
       y: 0.7,
       zone: 'meetup',
@@ -96,15 +97,15 @@ describe('toPresenceUser', () => {
       seenAt: '2026-10-08T04:59:58.000Z',
     });
     expect(Object.keys(u.user).sort()).toEqual(
-      ['admissionYear', 'avatar', 'avatarColor', 'college', 'id', 'nickname', 'temperature'].sort(),
+      ['admissionYear', 'avatar', 'avatarColor', 'college', 'department', 'id', 'nickname', 'temperature'].sort(),
     );
   });
 
   it('DB 에 이상한 아바타·색이 들어 있어도 기본값으로 안전하게 내려보낸다', () => {
     const u = toPresenceUser({ ...row, avatar: 'alien', avatarColor: 'zzz' }, now);
-    expect(u.user.avatar).toBe('bear');
+    expect(u.user.avatar).toBe('turtle-smile');
     expect(u.user.avatarColor).toBe('m1');
-    expect(toPresenceUser({ ...row, avatar: null, avatarColor: null }, now).user.avatar).toBe('bear');
+    expect(toPresenceUser({ ...row, avatar: null, avatarColor: null }, now).user.avatar).toBe('turtle-smile');
   });
 
   it('TTL 이 지난 이모트는 null', () => {

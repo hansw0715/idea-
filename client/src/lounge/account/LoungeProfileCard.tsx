@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { BAN_NOTICE_GENERIC, WARNINGS_TO_BAN, admissionLabel } from '../../../../shared/lounge';
+import { BAN_NOTICE_GENERIC } from '../../../../shared/lounge';
 import { Alert, Button, EmptyState, LoadingBlock } from '../../ui';
 import { useLounge } from '../LoungeContext';
 import Avatar, { TemperatureBadge } from '../parts/Avatar';
+import { factLine } from '../parts/fact';
 
 /**
- * 내 정보의 "라운지 프로필" 구역: 아바타·닉네임·단과대·학번, 매너온도, 노쇼 경고, 정지 안내, 고치기/만들기 버튼.
+ * 내 정보의 "라운지 프로필" 구역: 아바타·이름(가림)·학과·학번·매너온도(같은 줄), 정지 안내, 고치기/만들기 버튼.
  * 값은 LoungeContext 가 들고 있는 내 프로필이다 — 프로필 시트에서 저장하면 이 카드도 바로 바뀐다.
  * 스타일: pages/account.css (접두사 lounge-acct-)
  */
@@ -35,32 +36,17 @@ export default function LoungeProfileCard() {
           <Avatar user={profile} size="lg" />
           <div className="lounge-acct-who__text">
             <p className="lounge-acct-nick">{profile.nickname}</p>
-            <p className="lounge-acct-sub">
-              {profile.college} · {admissionLabel(profile.admissionYear)}
+            {/* 학과·학번과 매너온도를 같은 줄에, 같은 크기로 */}
+            <p className="lounge-acct-sub lounge-acct-line">
+              <span>{factLine(profile)}</span>
+              <TemperatureBadge value={profile.temperature} />
             </p>
           </div>
         </div>
 
-        <dl className="lounge-acct-stats">
-          <div className="lounge-acct-stat">
-            <dt className="lounge-acct-stat__key">매너온도</dt>
-            <dd className="lounge-acct-stat__val">
-              <TemperatureBadge value={profile.temperature} />
-            </dd>
-          </div>
-          <div className="lounge-acct-stat">
-            <dt className="lounge-acct-stat__key">노쇼 경고</dt>
-            <dd className="lounge-acct-stat__val tabular">
-              {profile.warnings}/{WARNINGS_TO_BAN}회
-            </dd>
-          </div>
-        </dl>
-        <p className="lounge-acct-help">
-          노쇼가 확정되면 경고가 1회 쌓이고, {WARNINGS_TO_BAN}회가 되면 이용이 정지돼요.
-        </p>
-
+        <p className="lounge-acct-help">이름·학과·학번은 연동한 학교 계정에서 가져와요. 직접 고칠 수 없어요. 불쾌한 일은 라운지에서 신고할 수 있어요.</p>
         <Button variant="secondary" block onClick={openProfileSheet}>
-          프로필 고치기
+          프로필 이미지 바꾸기
         </Button>
       </>
     );
@@ -68,11 +54,11 @@ export default function LoungeProfileCard() {
     body = (
       <EmptyState
         icon="user"
-        title="아직 라운지 프로필이 없어요."
-        description="닉네임과 아바타를 정하면 라운지에서 미팅과 밥약에 참여할 수 있어요."
+        title="학교 계정을 연동하면 라운지를 쓸 수 있어요."
+        description="이름·학과·학번은 연동한 학교 계정에서 자동으로 가져와요."
         action={
           <Button variant="secondary" onClick={openProfileSheet}>
-            라운지 프로필 만들기
+            안내 보기
           </Button>
         }
       />

@@ -8,7 +8,7 @@
 
 /* ── 격자 ─────────────────────────────────────────────────────── */
 .tt {
-  --tt-axis: 3.9rem; /* 시각 축 폭 ("10:00" 이 13px 에서 33px 라 3.6rem 에서는 보더에 닿는다) */
+  --tt-axis: 4.8rem; /* 시각 축 폭: 글자("10:00")를 가운데에 두어도 양쪽 선에 닿지 않을 만큼 */
   --tt-hour: 4.6rem; /* 1시간 높이 */
   --tt-hours: 13; /* 09:00 ~ 22:00 (JS 에서 덮어쓴다) */
 
@@ -169,21 +169,15 @@
 
 .tt .tt-time-label {
   position: absolute;
-  right: 0.3rem;
-  transform: translateY(-50%);
+  left: 0;
+  right: 0;
+  text-align: center;
+  margin-top: 0.5rem;
   font-size: var(--fs-xs);
   line-height: 1;
   color: var(--c-text-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-.tt .tt-time-label.is-first {
-  transform: none;
-  top: 0.4rem;
-}
-/* 맨 끝 시각은 절반이 아래로 넘어가 잘리므로 통째로 위로 올린다. */
-.tt .tt-time-label.is-last {
-  transform: translateY(-100%);
 }
 
 .tt .tt-col {

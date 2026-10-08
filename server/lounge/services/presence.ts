@@ -3,7 +3,7 @@
  * 3초마다 사람 수만큼 불리는 경로라서 읽기는 쿼리 2개(차단 목록 + 접속자·프로필 조인)로 끝낸다.
  * 규칙: docs/lounge/01-contract.md §2
  */
-import { AVATARS, AVATAR_COLORS, EMOTES, EMOTE_TTL_MS, PRESENCE_TTL_SEC, ZONES } from '../../../shared/lounge/constants.js';
+import { AVATARS, AVATAR_COLORS, DEFAULT_AVATAR, EMOTES, EMOTE_TTL_MS, PRESENCE_TTL_SEC, ZONES } from '../../../shared/lounge/constants.js';
 import type { AvatarColor, AvatarKey, EmoteKey } from '../../../shared/lounge/constants.js';
 import { fail, ok } from '../../../shared/lounge/types.js';
 import type { Result } from '../../../shared/lounge/types.js';
@@ -72,8 +72,9 @@ export function toPresenceUser(row: PresenceRow, now: Date): PresenceUser {
       id: row.userId,
       nickname: row.nickname,
       college: row.college,
+      department: row.department,
       admissionYear: row.admissionYear,
-      avatar: isAvatar(row.avatar) ? row.avatar : 'bear',
+      avatar: isAvatar(row.avatar) ? row.avatar : DEFAULT_AVATAR,
       avatarColor: isColor(row.avatarColor) ? row.avatarColor : 'm1',
       temperature: row.temperature,
     },

@@ -1,12 +1,13 @@
 import type { CSSProperties } from 'react';
 import { AVATARS, temperatureFace } from '../../../../shared/lounge';
+import { Icon } from '../../ui';
 import type { AvatarColor, AvatarKey } from '../../../../shared/lounge';
 import './parts.css';
 
-type AvatarLike = { avatar: AvatarKey; avatarColor: AvatarColor };
+type AvatarLike = { avatar?: AvatarKey; avatarColor: AvatarColor; nickname?: string };
 
 /**
- * 라운지 아바타: 색 테두리 + 연한 같은 색 바탕 + 동물 이모지.
+ * 라운지 아바타: 사용자가 고른 캐릭터 이미지(원형 배지). 이모지는 쓰지 않는다.
  * 색은 범주 색 토큰(--m-1 ~ --m-8)이고, 사람 구분은 색만이 아니라 이름/이모지/위치와 함께 한다.
  * size: sm(24) md(36) lg(56). 지도처럼 크기를 직접 정하려면 `--avatar-size` 를 style 로 넘긴다.
  */
@@ -34,7 +35,7 @@ export default function Avatar({
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >
-      <span className="lounge-avatar__face">{face.emoji}</span>
+      <img className="lounge-avatar__img" src={`/avatars/${face.key}.webp`} alt="" width="256" height="256" loading="lazy" draggable={false} />
     </span>
   );
 }
@@ -47,7 +48,7 @@ export function TemperatureBadge({ value, compact = false }: { value: number; co
       className={`lounge-temp lounge-temp--${face.tone}`}
       title={`매너온도 ${value.toFixed(1)}° · ${face.label}`}
     >
-      <span aria-hidden="true">{face.emoji}</span>
+      <Icon name="thermometer" className="lounge-temp__icon" />
       <span>{value.toFixed(1)}°</span>
       {!compact && <span className="lounge-temp__label">{face.label}</span>}
     </span>

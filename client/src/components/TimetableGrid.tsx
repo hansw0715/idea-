@@ -515,9 +515,9 @@ export default function TimetableGrid({
   const hourRem = compact ? 4.4 : 4.6;
   const cells = Math.ceil(TOTAL_MIN / step);
 
-  // 눈금선은 마지막 시각(맨 아래 테두리)에는 그리지 않고, 시각 글자는 09:00 ~ 22:00 모두 보여 준다.
+  // 시각 글자는 각 시간 칸의 맨 위(눈금선 바로 아래)에 같은 방식으로 붙인다. 마감(22:00)은 칸이 아니라 끝선이라 글자를 달지 않는다.
   const hourLabels: number[] = [];
-  for (let m = OPEN_MIN; m <= CLOSE_MIN; m += 60) hourLabels.push(m);
+  for (let m = OPEN_MIN; m < CLOSE_MIN; m += 60) hourLabels.push(m);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragView | null>(null);
@@ -815,9 +815,7 @@ export default function TimetableGrid({
                 {hourLabels.map((m) => (
                   <span
                     key={m}
-                    className={`tt-time-label${m === OPEN_MIN ? ' is-first' : ''}${
-                      m === CLOSE_MIN ? ' is-last' : ''
-                    }`}
+                    className="tt-time-label"
                     style={{ top: top(m) }}
                   >
                     {fmtMin(m)}

@@ -29,6 +29,9 @@ export const LOUNGE_MIGRATIONS = `
   ALTER TABLE users ADD COLUMN IF NOT EXISTS department TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS admission_year INTEGER;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT NOT NULL DEFAULT 'bear';
+  -- 아바타는 캐릭터 이미지로 바뀌었다(키: turtle-smile …). 옛 키(bear 등)는 읽을 때 기본 캐릭터로 보이고, 새 행의 기본값은 새 키다.
+  ALTER TABLE users ALTER COLUMN avatar SET DEFAULT 'turtle-smile';
+  UPDATE users SET avatar = 'turtle-smile' WHERE avatar IN ('bear','rabbit','fox','cat','dog','panda','lion','frog','penguin','owl','tiger','koala');
   ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color TEXT NOT NULL DEFAULT 'm1';
   ALTER TABLE users ADD COLUMN IF NOT EXISTS temperature DOUBLE PRECISION NOT NULL DEFAULT 36.5;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS warnings INTEGER NOT NULL DEFAULT 0;

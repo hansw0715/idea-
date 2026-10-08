@@ -1,10 +1,12 @@
 /**
  * 라운지가 보는 사용자. 기존 users 테이블(로그인·이름·이메일)에 프로필·평판 컬럼이 붙은 것.
- * 실명(name)·이메일은 라운지 DTO 로 내려가지 않는다. 학과(department)는 서버 안에서만 비교한다.
+ * 실명(name)·이메일은 라운지 DTO 로 내려가지 않는다. 닉네임은 실명을 가린 표기이고(학교 계정에서 자동 생성),
+ * 학과·입학년도는 연동한 학교 계정에서 읽어 온 값이라 상대에게도 보인다.
  */
 import { all, get, run } from '../db.js';
 import {
   AVATARS,
+  DEFAULT_AVATAR,
   AVATAR_COLORS,
   BAN_NOTICE_GENERIC,
   DEFAULT_TEMPERATURE,
@@ -24,7 +26,8 @@ export type LoungeUser = {
   nickname: string;
   college: string;
   department: string;
-  admissionYear: number;
+  /** 학교 계정에서 읽은 입학년도. 모르면 null */
+  admissionYear: number | null;
   avatar: AvatarKey;
   avatarColor: AvatarColor;
   temperature: number;
@@ -64,8 +67,8 @@ function fromRow(row: UserRow): LoungeUser {
     nickname: row.nickname ?? '',
     college: row.college ?? '',
     department: row.department ?? '',
-    admissionYear: row.admission_year ?? 0,
-    avatar: isAvatar(row.avatar) ? row.avatar : 'bear',
+    admissionYear: row.admission_year ?? null,
+    avatar: isAvatar(row.avatar) ? row.avatar : DEFAULT_AVATAR,
     avatarColor: isColor(row.avatar_color) ? row.avatar_color : 'm1',
     temperature: row.temperature ?? DEFAULT_TEMPERATURE,
     warnings: row.warnings ?? 0,
@@ -100,6 +103,7 @@ export const toPublicUser = (u: LoungeUser): PublicUser => ({
   id: u.id,
   nickname: u.nickname,
   college: u.college,
+  department: u.department,
   admissionYear: u.admissionYear,
   avatar: u.avatar,
   avatarColor: u.avatarColor,
@@ -110,9 +114,10 @@ export const toPublicUser = (u: LoungeUser): PublicUser => ({
 export const unknownUser = (id: string): PublicUser => ({
   id,
   nickname: '(탈퇴한 사용자)',
-  college: '-',
-  admissionYear: 0,
-  avatar: 'bear',
+  college: '',
+  department: '',
+  admissionYear: null,
+  avatar: DEFAULT_AVATAR,
   avatarColor: 'm8',
   temperature: 0,
 });
@@ -129,7 +134,6 @@ export function banReason(u: Pick<LoungeUser, 'banned' | 'warnings'>): string | 
 
 export const toProfile = (u: LoungeUser): Profile => ({
   ...toPublicUser(u),
-  department: u.department,
   warnings: u.warnings,
   banned: u.banned,
   banReason: banReason(u),
