@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon } from '../../ui';
+import { Icon, btnClass } from '../../ui';
 import { useLounge } from '../LoungeContext';
 import BlockListSheet from '../sheets/BlockListSheet';
 
@@ -15,22 +15,14 @@ export default function LoungeAccountRows() {
 
   return (
     <>
-      <button type="button" className="list__item list__item--link" onClick={() => setBlockOpen(true)}>
-        <Icon name="block" className="account-menu__icon" />
-        <span className="list__body">
-          <span className="list__main">차단한 사용자</span>
-          <span className="list__sub">차단하면 서로 라운지에서 보이지 않아요</span>
-        </span>
-        <Icon name="chevron-right" className="list__chev" />
+      <button type="button" className={btnClass({ variant: 'secondary', size: 'sm' })} onClick={() => setBlockOpen(true)}>
+        <Icon name="block" className="btn__icon" />
+        차단한 사용자
       </button>
       {isAdmin && (
-        <Link to="/admin" className="list__item list__item--link">
-          <Icon name="shield" className="account-menu__icon" />
-          <span className="list__body">
-            <span className="list__main">관리자 화면</span>
-            <span className="list__sub">신고 처리와 이용 통계</span>
-          </span>
-          <Icon name="chevron-right" className="list__chev" />
+        <Link to="/admin" className={btnClass({ variant: 'secondary', size: 'sm' })}>
+          <Icon name="shield" className="btn__icon" />
+          관리자 화면
         </Link>
       )}
       <BlockListSheet open={blockOpen} onClose={() => setBlockOpen(false)} />

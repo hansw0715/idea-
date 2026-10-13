@@ -126,10 +126,16 @@ describe('toGrid (설계 §6)', () => {
     expect(r.adjusted).toBe(1);
   });
 
-  it('22시를 넘기면 22:00 에서 자르고 조정으로 센다', () => {
-    const r = toGrid([cls(2, '21:00', '23:30')]);
-    expect(r.entries[0]).toMatchObject({ startMin: 1260, endMin: 1320 });
+  it('24시 직전에 끝나면 24:00 으로 올려 맞추고 조정으로 센다', () => {
+    const r = toGrid([cls(2, '23:00', '23:59')]);
+    expect(r.entries[0]).toMatchObject({ startMin: 1380, endMin: 1440 });
     expect(r.adjusted).toBe(1);
+  });
+
+  it('22시 이후 수업도 24시 안이면 그대로 가져온다', () => {
+    const r = toGrid([cls(2, '21:00', '23:30')]);
+    expect(r.entries[0]).toMatchObject({ startMin: 1260, endMin: 1410 });
+    expect(r.adjusted).toBe(0);
   });
 
   it('09:00 앞에서 시작하면 09:00 으로 자른다', () => {
@@ -138,12 +144,12 @@ describe('toGrid (설계 §6)', () => {
     expect(r.adjusted).toBe(1);
   });
 
-  it('잘라도 길이가 0 이면 건너뛰고 이유를 남긴다 (22시 이후·09시 이전)', () => {
-    const r = toGrid([cls(0, '22:00', '23:00', '야간'), cls(1, '07:00', '09:00', '조조')]);
+  it('잘라도 길이가 0 이면 건너뛰고 이유를 남긴다 (09시 이전)', () => {
+    const r = toGrid([cls(1, '07:00', '09:00', '조조')]);
     expect(r.entries).toEqual([]);
     expect(r.adjusted).toBe(0);
-    expect(r.skipped.map((s) => s.subject)).toEqual(['야간', '조조']);
-    expect(r.skipped[0].reason).toContain('09:00~22:00');
+    expect(r.skipped.map((s) => s.subject)).toEqual(['조조']);
+    expect(r.skipped[0].reason).toContain('09:00~24:00');
   });
 
   it('주말은 건너뛴다', () => {

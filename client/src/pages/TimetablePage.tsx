@@ -11,6 +11,7 @@ import {
   DAY_NAMES,
   OPEN_MIN,
   CLOSE_MIN,
+  GRID_DEFAULT_CLOSE_MIN,
   STEP_MIN,
   fmtMin,
   timeOptions,
@@ -134,6 +135,9 @@ export default function TimetablePage() {
 
   const fresh = loadedWeek === weekStart;
 
+  // 시간표는 기본으로 17:00 까지만 그리고, 더 늦은 일정이 있으면 그 시각(정각으로 올림)까지, 최대 24:00 까지 늘린다.
+  // 일정이 없는 저녁 시간에 일정을 넣으려면 아래 "이후 보기"로 펼친다.
+  const [showEvening, setShowEvening] = useState(false);
   const gridEntries = useMemo<GridEntry[]>(() => {
     const classes: GridEntry[] = entries
       // 다른 주를 받아 오는 동안에는 그 주에만 있는 일정(특정 날짜)을 숨긴다.
@@ -151,6 +155,9 @@ export default function TimetablePage() {
       }));
     return [...classes, ...(fresh ? reservationsToEntries(reservations) : [])];
   }, [entries, reservations, fresh]);
+  const latestEnd = useMemo(() => gridEntries.reduce((max, e) => Math.max(max, e.endMin), 0), [gridEntries]);
+  const naturalClose = Math.min(CLOSE_MIN, Math.max(GRID_DEFAULT_CLOSE_MIN, Math.ceil(latestEnd / 60) * 60));
+  const gridClose = showEvening ? CLOSE_MIN : naturalClose;
 
   // 고른 요일이 보고 있는 주에서 실제로 며칠인지.
   const rangeDate = weekDates(weekStart)[range.day] ?? null;
@@ -304,13 +311,9 @@ export default function TimetablePage() {
             <h1 className="page-title">내 시간표</h1>
             <p className="page-lead">시간표를 확인하고 일정을 추가합니다.</p>
           </div>
-          <Button variant="secondary" onClick={() => openAdd(defaultAddRange())}>
-            <Icon name="plus" className="btn__icon" />
-            일정 추가하기
-          </Button>
         </div>
 
-        {/* 학교 계정이 연동되어 있을 때만 "학교 시간표 가져오기" 한 줄이 보인다. 가져오면 목록을 새로고침한다. */}
+        {/* 화면에 버튼은 없다. 내 정보·가입 직후 "지금 가져오기"(?school=import)로 열리는 가져오기 시트만 담고 있다. */}
         <SchoolTimetableAction onImported={reload} />
 
         <Tabs
@@ -360,6 +363,10 @@ export default function TimetablePage() {
             <GridLegend />
           </div>
 
+          {loadedWeek !== null && (
+            <p className="tt-page__guide">시간표를 길게 누른 채 끌어 일정을 추가할 수 있습니다.</p>
+          )}
+
           {loadedWeek === null ? (
             !loadError && <LoadingBlock>시간표를 불러오는 중입니다.</LoadingBlock>
           ) : (
@@ -379,23 +386,31 @@ export default function TimetablePage() {
                   </Alert>
                 </div>
               )}
-              <TimetableGrid
-                entries={gridEntries}
-                onEntryClick={openInfo}
-                selectable
-                onSelectRange={openAdd}
-                pendingRange={addOpen ? range : null}
-                weekStart={weekStart}
-                slide={slide}
-              />
+              <div className="tt-page__gridwrap">
+                <TimetableGrid
+                  entries={gridEntries}
+                  onEntryClick={openInfo}
+                  selectable
+                  onSelectRange={openAdd}
+                  pendingRange={addOpen ? range : null}
+                  weekStart={weekStart}
+                  slide={slide}
+                  closeMin={gridClose}
+                />
+                {naturalClose < CLOSE_MIN && (
+                  <div className="tt-page__evening">
+                    <button
+                      type="button"
+                      className="tag tag--sm"
+                      aria-pressed={showEvening}
+                      onClick={() => setShowEvening((v) => !v)}
+                    >
+                      {showEvening ? '접기' : `${fmtMin(naturalClose)} 이후 보기`}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-
-          {loadedWeek !== null && (
-            <p className="tt-page__guide">
-              빈 칸을 누르면 30분이, 길게 누른 채 끌면 끈 만큼의 시간이 선택되어 일정을 추가할 수
-              있습니다. 등록한 수업을 누르면 정보를 보고 삭제할 수 있습니다.
-            </p>
           )}
         </div>
 

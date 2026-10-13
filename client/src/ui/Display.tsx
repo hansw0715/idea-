@@ -4,13 +4,12 @@ import { Sheet } from './Sheet';
 import { Button } from './Button';
 import { Choice } from './Form';
 
-/** KRDS 글자 크기: 90 / 100 / 110 / 130 / 150% */
+/** 글자 크기: 80 / 90 / 100 / 110% (저장돼 있던 그 밖의 값은 100% 로 돌아간다) */
 export const ZOOM_OPTIONS = [
+  { value: 0.8, label: '80%', desc: '가장 작게' },
   { value: 0.9, label: '90%', desc: '작게' },
   { value: 1, label: '100%', desc: '기본' },
   { value: 1.1, label: '110%', desc: '조금 크게' },
-  { value: 1.3, label: '130%', desc: '크게' },
-  { value: 1.5, label: '150%', desc: '가장 크게' },
 ] as const;
 
 export type Contrast = 'normal' | 'high';

@@ -3,20 +3,19 @@ import { Link } from 'react-router-dom';
 import { formatMeetAt } from '../../../../shared/lounge';
 import type { GatheringView } from '../../../../shared/lounge';
 import { ApiError } from '../../api';
-import { Alert, Badge, Button, EmptyState, Icon, LoadingBlock, btnClass } from '../../ui';
+import { Badge, Button, Icon } from '../../ui';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
 
 /**
- * 홈의 "내 라운지 약속" 구역 — 내가 주최·참여·신청한 모임 중 가까운 3건.
- * 홈의 다른 구역과 따로 불러온다(자기 상태만 가진다). 여기가 느리거나 실패해도 예약·회의·시간표는 그대로 보인다.
- * 스타일: pages/home.css (접두사 lounge-home-, 목록 틀은 홈의 home-card--rows / home-ul 을 같이 쓴다)
+ * 홈 "내 일정" 상자 안의 "내 라운지 약속" 묶음 — 내가 주최·참여·신청한 모임 중 가까운 3건.
+ * 홈의 다른 묶음과 따로 불러온다(자기 상태만 가진다). 여기가 느리거나 실패해도 예약·회의는 그대로 보인다.
+ * 상자(card)와 묶음 머리글 틀은 홈이 그리고, 스타일은 pages/home.css (접두사 home-sum-, lounge-home-).
  */
 
 /** 홈에 보여 주는 약속의 최대 개수 */
 const SHOW = 3;
 
-const KIND_LABEL: Record<string, string> = { meetup: '미팅', meal: '밥약', team: '팀빌딩' };
 const STATUS_LABEL: Record<string, { text: string; tone: 'success' | 'info' | 'gray' }> = {
   open: { text: '모집 중', tone: 'success' },
   full: { text: '정원 마감', tone: 'info' },
@@ -84,90 +83,53 @@ export default function MyLoungeSection() {
 
   let body;
   if (state.kind === 'loading') {
-    body = (
-      <div className="card">
-        <LoadingBlock>라운지 약속을 불러오는 중이에요.</LoadingBlock>
-      </div>
-    );
+    body = <p className="home-sum__empty">불러오는 중이에요.</p>;
   } else if (state.kind === 'profile') {
     body = (
-      <div className="card">
-        <EmptyState
-          icon="lounge"
-          title="라운지 프로필을 만들면 약속을 볼 수 있어요."
-          description="닉네임과 아바타를 정하면 라운지에서 미팅과 밥약에 참여할 수 있어요."
-          action={
-            <Link to="/lounge" className={btnClass({ variant: 'secondary' })}>
-              라운지 가기
-            </Link>
-          }
-        />
-      </div>
+      <p className="home-sum__empty">
+        라운지에서 학교 계정을 연동하면 약속을 볼 수 있어요. <Link to="/lounge">라운지 가기</Link>
+      </p>
     );
   } else if (state.kind === 'error') {
     body = (
-      <Alert
-        tone="danger"
-        title="라운지 약속을 불러오지 못했어요."
-        actions={
-          <Button variant="secondary" onClick={() => setAttempt((n) => n + 1)}>
-            다시 시도하기
-          </Button>
-        }
-      >
-        {state.message}
-      </Alert>
-    );
-  } else if (upcoming.length === 0 && reviewCount === 0) {
-    body = (
-      <div className="card">
-        <EmptyState
-          icon="lounge"
-          title="아직 약속이 없어요."
-          description="라운지에서 미팅이나 밥약을 찾아 자리에 앉아 보세요."
-          action={
-            <Link to="/lounge" className={btnClass({ variant: 'secondary' })}>
-              라운지 가기
-            </Link>
-          }
-        />
+      <div className="home-sum__error">
+        <p>{state.message}</p>
+        <Button variant="secondary" size="sm" onClick={() => setAttempt((n) => n + 1)}>
+          다시 시도하기
+        </Button>
       </div>
     );
+  } else if (upcoming.length === 0 && reviewCount === 0) {
+    body = <p className="home-sum__empty">아직 약속이 없어요.</p>;
   } else {
     body = (
       <>
         {upcoming.length > 0 && (
-          <div className="card home-card--rows">
-            <ul className="list home-ul">
-              {upcoming.slice(0, SHOW).map((g) => (
-                <li key={g.id}>
-                  <GatheringRow gathering={g} />
-                </li>
-              ))}
-            </ul>
-          </div>
+          <ul className="list home-ul">
+            {upcoming.slice(0, SHOW).map((g) => (
+              <li key={g.id}>
+                <GatheringRow gathering={g} />
+              </li>
+            ))}
+          </ul>
         )}
         {upcoming.length > SHOW && (
-          <p className="home-more">
-            약속 {upcoming.length}건 중 가까운 {SHOW}건을 표시했어요. 나머지는 라운지에서 볼 수 있어요.
-          </p>
+          <p className="home-sum__more">약속 {upcoming.length}건 중 가까운 {SHOW}건을 표시했어요.</p>
         )}
         {reviewCount > 0 && (
-          <p className="home-more">
-            끝난 약속 {reviewCount}건에 함께한 사람의 매너 평가를 남길 수 있어요. 라운지의 내 약속에서 확인해 주세요.
-          </p>
+          <p className="home-sum__more">끝난 약속 {reviewCount}건에 매너 평가를 남길 수 있어요.</p>
         )}
       </>
     );
   }
 
   return (
-    <section className="section" aria-labelledby="home-lounge-title">
-      <div className="section__head">
-        <h2 className="section__title" id="home-lounge-title">
+    <section className="home-sum__group" aria-labelledby="home-lounge-title">
+      <div className="home-sum__head">
+        <h3 className="home-sum__title" id="home-lounge-title">
           내 라운지 약속
-        </h2>
-        <Link to="/lounge" className={btnClass({ variant: 'text' })}>
+        </h3>
+        <Link to="/lounge" className="home-sum__link">
           라운지에서 보기
         </Link>
       </div>
@@ -176,7 +138,7 @@ export default function MyLoungeSection() {
   );
 }
 
-/** 약속 한 줄: 눌러서 라운지로 간다 (자리 확인·취소는 라운지에서) */
+/** 약속 한 줄: 눌러서 라운지로 간다 (자리 확인·취소는 라운지에서). 두 줄 + 오른쪽 상태 배지 */
 function GatheringRow({ gathering: g }: { gathering: GatheringView }) {
   const status = STATUS_LABEL[g.status];
   const role = g.viewer.isHost ? '주최' : g.viewer.isApplicant ? '승인 대기' : '참여';
@@ -186,15 +148,17 @@ function GatheringRow({ gathering: g }: { gathering: GatheringView }) {
       <div className="list__body">
         <div className="list__main">{g.title}</div>
         <div className="list__sub tabular">
-          {formatMeetAt(g.meetAt)} · {g.place}
+          {role} · {formatMeetAt(g.meetAt)} · {g.place}
         </div>
-        <div className="lounge-home-badges">
-          <Badge tone="gray">{KIND_LABEL[g.kind] ?? '모임'}</Badge>
-          <Badge tone={g.viewer.isApplicant ? 'warning' : 'primary'}>{role}</Badge>
-          {status && <Badge tone={status.tone}>{status.text}</Badge>}
-          {g.viewer.timetableConflict && <Badge tone="warning">수업과 겹쳐요: {g.viewer.timetableConflict}</Badge>}
-        </div>
+        {g.viewer.timetableConflict && (
+          <div className="lounge-home-badges">
+            <Badge tone="warning">수업과 겹쳐요: {g.viewer.timetableConflict}</Badge>
+          </div>
+        )}
       </div>
+      <Badge tone={g.viewer.isApplicant ? 'warning' : (status?.tone ?? 'primary')}>
+        {g.viewer.isApplicant ? '승인 대기' : (status?.text ?? '진행 중')}
+      </Badge>
       <Icon name="chevron-right" className="list__chev" />
     </Link>
   );

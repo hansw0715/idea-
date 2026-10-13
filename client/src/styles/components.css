@@ -959,6 +959,8 @@
 .sheet {
   position: fixed;
   inset: auto 0 0 0;
+  /* flex-direction 은 닫히는 동안에도 유지돼야 한다 — [open] 에만 두면 닫는 400ms 동안 가로로 펼쳐져 깨져 보인다 */
+  flex-direction: column;
   width: 100%;
   max-width: var(--frame-max);
   max-height: 92dvh;
@@ -977,7 +979,6 @@
 }
 .sheet[open] {
   display: flex;
-  flex-direction: column;
   transform: translateY(0);
 }
 @starting-style {
@@ -1153,4 +1154,16 @@ body:has(.app-frame.has-tabbar) .toast-region {
 }
 :root[data-contrast='high'] .toast {
   border: 2px solid var(--gray-0);
+}
+
+/* 라벨 줄 오른쪽 끝에 작은 동작을 두는 필드(Segmented labelAction) */
+.field__labelrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.field__labelrow .field__label {
+  margin-bottom: 0;
 }

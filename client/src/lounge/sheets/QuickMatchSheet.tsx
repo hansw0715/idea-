@@ -4,7 +4,7 @@
  *
  * 흐름: 시작 → (위치 허용) → 찾는 중 → 연결됨(수락/거절) → 확정(단톡방) | 상대가 거절·시간 초과 | 근처에 아무도 없음
  * 진실은 서버다. 소켓이 없어서 열려 있는 동안 2초마다 상태를 묻는다(탭이 보일 때만). 시트를 닫아도 대기는 서버에 남는다.
- * 내 위치는 매칭에만 쓰이고 매칭이 끝나면 서버가 지운다. 상대에게는 거리(50m 단위)만 보인다.
+ * 내 위치는 매칭에만 쓰이고 매칭이 끝나면 서버가 지운다. 상대에게는 거리도 보이지 않는다.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
@@ -254,7 +254,6 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
                   ? `${QUICK_WAIT_MIN}분 동안 근처에서 찾지 못했어요. 잠시 뒤에 다시 시도해 보세요.`
                   : '시작을 누르면 내 위치로 가까운 학우를 바로 찾아요. 연결되면 수락이나 거절만 하면 돼요.'}
               </p>
-              <p className="lounge-quick-hero__note">내 위치는 매칭에만 쓰고, 끝나면 지워요. 상대에게는 거리만 보여요.</p>
             </div>
           )}
 

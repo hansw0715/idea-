@@ -160,7 +160,8 @@ export default function Signup() {
       if (!alive.current) return;
       setVerified(result);
       setStep('account');
-      setFocusTarget(ID.username);
+      // 단계가 바뀐 뒤 키보드가 바로 올라와 화면을 가리지 않게, 입력 칸 대신 제목으로 포커스를 옮긴다
+      setFocusTarget('signup-title');
     } catch (err) {
       // 틀린 비밀번호를 그대로 다시 보내 학교 쪽 실패 횟수를 늘리지 않게 비밀번호 칸을 비운다
       clearSchoolInputs(form, 'password');
@@ -225,7 +226,7 @@ export default function Signup() {
     setError(null);
     setSchoolError(null);
     setStep('school');
-    setFocusTarget(ID.schoolId);
+    setFocusTarget('signup-title');
   }
 
   // ── ③ 연동 동의 → 가입 ──────────────────────────────────────
@@ -302,7 +303,9 @@ export default function Signup() {
       <main id="main" className="app-main">
         <img className="auth-logo auth-logo--sm" src="/brand/logo.png" alt="상상Book-E" width="720" height="559" />
         <div className="page-head">
-          <h1 className="page-title">회원가입</h1>
+          <h1 className="page-title" id="signup-title" tabIndex={-1}>
+            회원가입
+          </h1>
           <p className="page-lead">{lead[step]}</p>
         </div>
 
@@ -509,7 +512,7 @@ export default function Signup() {
                   암호를 푸는 열쇠는 방금 정한 아이디·비밀번호로 이 기기에서 만들고, 서버에는 보내지 않아요. 서버에 저장되는 건
                   암호문뿐이에요.
                 </li>
-                <li>라운지에서는 다른 학우에게 이 학교 계정에서 가져온 이름(가림, 예: 박○○)·학과·학번만 보여요. 실명 전체와 연락처는 보이지 않아요.</li>
+                <li>라운지에서는 다른 학우에게 이 학교 계정에서 가져온 이름(가림, 예: 박○재)·학과·학번만 보여요. 실명 전체와 연락처는 보이지 않아요.</li>
                 <li>다른 기기에서 같은 아이디·비밀번호로 로그인하면 같은 열쇠가 만들어져서 연동이 이어져요.</li>
                 <li>학교 기능을 쓰는 순간에는 우리 서버가 요청 처리를 위해 잠깐 사용하고 바로 버려요. 저장하거나 기록하지 않아요.</li>
                 <li>비밀번호를 잊으면 암호를 풀 수 없어 학교 계정을 다시 연동해야 해요. 연동은 언제든 해제할 수 있어요.</li>

@@ -2,7 +2,7 @@
  * 라운지 프로필 = 연동한 학교 계정에서 읽어 온 사실 (이름·학과·입학년도).
  * 사용자가 직접 입력하지 않는다. 가입·연동·`GET /me`(옛 계정)에서 이 모듈이 users 의 프로필 컬럼을 채운다.
  *
- *  - nickname        실명을 가린 표기: 첫 글자 + '○' ("박민재" → "박○○")
+ *  - nickname        실명을 가린 표기: 첫·끝 글자를 남기고 가운데를 '○' ("박민재" → "박○재")
  *  - department      users.school_department (없으면 '')
  *  - admission_year  users.school_admission_year (없으면 NULL)
  *  - college         학교에서 읽을 수 없어 항상 ''
@@ -23,13 +23,16 @@ const MASK = '○';
 export const tidyDepartment = (text: string): string => text.normalize('NFC').trim().replace(/\s+/gu, ' ');
 
 /**
- * 실명을 가린 닉네임. 첫 글자만 남기고 나머지는 '○' 로 바꾼다 (코드포인트 기준).
- * 한 글자면 그대로, 8자를 넘으면 앞 8글자만 쓴다.
+ * 실명을 가린 닉네임. 가운데 글자를 '○' 로 바꾸고 첫 글자와 끝 글자는 남긴다 (코드포인트 기준): "이윤수" → "이○수".
+ * 두 글자는 "이○", 한 글자는 그대로, 8자를 넘으면 앞 8글자만 쓴다.
  */
 export function maskName(name: string): string {
   const chars = [...name.normalize('NFC').trim()];
   if (chars.length === 0) return FALLBACK_NICKNAME;
-  const masked = chars.length === 1 ? chars[0]! : chars[0]! + MASK.repeat(chars.length - 1);
+  let masked: string;
+  if (chars.length === 1) masked = chars[0]!;
+  else if (chars.length === 2) masked = chars[0]! + MASK;
+  else masked = chars[0]! + MASK.repeat(chars.length - 2) + chars[chars.length - 1]!;
   return [...masked].slice(0, NICKNAME_MAX).join('');
 }
 

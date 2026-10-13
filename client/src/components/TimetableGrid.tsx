@@ -9,7 +9,7 @@ import { Badge, Button, Icon, Sheet, Spinner } from '../ui';
 import {
   DAY_NAMES,
   OPEN_MIN,
-  CLOSE_MIN,
+  RESERVE_CLOSE_MIN,
   STEP_MIN,
   fmtMin,
   fmtDayHeader,
@@ -83,9 +83,10 @@ interface Props {
   slide?: WeekSlide | null;
   /** 고를 때의 시간 단위(분). 학교 예약은 정각 1시간 단위라 60을 넘긴다. */
   step?: number;
+  /** 격자가 끝나는 시각(분). 기본은 22:00 — 시간표 화면은 일정에 맞춰 줄이거나 늘려서 넘긴다. */
+  closeMin?: number;
 }
 
-const TOTAL_MIN = CLOSE_MIN - OPEN_MIN;
 /** 길게 눌러야 범위 선택이 시작되는 시간 (그 전에 움직이면 스크롤로 본다) */
 const LONG_PRESS_MS = 350;
 /** 누른 채 이만큼(px) 움직이면 스크롤 의도로 본다 */
@@ -140,10 +141,6 @@ function placeOverlaps(dayEntries: GridEntry[]): Map<GridEntry, Placement> {
   }
   flush();
   return result;
-}
-
-function clampMinute(value: number): number {
-  return Math.min(CLOSE_MIN, Math.max(OPEN_MIN, value));
 }
 
 /** '월요일 10:00~12:00' */
@@ -509,15 +506,18 @@ export default function TimetableGrid({
   onNextWeek,
   slide = null,
   step = STEP_MIN,
+  closeMin = RESERVE_CLOSE_MIN,
 }: Props) {
+  const totalMin = closeMin - OPEN_MIN;
+  const clampMinute = (value: number): number => Math.min(closeMin, Math.max(OPEN_MIN, value));
   // 시간당 높이(rem). 글자 줄 수 계산에도 쓴다.
   // 홈처럼 줄인 격자도 정각 1시간 블록(수업·예약)이 터치 대상 최소 높이(--touch, 4.4rem)를 채우도록 한다.
   const hourRem = compact ? 4.4 : 4.6;
-  const cells = Math.ceil(TOTAL_MIN / step);
+  const cells = Math.ceil(totalMin / step);
 
   // 시각 글자는 각 시간 칸의 맨 위(눈금선 바로 아래)에 같은 방식으로 붙인다. 마감(22:00)은 칸이 아니라 끝선이라 글자를 달지 않는다.
   const hourLabels: number[] = [];
-  for (let m = OPEN_MIN; m < CLOSE_MIN; m += 60) hourLabels.push(m);
+  for (let m = OPEN_MIN; m < closeMin; m += 60) hourLabels.push(m);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<DragView | null>(null);
@@ -543,7 +543,7 @@ export default function TimetableGrid({
     const rect = col.getBoundingClientRect();
     if (rect.height <= 0) return 0;
     const ratio = (clientY - rect.top) / rect.height;
-    const raw = Math.floor((ratio * TOTAL_MIN) / step);
+    const raw = Math.floor((ratio * totalMin) / step);
     return Math.min(cells - 1, Math.max(0, raw));
   }
 
@@ -735,7 +735,8 @@ export default function TimetableGrid({
           e.day < DAY_NAMES.length &&
           clampMinute(e.endMin) > clampMinute(e.startMin),
       ),
-    [entries],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [entries, closeMin],
   );
 
   function pickEntry(entry: GridEntry) {
@@ -750,10 +751,10 @@ export default function TimetableGrid({
   const slideKey = `${weekStart ?? 'fixed'}-${slide?.tick ?? 0}`;
 
   function top(min: number): string {
-    return `${((min - OPEN_MIN) / TOTAL_MIN) * 100}%`;
+    return `${((min - OPEN_MIN) / totalMin) * 100}%`;
   }
   function height(start: number, end: number): string {
-    return `${((end - start) / TOTAL_MIN) * 100}%`;
+    return `${((end - start) / totalMin) * 100}%`;
   }
 
   const weekRange = dates ? `${fmtDayHeader(dates[0])} ~ ${fmtDayHeader(dates[dates.length - 1])}` : undefined;
@@ -764,7 +765,7 @@ export default function TimetableGrid({
       className={`tt${compact ? ' tt--compact' : ''}${multi ? ' tt--multi' : ''}${
         step < 60 ? ' tt--half' : ''
       }`}
-      style={{ '--tt-hours': TOTAL_MIN / 60 } as CSSProperties}
+      style={{ '--tt-hours': totalMin / 60 } as CSSProperties}
     >
       {hasNav && <WeekNav compact sub={weekRange} onPrev={onPrevWeek} onNext={onNextWeek} />}
 

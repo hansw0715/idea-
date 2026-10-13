@@ -121,6 +121,16 @@
   font-size: var(--fs-md);
   color: var(--c-text);
 }
+/* 내 정보 카드: 왼쪽 항목 · 오른쪽 값 */
+.school-info--row .school-info__row {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--sp-3);
+}
+.school-info--row .school-info__val {
+  margin: 0;
+}
 
 /* ── 내 정보 카드 ───────────────────────────────────────────── */
 .school-card__head {
@@ -166,8 +176,8 @@
   gap: var(--sp-3);
   margin-top: var(--sp-6);
 }
-.school-card__actions > * {
-  flex: 1 1 14rem;
+.school-card__actions {
+  justify-content: flex-end;
 }
 
 /* ── 시간표 가져오기 ────────────────────────────────────────── */
@@ -348,4 +358,108 @@
 /* ── 회의 상세의 학교 바로 신청 안내 한 줄 ───────────────────── */
 .school-hint {
   margin-top: var(--sp-5);
+}
+
+/* 내 정보 카드(연동됨): 학번·소속 한 줄 + 배지, 연동한 날, 바로가기 두 개, 맨 아래 작은 관리 버튼 */
+.school-card__who {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.school-card__id {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-1) var(--sp-3);
+  min-width: 0;
+  margin: 0;
+}
+.school-card__num {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+.school-card__dept {
+  font-size: var(--fs-md);
+  color: var(--c-text-sub);
+}
+.school-card__date {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+/* 시간표 가져오기 | 예약 보기: 한 상자를 세로선 하나로 나눠 양쪽이 같은 폭으로 채운다 */
+/* 4 : 4 : 2 — 두 바로가기(한 상자, 합쳐서 8)와 연동 해제(2). 연동 해제는 간격을 두고 따로 놓는다 */
+.school-card__row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-4);
+  margin-top: var(--sp-5);
+}
+.school-card__row > .school-card__split {
+  flex: 8 1 0;
+  min-width: 0;
+  margin-top: 0;
+}
+.school-card__unlink {
+  flex: 2 1 0;
+  min-width: 0;
+  min-height: var(--touch);
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--c-danger);
+  border-radius: var(--r);
+  background: var(--c-bg);
+  color: var(--c-danger-text, var(--c-danger));
+  font-size: var(--fs-sm);
+}
+.school-card__unlink:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+@media (hover: hover) {
+  .school-card__unlink:hover {
+    background: var(--c-surface);
+  }
+}
+.school-card__split {
+  display: flex;
+  margin-top: var(--sp-5);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.school-card__split-btn {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: var(--touch);
+  padding: 0 var(--sp-3);
+  border: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+}
+.school-card__split-btn + .school-card__split-btn {
+  border-left: 1px solid var(--c-border);
+}
+.school-card__split-btn:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--c-action);
+}
+@media (hover: hover) {
+  .school-card__split-btn:hover {
+    background: var(--c-surface);
+  }
+}
+.school-card__split-btn .btn__icon {
+  width: 1.8rem;
+  height: 1.8rem;
+  color: var(--c-text-sub);
+}
+.school-card__actions {
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--c-divider);
 }

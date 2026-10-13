@@ -4,7 +4,7 @@
  * 도메인 모델(Gathering)은 userId 만 들고 있어서 화면에 그대로 못 쓴다.
  * 서버가 닉네임·아바타를 붙이고, "내가 지금 참여할 수 있나?" 같은 판단까지 끝내서
  * 클라이언트가 규칙을 다시 구현하지 않게 한다. (규칙이 두 군데 있으면 반드시 어긋난다)
- * 실명·이메일은 절대 내려보내지 않는다. 닉네임은 실명을 가린 표기("박○○")이고, 학과·입학년도는 학교 계정에서 읽은 사실이다.
+ * 실명·이메일은 절대 내려보내지 않는다. 닉네임은 실명을 가린 표기("박○재")이고, 학과·입학년도는 학교 계정에서 읽은 사실이다.
  */
 import type { ISODateTime } from './types.js';
 import type { AvatarColor, AvatarKey, EmoteKey, PlaceType, ReportReason, ReportStatus, Zone } from './constants.js';

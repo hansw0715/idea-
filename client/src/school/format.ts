@@ -1,14 +1,15 @@
 /** 학교 연동 화면에서 쓰는 표시용 도우미 (문장·이름·날짜). 학번·비밀번호는 다루지 않는다. */
 
 /**
- * 이름을 가려서 보여 준다: "박민재" → "박○○". 연동한 계정이 맞는지 알아볼 수 있을 만큼만 보이고,
- * 화면을 어깨너머로 보는 사람에게는 이름이 드러나지 않는다. (이 이름은 어디에도 저장하지 않는다.)
+ * 이름을 가려서 보여 준다: "박민재" → "박○재". 연동한 계정이 맞는지 알아볼 수 있을 만큼만 보이고,
+ * 화면을 어깨너머로 보는 사람에게는 이름이 드러나지 않는다. (서버의 라운지 이름 가림과 같은 규칙이다.)
  */
 export function maskName(name: string): string {
   const chars = Array.from(name.trim());
   if (chars.length === 0) return '';
   if (chars.length === 1) return chars[0];
-  return chars[0] + '○'.repeat(chars.length - 1);
+  if (chars.length === 2) return chars[0] + '○';
+  return chars[0] + '○'.repeat(chars.length - 2) + chars[chars.length - 1];
 }
 
 /** 받침 유무에 맞는 조사 "로/으로" ("AI응용학과" → "AI응용학과로", "융합전공" → "융합전공으로") */
@@ -23,7 +24,7 @@ export function withRo(word: string): string {
   return `${word}로`;
 }
 
-/** 연동 성공 화면의 확인 문장. 예: "박○○님, AI응용학과로 확인했어요" */
+/** 연동 성공 화면의 확인 문장. 예: "박○재님, AI응용학과로 확인했어요" */
 export function verifiedLine(name: string, department: string): string {
   const who = maskName(name);
   const dept = department.trim();

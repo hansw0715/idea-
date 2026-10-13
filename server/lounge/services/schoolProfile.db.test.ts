@@ -83,11 +83,12 @@ const row = (uid: number) => get<Record<string, unknown>>('SELECT * FROM users W
 
 describe('maskName — 실명을 가린 닉네임', () => {
   it('첫 글자만 남기고 나머지는 ○, 한 글자는 그대로, 길면 앞 8글자', () => {
-    expect(maskName('박민재')).toBe('박○○');
-    expect(maskName('남궁민수')).toBe('남○○○');
+    expect(maskName('박민재')).toBe('박○재');
+    expect(maskName('이윤수')).toBe('이○수');
+    expect(maskName('남궁민수')).toBe('남○○수');
     expect(maskName('박')).toBe('박');
     expect(maskName('  이둘 ')).toBe('이○');
-    expect(maskName('가나다라마바사아자차')).toBe('가○○○○○○○');
+    expect(maskName('가나다라마바사아자차')).toBe('가○○○○○○○');  // 8자까지만
     expect(maskName('')).toBe('학생');
   });
 });
@@ -103,7 +104,7 @@ describe('연동하면 프로필이 만들어진다', () => {
     const svc = service();
     await svc.link(uid, { creds, cipher });
     expect(await row(uid)).toMatchObject({
-      nickname: '박○○',
+      nickname: '박○재',
       college: '',
       department: 'AI응용학과',
       admission_year: 2021,
@@ -154,7 +155,7 @@ describe('PUT /api/lounge/me — 아바타 색만', () => {
       expect(r.status, JSON.stringify(extra)).toBe(400);
       expect(r.json).toMatchObject({ code: 'INVALID', error: '이름·학과·학번은 학교 계정 정보로 자동으로 정해져요.' });
     }
-    expect(await row(uid)).toMatchObject({ nickname: '박○○', department: 'AI응용학과', avatar_color: 'm1' });
+    expect(await row(uid)).toMatchObject({ nickname: '박○재', department: 'AI응용학과', avatar_color: 'm1' });
   });
 
   it('avatarColor 만 바꿀 수 있고, 목록에 없는 색은 400', async () => {
@@ -164,7 +165,7 @@ describe('PUT /api/lounge/me — 아바타 색만', () => {
 
     const r = await api(uid, 'PUT', '/me', { avatarColor: 'm4' });
     expect(r.status).toBe(200);
-    expect(r.json.profile).toMatchObject({ nickname: '박○○', department: 'AI응용학과', admissionYear: 2021, college: '', avatarColor: 'm4' });
+    expect(r.json.profile).toMatchObject({ nickname: '박○재', department: 'AI응용학과', admissionYear: 2021, college: '', avatarColor: 'm4' });
     expect((await row(uid))!.avatar_color).toBe('m4');
   });
 });
@@ -180,7 +181,7 @@ describe('GET /api/lounge/me · 다른 사용자 카드', () => {
     expect((await row(legacy))!.profile_done).toBe(false);
     const r = await api(legacy, 'GET', '/me');
     expect(r.status).toBe(200);
-    expect(r.json).toMatchObject({ needsProfile: false, profile: { nickname: '김○○', department: '경영학부', admissionYear: 2022 } });
+    expect(r.json).toMatchObject({ needsProfile: false, profile: { nickname: '김○나', department: '경영학부', admissionYear: 2022 } });
     expect((await row(legacy))!.profile_done).toBe(true);
 
     const none = await makeUser('이둘');

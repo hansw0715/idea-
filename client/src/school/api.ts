@@ -6,6 +6,7 @@
  * 어디에도 저장하거나 기록하지 않는다. (URL·쿼리에 실리는 요청은 하나도 없다.)
  */
 import { api } from '../api';
+import type { EclassSnapshot } from '../../../shared/school/eclass';
 import type {
   BookCancelResult,
   BookPreview,
@@ -38,6 +39,8 @@ export const schoolApi = {
     api.post<BookPreview>(`${S}/book/preview`, { creds, reservationId }),
   /** 사용자가 미리보기를 보고 명시적으로 누른 한 번에만 부른다. 자동 재전송 금지 */
   bookSubmit: (body: BookSubmitRequest) => api.post<BookResult>(`${S}/book/submit`, body),
+  /** e-class 의 강의·과제·출석 현황(읽기 전용). 서버가 요청마다 e-class 에 로그인해 읽고 세션은 버린다 */
+  eclass: (creds: SchoolCredentials) => api.post<EclassSnapshot>(`${S}/eclass`, { creds }),
   /** 학교에 보낸 신청을 학교 신청내역의 취소로 취소한다. 사용자가 확인창에서 명시적으로 누른 한 번에만 부른다 */
   bookCancel: (creds: SchoolCredentials, reservationId: number) =>
     api.post<BookCancelResult>(`${S}/book/cancel`, { creds, reservationId }),

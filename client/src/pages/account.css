@@ -15,12 +15,16 @@
   margin-bottom: 0;
 }
 
-/* 이름 / 학교 이메일 */
+/* 이름 / 아이디: 왼쪽에 항목, 오른쪽에 값 — 한 줄에 하나씩 */
 .account-info {
   margin: 0;
 }
 .account-info__row {
-  padding: var(--sp-5) 0;
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--sp-3);
+  padding: var(--sp-4) 0;
   border-bottom: 1px solid var(--c-divider);
 }
 .account-info__row:first-child {
@@ -35,13 +39,24 @@
   color: var(--c-text-sub);
 }
 .account-info__val {
-  margin: var(--sp-1) 0 0;
+  margin: 0;
   font-size: var(--fs-md);
   color: var(--c-text);
+  overflow-wrap: anywhere;
 }
 .account-info__val--name {
-  font-size: var(--fs-lg);
   font-weight: var(--fw-bold);
+}
+
+/* 맨 아래 설정: 글자·화면 설정 / 차단한 사용자(/ 관리자 화면)를 좌우로 나란히, 작게 */
+.account-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.account-tools > * {
+  flex: 1 1 0;
+  min-width: 10rem;
 }
 
 /* 설정 행: 카드 안쪽 여백 없이 행 전체가 눌리도록 한다.
@@ -178,7 +193,7 @@
 }
 
 .lounge-acct-help {
-  margin: 0 0 var(--sp-6);
+  margin: 0 0 var(--sp-4);
   font-size: var(--fs-sm);
   color: var(--c-text-sub);
 }

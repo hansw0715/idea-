@@ -14,5 +14,10 @@
   ],
   "regions": [
     "icn1"
-  ]
+  ],
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 60
+    }
+  }
 }

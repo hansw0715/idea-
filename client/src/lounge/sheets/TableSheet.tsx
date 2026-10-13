@@ -312,7 +312,7 @@ export default function TableSheet({
     if (!ok) return;
     await perform(`join:${slot.key}`, 'join', { slotKey: slot.key }, {
       fail: '자리에 앉지 못했어요.',
-      done: `${slot.label} 자리에 앉았어요. 자리가 다 차면 단톡방이 열려요.`,
+      done: `${slot.label} 자리에 앉았어요.`,
     });
   }
 
@@ -639,13 +639,12 @@ export default function TableSheet({
                 <section aria-label="참여 신청">
                   <TextAreaField
                     label="주최자에게 한마디"
-                    help="수락하기 전에는 자리를 차지하지 않아요. 적지 않아도 신청할 수 있어요."
+                    help="적지 않아도 신청할 수 있어요."
                     placeholder="예) 저도 상상관에서 출발해요"
                     value={applyText}
                     maxLength={APPLY_MAX}
                     onChange={(e) => setApplyText(e.target.value)}
                     disabled={busy === 'apply'}
-                    autoFocus
                   />
                 </section>
               )}
@@ -836,7 +835,7 @@ function ReviewSection({
       <h3 className="lounge-gath-h3" id="lounge-gath-review-title">
         오늘 어땠어요?
       </h3>
-      <p className="text-sub text-sm">좋았어요를 받으면 매너온도가 올라가요. 약속을 어기거나 불쾌한 일이 있었다면 신고해 주세요.</p>
+      <p className="text-sub text-sm">불쾌한 일이 있었다면 신고해 주세요.</p>
       <ul className="lounge-gath-reviews">
         {others.map((m) => {
           const mine = g.myReviews[m.id];
@@ -941,7 +940,7 @@ function HostSection({
             </ul>
           ) : (
             g.status === 'open' && (
-              <p className="text-sub text-sm">아직 신청한 사람이 없어요. 신청이 오면 여기에서 수락하거나 거절할 수 있어요.</p>
+              <p className="text-sub text-sm">아직 신청한 사람이 없어요.</p>
             )
           )}
         </>

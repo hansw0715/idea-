@@ -180,6 +180,8 @@ interface SegmentedProps<T extends string> {
   onChange: (value: T) => void;
   options: { value: T; label: string }[];
   help?: ReactNode;
+  /** 라벨과 같은 줄 오른쪽 끝에 놓는 요소 (글자 버튼 등) */
+  labelAction?: ReactNode;
 }
 
 /** 2~3개 중 하나 고르기 (role=radiogroup, 좌우 방향키 이동) */
@@ -189,13 +191,24 @@ export function Segmented<T extends string>({
   onChange,
   options,
   help,
+  labelAction,
 }: SegmentedProps<T>) {
   const id = useId();
+  const labelEl = (
+    <span className="field__label" id={`${id}-label`}>
+      {label}
+    </span>
+  );
   return (
     <div className="field">
-      <span className="field__label" id={`${id}-label`}>
-        {label}
-      </span>
+      {labelAction ? (
+        <div className="field__labelrow">
+          {labelEl}
+          {labelAction}
+        </div>
+      ) : (
+        labelEl
+      )}
       <div className="segmented" role="radiogroup" aria-labelledby={`${id}-label`}>
         {options.map((o, i) => (
           <button

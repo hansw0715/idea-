@@ -83,63 +83,43 @@ export default function SchoolLinkCard() {
               <Badge tone="gray">연동 안 됨</Badge>
             </div>
             <p className="school-card__lead">
-              학교 계정을 연동하면 학교 시간표를 가져오고, 회의에서 잡은 시설을 학교에 바로 신청할 수 있어요.
-            </p>
-            <p className="school-card__lead">
-              저장되는 건 암호문뿐이고, 풀 수 있는 키는 이 기기에만 있어요.
+              학교 계정을 연동하면 시간표를 가져오고 시설을 학교에 바로 신청할 수 있어요.
             </p>
             <div className="school-card__actions">
-              <Button variant="secondary" onClick={() => setLinkOpen(true)}>
-                학교 계정 연동하기
+              <Button variant="secondary" size="sm" onClick={() => setLinkOpen(true)}>
+                다시 연동
               </Button>
             </div>
           </>
         ) : (
           <>
-            <div className="school-card__head">
-              <h3 className="card__title">연동 상태</h3>
+            <div className="school-card__who">
+              <p className="school-card__id">
+                <span className="school-card__num" aria-hidden="true">
+                  {school.hint}
+                </span>
+                <span className="sr-only">학번 끝 3자리 {hintDigits}</span>
+                {department ? <span className="school-card__dept">{department}</span> : null}
+              </p>
               {school.canUse ? <Badge tone="success">연동됨</Badge> : <Badge tone="warning">이 기기에서는 쓸 수 없음</Badge>}
             </div>
-
-            <dl className="school-info">
-              <div className="school-info__row">
-                <dt className="school-info__key">학번</dt>
-                <dd className="school-info__val">
-                  <span aria-hidden="true">{school.hint}</span>
-                  <span className="sr-only">끝 3자리 {hintDigits}</span>
-                </dd>
-              </div>
-              {department ? (
-                <div className="school-info__row">
-                  <dt className="school-info__key">소속</dt>
-                  <dd className="school-info__val">{department}</dd>
-                </div>
-              ) : null}
-              {linkedDate && (
-                <div className="school-info__row">
-                  <dt className="school-info__key">연동한 날</dt>
-                  <dd className="school-info__val">{linkedDate}</dd>
-                </div>
-              )}
-            </dl>
+            {linkedDate && <p className="school-card__date">연동한 날 {linkedDate}</p>}
 
             {school.canUse ? (
-              <div className="list school-card__menu">
-                <button type="button" className="list__item list__item--link" onClick={() => setTimetableOpen(true)}>
-                  <Icon name="calendar" className="school-card__icon" />
-                  <span className="list__body">
-                    <span className="list__main">학교 시간표 가져오기</span>
-                    <span className="list__sub">학교 개인시간표를 미리 보고 내 시간표에 넣어요.</span>
-                  </span>
-                  <Icon name="chevron-right" className="list__chev" />
-                </button>
-                <button type="button" className="list__item list__item--link" onClick={() => setReservationsOpen(true)}>
-                  <Icon name="pin" className="school-card__icon" />
-                  <span className="list__body">
-                    <span className="list__main">내 학교 예약 보기</span>
-                    <span className="list__sub">학교 예약 시스템에 접수된 내 신청내역이에요.</span>
-                  </span>
-                  <Icon name="chevron-right" className="list__chev" />
+              // 시간표 가져오기 : 예약 보기 : 연동 해제 = 4 : 4 : 2 (연동 해제는 조금 띄어서)
+              <div className="school-card__row">
+                <div className="school-card__split" role="group" aria-label="학교 계정 바로가기">
+                  <button type="button" className="school-card__split-btn" onClick={() => setTimetableOpen(true)}>
+                    <Icon name="calendar" className="btn__icon" />
+                    시간표 가져오기
+                  </button>
+                  <button type="button" className="school-card__split-btn" onClick={() => setReservationsOpen(true)}>
+                    <Icon name="pin" className="btn__icon" />
+                    예약 보기
+                  </button>
+                </div>
+                <button type="button" className="school-card__unlink" onClick={() => void unlink()}>
+                  연동 해제
                 </button>
               </div>
             ) : (
@@ -150,14 +130,17 @@ export default function SchoolLinkCard() {
               </div>
             )}
 
-            <div className="school-card__actions">
-              <Button variant={school.canUse ? 'tertiary' : 'secondary'} onClick={() => setLinkOpen(true)}>
-                다시 연동
-              </Button>
-              <Button variant="danger" onClick={() => void unlink()}>
-                연동 해제
-              </Button>
-            </div>
+            {/* 이 기기에서 풀 수 없을 때만 아래 줄에 다시 연동·연동 해제를 둔다(복구 수단). 평소의 연동 해제는 위 줄에 있다 */}
+            {!school.canUse && (
+              <div className="school-card__actions">
+                <Button variant="secondary" size="sm" onClick={() => setLinkOpen(true)}>
+                  다시 연동
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => void unlink()}>
+                  연동 해제
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>

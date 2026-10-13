@@ -114,7 +114,7 @@ describe('프로필 고치기 (PUT /me) — 아바타 색만', () => {
     expect(saved.ok).toBe(true);
     if (saved.ok) {
       expect(saved.value).toMatchObject({ avatarColor: 'm5', department: '컴퓨터공학부', admissionYear: 2022, temperature: 31.2, warnings: 1, banned: true });
-      expect(saved.value.nickname).toBe(maskName(u.name)); // '실명12' → '실○○○'
+      expect(saved.value.nickname).toBe(maskName(u.name)); // '실명12' → '실○○2'
     }
 
     const after = await get<Record<string, unknown>>('SELECT * FROM users WHERE id = ?', [u.id]);

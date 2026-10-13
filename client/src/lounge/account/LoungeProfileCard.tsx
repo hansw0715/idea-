@@ -44,8 +44,8 @@ export default function LoungeProfileCard() {
           </div>
         </div>
 
-        <p className="lounge-acct-help">이름·학과·학번은 연동한 학교 계정에서 가져와요. 직접 고칠 수 없어요. 불쾌한 일은 라운지에서 신고할 수 있어요.</p>
-        <Button variant="secondary" block onClick={openProfileSheet}>
+        <p className="lounge-acct-help">이름·학과·학번은 학교 계정에서 가져와요.</p>
+        <Button variant="secondary" size="sm" onClick={openProfileSheet}>
           프로필 이미지 바꾸기
         </Button>
       </>

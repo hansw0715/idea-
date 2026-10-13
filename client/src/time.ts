@@ -1,7 +1,9 @@
 export const DAY_NAMES = ['월', '화', '수', '목', '금'];
 export const OPEN_MIN = 540; // 09:00
 // 시간표에 적을 수 있는 범위 (야간 수업·아르바이트까지)
-export const CLOSE_MIN = 1320; // 22:00
+export const CLOSE_MIN = 1440; // 24:00
+// 시간표 격자의 기본 끝(일정이 없으면 여기까지만 그린다). 이보다 늦은 일정이 있으면 그 시각까지 늘어난다.
+export const GRID_DEFAULT_CLOSE_MIN = 1020; // 17:00
 // 시설 예약·공통 여유 시간도 같은 22시까지 다룬다
 export const RESERVE_CLOSE_MIN = 1320; // 22:00
 export const STEP_MIN = 30;

@@ -14,7 +14,8 @@
 }
 
 .home-ul .list__item {
-  padding: var(--sp-5) var(--sp-6);
+  padding: var(--sp-4) var(--sp-5);
+  gap: var(--sp-3);
   border-bottom: 0;
 }
 
@@ -25,7 +26,7 @@
 }
 
 .home-badge {
-  margin-top: var(--sp-3);
+  flex: none;
 }
 
 .home-more {
@@ -92,4 +93,102 @@
   padding-bottom: var(--sp-1);
   white-space: normal;
   line-height: 1.3;
+}
+
+/* ── 내 일정 상자: 다가오는 예약 · 내 회의 · 내 라운지 약속을 한 카드 안에 묶음으로 ───────── */
+.home-sum__group + .home-sum__group {
+  border-top: 1px solid var(--c-border);
+}
+.home-sum__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5) var(--sp-2);
+}
+.home-sum__title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.home-sum__link {
+  font-size: var(--fs-sm);
+  color: var(--c-action-text);
+  text-decoration: none;
+}
+.home-sum__link:hover {
+  text-decoration: underline;
+}
+.home-sum__empty {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-5) var(--sp-5);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.home-sum__empty a {
+  color: var(--c-action-text);
+}
+.home-sum__more {
+  margin: 0;
+  padding: var(--sp-1) var(--sp-5) var(--sp-4);
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.home-sum__error {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
+  padding: var(--sp-2) var(--sp-5) var(--sp-5);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.home-sum__error p {
+  margin: 0;
+}
+/* 묶음 안의 행은 머리글 아래에서 카드 가장자리까지 닿는다 */
+.home-sum .home-ul > li:first-child .list__item {
+  padding-top: var(--sp-3);
+}
+
+/* ── 홈 머리: 왼쪽 위에 "홈", 오른쪽에 오늘 날짜 ───────────────────────────────────────── */
+.home-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-3) 0 var(--sp-5);
+  margin-bottom: var(--sp-4);
+  border-bottom: 2px solid var(--c-action);
+}
+.home-hero__who {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.home-hero__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--r);
+  background: var(--c-action-bg-strong);
+  color: var(--c-action-text);
+}
+.home-hero__mark svg {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+.home-hero__title {
+  margin: 0;
+  font-size: var(--fs-h1);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+}
+.home-hero__date {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  white-space: nowrap;
 }

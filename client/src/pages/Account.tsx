@@ -14,6 +14,7 @@ import {
   Button,
   Icon,
   PasswordField,
+  btnClass,
   TextField,
   useConfirm,
   useDisplay,
@@ -154,27 +155,17 @@ export default function Account() {
           <SchoolLinkCard />
         </div>
 
-        <section className="section" aria-labelledby="account-settings-title">
-          <div className="section__head">
-            <h2 className="section__title" id="account-settings-title">
-              설정
-            </h2>
-          </div>
-          <div className="card card--list account-menu">
-            <div className="list">
-              <button type="button" className="list__item list__item--link" onClick={openSettings}>
-                <Icon name="text-size" className="account-menu__icon" />
-                <span className="list__body">
-                  <span className="list__main">글자·화면 설정</span>
-                  <span className="list__sub">
-                    글자 크기 {Math.round(zoom * 100)}% · {contrastLabel}
-                  </span>
-                </span>
-                <Icon name="chevron-right" className="list__chev" />
-              </button>
-              {LOUNGE_ENABLED && <LoungeAccountRows />}
-            </div>
-          </div>
+        <section className="section account-tools" aria-label="설정">
+          <button
+            type="button"
+            className={btnClass({ variant: 'secondary', size: 'sm' })}
+            onClick={openSettings}
+            title={`글자 크기 ${Math.round(zoom * 100)}% · ${contrastLabel}`}
+          >
+            <Icon name="text-size" className="btn__icon" />
+            글자·화면 설정
+          </button>
+          {LOUNGE_ENABLED && <LoungeAccountRows />}
         </section>
 
         <section className="section account-logout">

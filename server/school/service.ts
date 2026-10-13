@@ -54,6 +54,8 @@ import {
 } from './http.js';
 import type { FetchLike, SchoolOrigins } from './http.js';
 import { fetchProfile, fetchTimetable, loginInfo } from './info.js';
+import { createEclassFlow } from './eclass.js';
+import type { EclassSnapshot } from '../../shared/school/eclass.js';
 import {
   admissionYearOf,
   buildPayload,
@@ -232,6 +234,7 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
   const now = deps.now ?? Date.now;
   const origins = (): SchoolOrigins => (deps.origins ? deps.origins() : resolveOrigins());
   const newInfoHttp = (): SchoolHttp => new SchoolHttp('info', { fetch: deps.fetch, origins: origins(), now });
+  const newEclassHttp = (): SchoolHttp => new SchoolHttp('eclass', { fetch: deps.fetch, origins: origins(), now });
   const newResve = (): ResveClient => new ResveClient(new SchoolHttp('resve', { fetch: deps.fetch, origins: origins(), now }));
 
   const toProfile = (p: ParsedProfile): SchoolProfile => ({
@@ -827,7 +830,35 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
       : { status: 'nothing-to-cancel', message: '학교 신청내역에 이 신청이 없어요. 앱의 예약만 지우면 돼요.' };
   }
 
-  return { getLink, link, verifyStudent, unlink, timetablePreview, timetableImport, myReservations, bookPreview, bookSubmit, bookCancel };
+  // ── e-class (읽기 전용 조회) ──────────────────────────────────
+
+  /**
+   * e-class 의 강의·과제·출석 현황. 연동한 학번과 같은 계정으로 요청마다 e-class 에 로그인해 읽고 세션은 버린다.
+   * 학교 로그인 가드(연속 5회 실패 30분 잠금)를 같이 쓴다: 잠겨 있으면 e-class 에도 요청하지 않는다.
+   */
+  async function eclassOverview(uid: number, body: unknown): Promise<EclassSnapshot> {
+    const o = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
+    const creds = parseCredentials(o.creds);
+    hitLimiter(schoolCallLimiter, uid);
+    await requireLinked(uid, creds);
+    const flow = createEclassFlow(newEclassHttp(), { now });
+    const budget = await guardedLogin(creds.studentId, () => flow.login(creds), now);
+    return flow.snapshot(budget);
+  }
+
+  return {
+    getLink,
+    link,
+    verifyStudent,
+    unlink,
+    timetablePreview,
+    timetableImport,
+    myReservations,
+    bookPreview,
+    bookSubmit,
+    bookCancel,
+    eclassOverview,
+  };
 }
 
 export type SchoolService = ReturnType<typeof createSchoolService>;

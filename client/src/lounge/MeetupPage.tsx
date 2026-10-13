@@ -47,7 +47,7 @@ export default function MeetupPage() {
           </Alert>
         ) : (
           <>
-            <p className="page-lead lounge-hub-lead">자리에 앉으면 바로 참여돼요. 자리가 다 차면 단톡방이 열려요.</p>
+            <p className="page-lead lounge-hub-lead">자리에 앉으면 바로 참여돼요.</p>
             <Button variant="primary" size="lg" block disabled={profile.banned} onClick={() => setCreateOpen(true)}>
               <Icon name="plus" className="btn__icon" />
               미팅 자리 만들기

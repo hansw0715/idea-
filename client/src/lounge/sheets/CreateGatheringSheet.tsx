@@ -193,7 +193,7 @@ function CreateForm({
     }
     if (codePoints(body.trim()) > BODY_MAX) e.body = `소개는 ${BODY_MAX}자까지 쓸 수 있어요.`;
     const p = place.trim();
-    if (codePoints(p) < 1) e.place = '장소가 비어 있어요. 만날 곳을 적어 주세요. 예) 상상관 앞';
+    if (codePoints(p) < 1) e.place = '장소가 비어 있어요. 만날 곳을 적어 주세요.';
     else if (codePoints(p) > PLACE_MAX) e.place = `장소는 ${PLACE_MAX}자까지 쓸 수 있어요.`;
 
     const now = Date.now();
@@ -307,7 +307,6 @@ function CreateForm({
             value={size}
             onChange={setSize}
             options={sizeOptions}
-            help={`우리 쪽 / 상대 쪽으로 자리가 나뉘어요. 나는 '우리 쪽' 자리에 먼저 앉아요. 선착순이라 구성이 깨지지 않아요.`}
           />
           <TextField
             id={fid('title')}
@@ -315,7 +314,6 @@ function CreateForm({
             required
             value={title}
             maxLength={TITLE_MAX}
-            placeholder={`예) 금요일 저녁 ${size} 하실 분!`}
             help={`${title.length}/${TITLE_MAX}`}
             error={errors.title}
             onChange={(e) => {
@@ -329,7 +327,6 @@ function CreateForm({
             required
             value={place}
             maxLength={PLACE_MAX}
-            placeholder="예) 삼선교"
             error={errors.place}
             onChange={(e) => {
               setPlace(e.target.value);
@@ -353,7 +350,6 @@ function CreateForm({
           <Choice
             type="checkbox"
             label="같은 과는 빼고"
-            description="아는 사람을 마주치지 않게, 같은 학과 사람은 참여할 수 없어요."
             checked={excludeSameDept}
             onChange={(e) => setExcludeSameDept(e.target.checked)}
           />
@@ -374,7 +370,7 @@ function CreateForm({
               <TextAreaField
                 id={fid('body')}
                 label="소개"
-                placeholder="어떤 분위기로 만나고 싶은지 적어 주세요."
+                placeholder="소개 (선택)"
                 value={body}
                 maxLength={BODY_MAX}
                 error={errors.body}
@@ -401,7 +397,7 @@ function CreateForm({
           </div>
           {!detailsOpen && deadline && (
             <p className="field__help lounge-gath-autoline">
-              신청 마감은 {deadlineLabel(deadline)}로 정해져요. 바꾸려면 상세 설정을 열어 주세요.
+              신청 마감 {deadlineLabel(deadline)}
             </p>
           )}
           {errors.deadline && !detailsOpen && (
@@ -418,7 +414,6 @@ function CreateForm({
             value={String(capacity)}
             onChange={(v) => setCapacity(Number(v))}
             options={capacityOptions}
-            help="나를 포함한 인원이에요. 신청한 사람 중에서 내가 수락해요."
           />
           <TextField
             id={fid('title')}
@@ -426,7 +421,6 @@ function CreateForm({
             required
             value={title}
             maxLength={TITLE_MAX}
-            placeholder="예) 오늘 점심 학식 같이 드실 분"
             help={`${title.length}/${TITLE_MAX}`}
             error={errors.title}
             onChange={(e) => {
@@ -437,7 +431,7 @@ function CreateForm({
           <TextAreaField
             id={fid('body')}
             label="소개"
-            placeholder="몇 시에 어디서 만날지, 어떤 사람이면 좋을지 적어 주세요."
+            placeholder="자세한 내용 (선택)"
             value={body}
             maxLength={BODY_MAX}
             error={errors.body}
@@ -452,7 +446,6 @@ function CreateForm({
             required
             value={place}
             maxLength={PLACE_MAX}
-            placeholder="예) 상상관 앞, 삼선교 먹자골목"
             error={errors.place}
             onChange={(e) => {
               setPlace(e.target.value);
@@ -488,7 +481,6 @@ function CreateForm({
                 );
               })}
             </div>
-            <p className="field__help">분위기를 미리 맞춰 두면 신청할 때 서로 편해요. 여러 개 고를 수 있어요.</p>
           </div>
           <TextField
             id={fid('meetAt')}
@@ -560,7 +552,7 @@ function DeadlineField({
         value={value}
         min={toLocalInput(new Date())}
         error={error}
-        help="마감 뒤에는 참여를 취소할 수 없어요. 약속을 지키게 하려는 장치예요."
+        help="마감 뒤에는 참여를 취소할 수 없어요."
         onChange={(e) => onChange(e.target.value)}
       />
       {edited && (

@@ -41,7 +41,17 @@ export function Sheet({ open, onClose, title, children, footer, full = false, in
     if (!dialog) return;
     if (open && render && !dialog.open) {
       dialog.showModal();
-      if (initialFocus) dialog.querySelector<HTMLElement>(initialFocus)?.focus();
+      // 시트가 열리자마자 키보드가 올라와 화면을 가리지 않게, 글자 입력 칸에는 자동으로 포커스를 주지 않는다.
+      // (입력 칸이 아닌 요소는 그대로 initialFocus 로 포커스한다. 입력은 사용자가 칸을 눌렀을 때 시작한다.)
+      const isTextEntry = (el: Element | null): boolean =>
+        !!el && el.matches('textarea, input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="range"])');
+      const wanted = initialFocus ? dialog.querySelector<HTMLElement>(initialFocus) : null;
+      if (wanted && !isTextEntry(wanted)) wanted.focus();
+      else if (isTextEntry(document.activeElement)) {
+        // 브라우저 기본 동작이나 autofocus 로 입력 칸이 잡혔다면 닫기 버튼으로 옮긴다
+        (document.activeElement as HTMLElement).blur();
+        dialog.querySelector<HTMLElement>('.sheet__head button')?.focus();
+      }
     } else if (!open && dialog.open) {
       dialog.close();
     }

@@ -32,7 +32,7 @@
 }
 
 .tt-page__guide {
-  margin-top: var(--sp-5);
+  margin: var(--sp-2) 0 var(--sp-4);
   font-size: var(--fs-sm);
   color: var(--c-text-sub);
 }
@@ -59,4 +59,37 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   column-gap: var(--sp-5);
+}
+
+/* 시간표 / 과목 검색 탭: 두 탭이 같은 크기로 나란히, 누르기 좋은 높이(터치 최소 44px) + 위아래 여백 */
+.tt-page .tabs {
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 var(--sp-4);
+  /* 탭 두 개가 늘 한 줄에 들어가므로 스크롤 영역(위아래 화살표)이 생기지 않게 한다 */
+  overflow: visible;
+}
+.tt-page .tabs__tab {
+  flex: 1 1 0;
+  height: var(--touch);
+  min-height: var(--touch);
+  margin-bottom: 0;
+  padding: 0 var(--sp-5);
+  font-size: var(--fs-md);
+}
+
+/* 격자 아래쪽 가운데에 살짝 걸쳐 놓인 "○○:00 이후 보기" / "접기" 버튼 */
+.tt-page__gridwrap {
+  position: relative;
+  margin-bottom: var(--sp-6);
+}
+.tt-page__evening {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 7;
+  transform: translate(-50%, 50%);
+}
+.tt-page__evening .tag {
+  background: var(--c-bg);
+  border-color: var(--c-border);
 }

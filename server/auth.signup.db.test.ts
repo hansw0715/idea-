@@ -281,7 +281,7 @@ describe('POST /api/auth/signup — 가입 ② 아이디·비밀번호 + 연동'
       school_admission_year: 2021,
       school_student_hash: studentLinkHash('2021204044'),
       // 라운지 프로필은 가입과 동시에 학교 계정 정보로 만들어진다
-      nickname: '박○○',
+      nickname: '박○재',
       college: '',
       department: 'AI응용학과',
       admission_year: 2021,

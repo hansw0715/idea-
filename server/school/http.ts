@@ -3,7 +3,7 @@
  * 설계: docs/school/00-design.md §2·§3
  *
  * 지키는 것
- *  - 요청은 `info.hansung.ac.kr`, `hansung.ac.kr` 두 호스트로만 나간다. 리다이렉트로 다른 호스트에 끌려가도 막는다 (SSRF 방지).
+ *  - 요청은 `info.hansung.ac.kr`, `hansung.ac.kr`, `learn.hansung.ac.kr`(e-class) 세 호스트로만 나간다. 리다이렉트로 다른 호스트에 끌려가도 막는다 (SSRF 방지).
  *  - 리다이렉트는 직접 처리한다 (`redirect:'manual'`). 로그인·제출처럼 따라가면 안 되는 요청은 따라가지 않는다.
  *  - 쿠키는 인스턴스마다 따로 둔 jar 에 쌓는다 (Domain/Path 반영). 사용자 사이, 요청 사이에 쿠키가 섞이지 않는다.
  *  - 타임아웃 10초, 응답 2MB 제한, 항상 같은 User-Agent.
@@ -174,12 +174,15 @@ export type SchoolOrigins = {
   info: string;
   /** 시설 예약 (공용 CMS) */
   resve: string;
+  /** e-class (Moodle). 생략하면 info 가 가짜 학교일 때는 같은 가짜 학교, 아니면 운영 주소 */
+  eclass?: string;
 };
 
 /** 운영에서 쓰는 유일한 대상 */
 export const SCHOOL_ORIGINS: SchoolOrigins = {
   info: 'https://info.hansung.ac.kr',
   resve: 'https://hansung.ac.kr',
+  eclass: 'https://learn.hansung.ac.kr',
 };
 
 export const SCHOOL_USER_AGENT =
@@ -227,12 +230,12 @@ export function mockOriginFromEnv(): string | null {
 
 export function resolveOrigins(): SchoolOrigins {
   const mock = mockOriginFromEnv();
-  return mock ? { info: mock, resve: mock } : SCHOOL_ORIGINS;
+  return mock ? { info: mock, resve: mock, eclass: mock } : SCHOOL_ORIGINS;
 }
 
 function checkOrigins(origins: SchoolOrigins): void {
-  for (const origin of [origins.info, origins.resve]) {
-    if (origin === SCHOOL_ORIGINS.info || origin === SCHOOL_ORIGINS.resve) continue;
+  for (const origin of [origins.info, origins.resve, origins.eclass].filter((o): o is string => typeof o === 'string')) {
+    if (origin === SCHOOL_ORIGINS.info || origin === SCHOOL_ORIGINS.resve || origin === SCHOOL_ORIGINS.eclass) continue;
     if (!isProduction() && isLoopbackOrigin(origin)) continue;
     throw new Error('허용되지 않은 학교 주소입니다.');
   }
@@ -437,11 +440,13 @@ export class SchoolHttp {
   private readonly maxBytes: number;
   private readonly now: () => number;
 
-  constructor(kind: 'info' | 'resve', opts: SchoolHttpOptions = {}) {
+  constructor(kind: 'info' | 'resve' | 'eclass', opts: SchoolHttpOptions = {}) {
     const origins = opts.origins ?? resolveOrigins();
     checkOrigins(origins);
-    this.origin = origins[kind];
-    this.allowedHosts = new Set([new URL(origins.info).host, new URL(origins.resve).host]);
+    // 가짜 학교(info 가 운영 주소가 아님)면 e-class 도 같은 가짜 학교로 보낸다
+    const eclass = origins.eclass ?? (origins.info === SCHOOL_ORIGINS.info ? SCHOOL_ORIGINS.eclass! : origins.info);
+    this.origin = kind === 'eclass' ? eclass : origins[kind];
+    this.allowedHosts = new Set([new URL(origins.info).host, new URL(origins.resve).host, new URL(eclass).host]);
     this.doFetch = opts.fetch ?? ((input, init) => fetch(input, init));
     this.timeoutMs = opts.timeoutMs ?? REQUEST_TIMEOUT_MS;
     this.maxBytes = opts.maxBytes ?? MAX_BODY_BYTES;

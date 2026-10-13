@@ -73,6 +73,7 @@ export function createSchoolRouter(service: SchoolService): Router {
 
   router.post('/book/preview', route(async (req, res) => { res.json(await service.bookPreview(userId(res), bodyOf(req))); }));
   router.post('/book/submit', route(async (req, res) => { res.json(await service.bookSubmit(userId(res), bodyOf(req))); }));
+  router.post('/eclass', route(async (req, res) => { res.json(await service.eclassOverview(userId(res), bodyOf(req))); }));
   router.post('/book/cancel', route(async (req, res) => { res.json(await service.bookCancel(userId(res), bodyOf(req))); }));
 
   return router;

@@ -212,7 +212,7 @@ describe('SCHOOL_MOCK_ORIGIN (테스트 전용 주입)', () => {
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('SCHOOL_MOCK_ORIGIN', 'http://127.0.0.1:4555/');
     expect(mockOriginFromEnv()).toBe('http://127.0.0.1:4555');
-    expect(resolveOrigins()).toEqual({ info: 'http://127.0.0.1:4555', resve: 'http://127.0.0.1:4555' });
+    expect(resolveOrigins()).toEqual({ info: 'http://127.0.0.1:4555', resve: 'http://127.0.0.1:4555', eclass: 'http://127.0.0.1:4555' });
     vi.stubEnv('SCHOOL_MOCK_ORIGIN', 'https://evil.example.com');
     expect(mockOriginFromEnv()).toBeNull();
     expect(resolveOrigins()).toEqual(SCHOOL_ORIGINS);

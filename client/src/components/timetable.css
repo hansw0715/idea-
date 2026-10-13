@@ -8,8 +8,8 @@
 
 /* ── 격자 ─────────────────────────────────────────────────────── */
 .tt {
-  --tt-axis: 4.8rem; /* 시각 축 폭: 글자("10:00")를 가운데에 두어도 양쪽 선에 닿지 않을 만큼 */
-  --tt-hour: 4.6rem; /* 1시간 높이 */
+  --tt-axis: 4.2rem; /* 시각 축 폭: 글자("10:00")를 가운데에 두어도 양쪽 선에 닿지 않을 만큼 (기존 4.8rem 에서 줄임) */
+  --tt-hour: 3.7rem; /* 1시간 높이 (기존 4.6rem 의 80%) */
   --tt-hours: 13; /* 09:00 ~ 22:00 (JS 에서 덮어쓴다) */
 
   --tt-line: var(--c-divider);
@@ -18,14 +18,14 @@
   --tt-today-bg: var(--primary-5);
   --tt-today-bar: var(--c-action);
 
-  /* 내 수업·일정: 인디고 틴트 + 왼쪽 막대 */
-  --tt-class-bg: var(--primary-10);
-  --tt-class-bar: var(--primary-50);
-  --tt-class-line: var(--primary-30);
-  /* 회의 예약: 초록 틴트 + 막대 + 빗금 + "예약" 글자 */
-  --tt-res-bg: var(--success-5);
-  --tt-res-bar: var(--success-50);
-  --tt-res-line: var(--success-50);
+  /* 내 수업·일정: 흰 바탕 + 진한 윤곽선 + 왼쪽 굵은 막대 (컴퓨터·휴대폰 모두 같은 모양) */
+  --tt-class-bg: var(--gray-0);
+  --tt-class-bar: var(--primary-80);
+  --tt-class-line: var(--gray-100);
+  /* 회의 예약: 흰 바탕 + 진한 윤곽선 + 초록 막대 + 빗금 + "예약" 글자 */
+  --tt-res-bg: var(--gray-0);
+  --tt-res-bar: var(--success-70);
+  --tt-res-line: var(--gray-100);
   --tt-res-text: var(--success-70);
   --tt-res-hatch: var(--success-5);
   --tt-res-hatch: color-mix(in srgb, var(--success-50) 20%, var(--c-bg));
@@ -553,20 +553,20 @@
   width: 2rem;
   height: 1.4rem;
   border-radius: var(--r-xs);
-  border-left: 0.3rem solid var(--primary-50);
-  background: var(--primary-10);
-  box-shadow: inset 0 0 0 1px var(--primary-30);
+  border-left: 0.3rem solid var(--primary-80);
+  background: var(--gray-0);
+  box-shadow: inset 0 0 0 1px var(--gray-100);
 }
 .tt-swatch--res {
   --tt-res-hatch: var(--success-5);
   --tt-res-hatch: color-mix(in srgb, var(--success-50) 20%, var(--c-bg));
-  border-left-color: var(--success-50);
-  box-shadow: inset 0 0 0 1px var(--success-50);
-  background-color: var(--success-5);
+  border-left-color: var(--success-70);
+  box-shadow: inset 0 0 0 1px var(--gray-100);
+  background-color: var(--gray-0);
   background-image: repeating-linear-gradient(
     135deg,
-    var(--success-5) 0,
-    var(--success-5) 0.3rem,
+    var(--gray-0) 0,
+    var(--gray-0) 0.3rem,
     var(--tt-res-hatch, var(--success-5)) 0.3rem,
     var(--tt-res-hatch, var(--success-5)) 0.5rem
   );
@@ -647,17 +647,20 @@
 
 .tt-cs__pair {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  column-gap: var(--sp-5);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--sp-4);
 }
 
 .tt-cs__count {
-  margin: var(--sp-2) 0 var(--sp-2);
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-bold);
+  margin: var(--sp-2) 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
 }
 
 .tt-cs__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   border-top: 1px solid var(--c-border);
   transition: opacity var(--t-fade);
 }
@@ -665,47 +668,65 @@
   opacity: 0.5;
 }
 
+/* 한 과목 = 두 줄: 이름(+분류) / 시간·강의실·교수. 오른쪽 끝에 작은 담기 */
 .tt-cs__row {
   border-bottom: 1px solid var(--c-divider);
 }
-.tt-cs__row .list__item {
-  border-bottom: 0;
-  align-items: flex-start;
+.tt-cs__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
 }
-
+.tt-cs__body {
+  flex: 1;
+  min-width: 0;
+}
 .tt-cs__name {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-2) var(--sp-3);
+  align-items: baseline;
+  gap: 0 var(--sp-2);
+  margin: 0;
+}
+.tt-cs__title {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  overflow-wrap: anywhere;
+}
+.tt-cs__cat {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.tt-cs__meta {
+  margin: 0.2rem 0 0;
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  color: var(--c-text-sub);
 }
 
 .tt-cs__item .btn.tt-cs__add {
   flex: none;
-  min-height: var(--touch);
-  min-width: var(--touch);
-}
-
-.tt-cs__online {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-2);
-  color: var(--c-text-muted);
-  font-size: var(--fs-xs);
-}
-.tt-cs__online svg {
-  flex: none;
-  width: 1.6rem;
-  height: 1.6rem;
-  margin-top: 0.1rem;
+  min-height: 3.2rem;
+  padding: 0 var(--sp-4);
+  font-size: var(--fs-sm);
 }
 
 .tt-cs__row .alert {
-  margin-bottom: var(--sp-4);
+  margin-bottom: var(--sp-3);
 }
 
 .tt-cs__more {
   padding: var(--sp-5) 0;
   font-size: var(--fs-sm);
   color: var(--c-text-sub);
+}
+
+/* 과목 검색 입력칸·선택칸: 비활성(학과를 고르기 전)일 때도 회색 바탕 대신 흰색.
+   이 파일이 전역 css 보다 먼저 읽히므로 클래스를 겹쳐 우선순위를 높인다. */
+.tt-cs .input.input,
+.tt-cs .input.input:disabled,
+.tt-cs .select.select,
+.tt-cs .select.select:disabled {
+  background: var(--c-bg);
 }

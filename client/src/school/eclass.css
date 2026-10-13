@@ -1,0 +1,165 @@
+/* 홈의 e-class 알림 (접두사 school-eclass) */
+.school-eclass-empty {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
+  padding: var(--sp-5);
+}
+.school-eclass {
+  display: grid;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+}
+.school-eclass__warnings {
+  margin: 0;
+  padding-left: var(--sp-5);
+}
+.school-eclass__filters {
+  display: grid;
+  gap: 0;
+}
+/* 항목 종류(강의/과제) 바로 아래에 개수 줄이 붙도록 필드의 아래 여백을 없앤다 */
+.school-eclass__filters > .field {
+  margin-bottom: var(--sp-2);
+}
+.school-eclass__toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-1) var(--sp-4);
+}
+.school-eclass__tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.school-eclass__tally b {
+  margin-left: 0.15rem;
+  font-size: var(--fs-sm);
+  color: var(--c-text);
+}
+.school-eclass__groups {
+  display: grid;
+  gap: var(--sp-5);
+}
+.school-eclass__group {
+  display: grid;
+  gap: var(--sp-2);
+}
+.school-eclass__course {
+  margin: 0;
+  padding-bottom: var(--sp-2);
+  border-bottom: 2px solid var(--c-border);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--c-text-sub);
+}
+.school-eclass__list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.school-eclass__item {
+  display: grid;
+  gap: var(--sp-1);
+  padding: var(--sp-3) 0;
+  border-top: 1px solid var(--c-border);
+}
+.school-eclass__item:first-child {
+  border-top: 0;
+}
+.school-eclass__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.school-eclass__title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+  text-decoration: none;
+}
+.school-eclass__title:hover {
+  text-decoration: underline;
+}
+.school-eclass__title:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.school-eclass__row > :last-child {
+  flex: none;
+}
+.school-eclass__sub {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.school-eclass__none {
+  margin: 0;
+  color: var(--c-text-sub);
+}
+.school-eclass__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.school-eclass__stamp {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+/* 글자 버튼(알약·테두리 없음): 이번주 완료 보기 · 새로고침 */
+.school-eclass__textbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: 3.2rem;
+  padding: 0 var(--sp-1);
+  border: 0;
+  background: transparent;
+  color: var(--c-action-text);
+  /* 왼쪽 "항목 종류" 라벨(.field__label)과 같은 글자 크기·굵기 */
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.school-eclass__textbtn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.school-eclass__textbtn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.school-eclass__textbtn:disabled {
+  color: var(--c-disabled-text, var(--c-text-sub));
+}
+.school-eclass__textbtn .btn__icon {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+.school-eclass__refresh {
+  flex: none;
+  color: var(--c-text-sub);
+}
+.school-eclass__refresh:not(:disabled):hover {
+  color: var(--c-text);
+}
+
+/* 확인하는 중에는 새로고침 화살표가 계속 돌아, 멈추지 않고 진행 중임을 보여 준다 (spin 은 components.css) */
+.school-eclass__refresh[aria-busy='true'] {
+  color: var(--c-text);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .school-eclass__refresh[aria-busy='true'] .btn__icon {
+    animation: spin 0.9s linear infinite;
+  }
+}
