@@ -1,308 +1,411 @@
-/* 홈(대시보드) 전용 스타일 — 접두사 home-
-   배치: 학교 이름 → 옆으로 넘기는 요약 카드 → 배너 → e-class → 내 일정 표
-   색·버튼은 공통 토큰을 그대로 쓰고, 홈의 카드만 둥글기를 크게(--home-r) 준다. */
+/* ───────────────────────────────────────────────────────────────
+   홈 — taste-skill "editorial greeting" (seed 1965601332)
+   · 제목(h1)은 사람 이름 + 오늘 가장 먼저 챙길 사실 한 줄, 그 아래 회색 한 줄(날짜·개수)
+   · 패널은 흰 페이지 위 한 단계 옅은 면. 선·띠·그림자 없음, 숫자는 보통 굵기의 tabular
+   · 휴대폰: 중요한 순서대로 한 열 (미수강 강의 → 오늘 수업 → 다음 예약 → 회의 → 공지 → 라운지)
+   · 넓은 화면: 12열 격자에서 7 + 5 두 열. 각 열은 따로 쌓아 카드 사이가 벌어지지 않게 한다
+     (본문 1120px - 좌우 여백 = 약 1072px → 7열 621 + 거터 16 + 5열 435)
+   ─────────────────────────────────────────────────────────────── */
 
 .home-page {
-  --home-r: 1.6rem;
+  container: home / inline-size;
 }
 
-/* ── 학교 이름 + 오늘 날짜 ───────────────────────────────────── */
-.home-hero {
+/* ── 제목 줄 ── */
+.home-head {
   display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: var(--sp-4);
-  padding: var(--sp-2) 0 var(--sp-6);
+  gap: var(--sp-5) var(--sp-7);
+  padding: var(--sp-3) 0 var(--sp-8);
 }
-.home-hero__title {
+
+.home-head__text {
+  flex: 1 1 28rem;
+  min-width: 0;
+}
+
+.home-head__title {
   margin: 0;
   font-size: var(--fs-display);
   font-weight: var(--fw-bold);
-  line-height: 1.2;
-}
-.home-hero__date {
-  margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-  white-space: nowrap;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 
-/* ── 옆으로 넘기는 요약 카드 ─────────────────────────────────── */
-/* 카드가 화면 오른쪽 끝에 걸쳐 보여 "옆으로 더 있다"는 걸 알린다 */
-.home-cards {
-  margin: 0 calc(var(--gutter) * -1);
-}
-.home-cards__track {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(24rem, 64%);
-  gap: var(--sp-5);
-  padding: 0 var(--gutter) var(--sp-2);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding: 0 var(--gutter);
-  scrollbar-width: none;
-}
-.home-cards__track::-webkit-scrollbar {
-  display: none;
-}
-.home-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  min-height: 15rem;
-  padding: var(--sp-7) var(--sp-7) var(--sp-6);
-  border: 1px solid var(--c-border-soft);
-  border-radius: var(--home-r);
-  background: var(--c-bg);
-  scroll-snap-align: start;
-}
-.home-card--accent {
-  border-color: var(--c-action-bg-strong);
-  background: var(--c-action-bg);
-}
-.home-card__title {
-  margin: 0;
-  font-size: var(--fs-h3);
-  font-weight: var(--fw-bold);
-  line-height: 1.3;
-}
-.home-card__sub {
-  margin: 0;
-  font-size: var(--fs-md);
+.home-head__sub {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-sm);
   color: var(--c-text-sub);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-.home-card__more,
-.home-card__act {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  min-height: var(--touch);
-  font-size: var(--fs-md);
-  font-weight: var(--fw-bold);
-  color: var(--c-text-sub);
-  text-decoration: none;
-}
-.home-card__more {
-  margin-top: auto;
-  align-self: flex-start;
-}
-.home-card--accent .home-card__more {
-  color: var(--c-action-text);
-}
-.home-card__more svg,
-.home-card__act svg {
-  width: 1.8rem;
-  height: 1.8rem;
-}
-.home-card__actions {
+
+.home-head__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-6);
-  margin-top: auto;
-}
-@media (hover: hover) {
-  .home-card__more:hover,
-  .home-card__act:hover {
-    color: var(--c-action-text);
-  }
+  gap: var(--sp-3);
 }
 
-/* ── 배너 ───────────────────────────────────────────────────── */
-.home-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-5);
-  margin-top: var(--sp-8);
-  padding: var(--sp-7);
-  border-radius: var(--home-r);
-  background: var(--c-action);
-  color: var(--c-on-action);
-  text-decoration: none;
-}
-.home-banner__text {
+/* ── 격자: 휴대폰에서는 두 열 묶음을 풀고(display: contents) 중요한 순서대로 세운다 ── */
+.home-grid {
   display: grid;
-  gap: var(--sp-3);
+  gap: var(--sp-5);
+  align-content: start;
+}
+
+.home-col {
+  display: contents;
+}
+
+.home-col > * {
   min-width: 0;
 }
-.home-banner__text strong {
-  font-size: var(--fs-h3);
-  font-weight: var(--fw-bold);
-  line-height: 1.35;
-}
-.home-banner__sub {
-  font-size: var(--fs-sm);
-  opacity: 0.85;
-}
-.home-banner__art {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 6.4rem;
-  height: 6.4rem;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
-}
-.home-banner__art svg {
-  width: 3.2rem;
-  height: 3.2rem;
-}
-@media (hover: hover) {
-  .home-banner:hover {
-    background: var(--c-action-hover);
-  }
+
+.home-panel--eclass { order: 1; }
+.home-panel--today { order: 2; }
+.home-panel--res { order: 3; }
+.home-panel--meet { order: 4; }
+.home-panel--notice { order: 5; }
+.home-panel--lounge { order: 6; }
+
+/* ── 패널: 흰 페이지 위 한 단계 옅은 면 ── */
+.home-panel {
+  padding: var(--sp-6) var(--sp-7) var(--sp-7);
+  border-radius: var(--r-lg);
+  background: var(--c-panel);
 }
 
-/* e-class 구역: 아래 표와 같은 제목 크기·둥근 상자 */
-.home-page .section {
-  margin-top: var(--sp-9);
-}
-.home-page .section .section__title {
-  font-size: var(--fs-h2);
-}
-.home-page .section .card {
-  border-color: var(--c-border-soft);
-  border-radius: var(--home-r);
-}
-
-/* ── 내 일정 표: 굵은 제목 + 더 보기, 아래 둥근 상자 안에 한 줄씩 ─────────── */
-.home-table {
-  margin-top: var(--sp-9);
-}
-.home-sum__head {
+.home-panel__head {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: baseline;
   gap: var(--sp-3);
   margin-bottom: var(--sp-4);
 }
-.home-sum__title {
+
+.home-panel__title {
   margin: 0;
-  font-size: var(--fs-h2);
+  font-size: var(--fs-md);
   font-weight: var(--fw-bold);
 }
-.home-sum__link {
+
+.home-panel__count {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.home-panel__link {
+  margin-left: auto;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-action-text);
+  text-decoration: none;
+}
+
+.home-panel__empty {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* 목록 아래의 "더 보기 / 모두 보기" — 밑줄 없는 블루 글자 */
+.home-panel__more {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-1);
   min-height: var(--touch);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-bold);
-  color: var(--c-text-sub);
-  text-decoration: none;
-}
-.home-sum__link svg {
-  width: 1.6rem;
-  height: 1.6rem;
-}
-.home-sum__link:hover {
+  margin-top: var(--sp-2);
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--c-action-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  text-decoration: none;
+  cursor: pointer;
 }
 
-/* 줄 사이 구분선 없이 위아래 여백만으로 나눈다 */
-.home-table__box {
-  margin: 0;
-  padding: var(--sp-4) 0;
+/* ── 행: 패널 안에서는 선 대신 간격으로 나눈다. 누르면 한 단계 진한 면 ── */
+.home-rows {
+  display: grid;
+  gap: var(--sp-2);
+  margin: 0 calc(var(--sp-4) * -1);
+  padding: 0;
   list-style: none;
-  border: 1px solid var(--c-border-soft);
-  border-radius: var(--home-r);
-  background: var(--c-bg);
-  overflow: hidden;
 }
 
-/* 한 줄: 굵은 이름 · 흐린 미리보기 · 오른쪽 동그라미 개수 */
-.home-table__row {
+.home-row {
   display: flex;
   align-items: center;
-  gap: var(--sp-6);
-  min-height: 5.2rem;
-  padding: var(--sp-3) var(--sp-7);
-  color: var(--c-text);
+  gap: var(--sp-4);
+  min-height: var(--touch);
+  padding: var(--sp-4);
+  border-radius: var(--r);
+  color: inherit;
   text-decoration: none;
+  transition: background-color var(--t-quick);
 }
-.home-table__label {
-  flex: none;
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-bold);
-  white-space: nowrap;
+
+.home-row:active {
+  background: var(--c-panel-strong);
 }
-.home-table__preview {
+
+@media (hover: hover) {
+  .home-row:hover {
+    background: var(--c-panel-strong);
+  }
+  .home-row:hover .home-row__chev {
+    color: var(--c-text);
+  }
+}
+
+.home-row__body {
   flex: 1;
   min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+  overflow-wrap: anywhere;
+}
+
+.home-row__main {
   font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  line-height: 1.35;
+}
+
+.home-row__sub {
+  font-size: var(--fs-sm);
   color: var(--c-text-sub);
+}
+
+.home-row__chev {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  color: var(--gray-40);
+  transition: color var(--t-quick);
+}
+
+/* ── 오늘 수업: 이 앱에만 있는 칸. 시간 열 + 과목. 다음 수업의 시각만 한성 블루 ── */
+.home-day {
+  display: grid;
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-day__row {
+  display: grid;
+  grid-template-columns: 5.6rem minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: baseline;
+}
+
+.home-day__time {
+  display: grid;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  line-height: 1.35;
+}
+
+.home-day__end {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+  color: var(--c-text-sub);
+}
+
+.home-day__body {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.home-day__title {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  line-height: 1.35;
+}
+
+.home-day__place {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.home-day__row.is-next .home-day__time {
+  color: var(--c-action-text);
+  font-weight: var(--fw-bold);
+}
+
+.home-day__row.is-done {
+  color: var(--c-text-muted);
+}
+.home-day__row.is-done .home-day__title {
+  font-weight: var(--fw-medium);
+}
+
+/* ── 다음 예약: 날짜와 시각을 한 줄에. 첫 건의 시각만 크게(보통 굵기) ── */
+.home-res__when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--sp-4);
+}
+
+.home-res__date {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.home-res__time {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-regular);
+  line-height: 1.3;
+}
+
+.home-row:not(.home-row--next) .home-res__time {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+}
+
+.home-res__badge {
+  justify-self: start;
+  margin-top: var(--sp-2);
+  height: auto;
+  white-space: normal;
+}
+
+/* ── 미수강 강의 (EclassHome 이 자기 제목·카드를 그린다): 패널 안에서는 면을 한 겹만 ── */
+.home-panel--eclass > .section {
+  margin: 0;
+}
+.home-panel--eclass .section__head {
+  margin-bottom: var(--sp-4);
+}
+.home-panel--eclass .section__title {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.home-panel--eclass .card {
+  padding: 0;
+  background: transparent;
+}
+.home-panel--eclass .school-eclass-empty {
+  display: grid;
+  gap: var(--sp-4);
+  justify-items: start;
+}
+.home-panel--eclass .school-eclass-empty p {
+  margin: 0;
+}
+
+/* ── 라운지 약속 (MyLoungeSection 의 home-sum__* 마크업) ── */
+.home-panel--lounge .home-sum__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.home-panel--lounge .home-sum__title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.home-panel--lounge .home-sum__link {
+  margin-left: auto;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-action-text);
+  text-decoration: none;
+}
+.home-sum__empty,
+.home-sum__more {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.home-sum__more {
+  margin-top: var(--sp-3);
+}
+.home-sum__error {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
+}
+.home-sum__error p {
+  margin: 0;
+}
+.home-panel--lounge .home-ul .list__item {
+  padding-block: var(--sp-4);
+}
+.lounge-home-kind {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  color: var(--c-text-sub);
+}
+.lounge-home-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.lounge-home-badges .badge {
+  height: auto;
+  white-space: normal;
+}
+
+/* ── 넓은 화면: 12열 중 7 + 5 ── */
+@container home (min-width: 64rem) {
+  .home-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1.6rem;
+    align-items: start;
+  }
+  .home-col--main {
+    grid-column: 1 / span 7;
+  }
+  .home-col--side {
+    grid-column: 8 / span 5;
+  }
+  .home-col {
+    display: grid;
+    gap: 1.6rem;
+    align-content: start;
+  }
+}
+
+/* 선명한 화면 모드: 면 차이가 약하므로 패널에 테두리를 다시 그린다 */
+:root[data-contrast='high'] .home-panel {
+  background: var(--gray-0);
+  box-shadow: inset 0 0 0 2px var(--gray-100);
+}
+
+/* ── 공지: 제목 한 줄 + 날짜. 오늘 올라온 글만 한성 블루 N ── */
+.home-notice__title {
   overflow: hidden;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.home-table__count {
-  display: grid;
-  place-items: center;
+
+.home-notice__date {
   flex: none;
-  min-width: 2.2rem;
-  height: 2.2rem;
-  padding: 0 var(--sp-2);
-  border-radius: var(--r-pill);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.home-notice__new {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
   background: var(--c-action);
   color: var(--c-on-action);
   font-size: var(--fs-xs);
   font-weight: var(--fw-bold);
-  line-height: 1;
-}
-/* 공지 줄: 제목이 남는 폭을 다 쓰고, 날짜는 오른쪽에 */
-.home-notice__title {
-  color: var(--c-text);
-}
-.home-notice__date {
-  flex: none;
-  font-size: var(--fs-sm);
-  color: var(--c-text-muted);
-}
-.home-table__toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  width: 100%;
-  min-height: var(--touch);
-  margin-top: var(--sp-2);
-  padding: var(--sp-3) var(--sp-7);
-  border: 0;
-  border-top: 1px solid var(--c-divider);
-  background: none;
-  font: inherit;
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-bold);
-  color: var(--c-text-sub);
-  cursor: pointer;
-}
-.home-table__toggle svg {
-  width: 1.6rem;
-  height: 1.6rem;
-}
-
-@media (hover: hover) {
-  .home-table__toggle:hover {
-    color: var(--c-action-text);
-  }
-  .home-table__row:hover {
-    background: var(--c-surface);
-  }
-}
-
-/* 넓은 화면: 요약 카드를 넘기지 않고 나란히 */
-@media (min-width: 768px) {
-  .home-cards {
-    margin: 0;
-  }
-  .home-cards__track {
-    grid-auto-flow: row;
-    grid-template-columns: 1fr 1fr;
-    padding: 0;
-    overflow: visible;
-  }
 }

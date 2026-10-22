@@ -14,8 +14,10 @@ import { maskName, verifiedLine } from '../school/format';
 import { cacheKey } from '../school/loginKey';
 import { SchoolErrorAlert, SchoolWaiting } from '../school/SchoolParts';
 import { vault } from '../school/vault';
-import { Alert, Button, Choice, PasswordField, Segmented, Stepper, TextField, btnClass, useToast } from '../ui';
+import { motion } from 'motion/react';
+import { Alert, Button, Choice, PasswordField, SPRING, Segmented, Stepper, TextField, btnClass, useToast } from '../ui';
 import './auth.css';
+import './signup.css';
 
 /** 한성대 정보 시스템 → 플랫폼 아이디·비밀번호 → 연동 동의 → 가입 완료 */
 const STEPS = ['학교 인증', '계정 만들기', '연동 동의', '가입 완료'];
@@ -303,19 +305,30 @@ export default function Signup() {
   return (
     <>
       <AppHeader />
-      <main id="main" className="app-main">
-        <img className="auth-logo auth-logo--sm" src="/brand/logo.png" alt="상상Book-E" width="720" height="559" />
+      <main id="main" className="app-main signup-page auth-split">
+        {/* 왼쪽(넓은 화면): 단계 제목과 진행 — 스크롤해도 따라온다 */}
+        <div className="signup-side">
         <div className="page-head">
           <h1 className="page-title" id="signup-title" tabIndex={-1}>
-            회원가입
+            {STEPS[currentIndex - 1]}
           </h1>
           <p className="page-lead">{lead[step]}</p>
         </div>
 
         <div className="auth-steps">
+          <p className="signup-progress mono" aria-hidden="true">{String(currentIndex).padStart(2, '0')} <span>/ 04</span></p>
           <Stepper steps={STEPS} current={currentIndex} />
         </div>
+        </div>
 
+        {/* 오른쪽: 단계 본문. 단계가 바뀌면 새 본문이 살짝 떠오른다 (포커스 이동을 막지 않도록 퇴장 애니메이션은 두지 않는다) */}
+        <motion.div
+          key={step}
+          className="auth-split__form"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={SPRING}
+        >
         {notice && (
           <div className="auth-alert">
             <Alert tone="info">{notice}</Alert>
@@ -610,6 +623,7 @@ export default function Signup() {
             </Link>
           </div>
         )}
+        </motion.div>
       </main>
     </>
   );

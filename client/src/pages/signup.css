@@ -1,0 +1,11 @@
+.signup-page { padding-top: var(--sp-7); }
+.signup-page .page-head { margin-bottom: var(--sp-7); }
+.signup-page .eyebrow { margin-bottom: var(--sp-4); }
+.signup-page .auth-steps { padding: var(--sp-6); background: var(--c-bg); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
+.signup-progress { margin: 0 0 var(--sp-4); font-size: var(--fs-h2); font-weight: var(--fw-bold); line-height: 1.4; letter-spacing: 0; font-variant-numeric: tabular-nums; color: var(--c-action-text); }
+.signup-progress span { font-size: var(--fs-md); font-weight: var(--fw-medium); color: var(--c-text-sub); letter-spacing: 0; }
+.signup-page .auth-steps { position: relative; }
+.signup-page .school-notice { border-radius: var(--r-lg); }
+.signup-page form { padding: var(--sp-6); border-radius: var(--r-lg); background: var(--c-bg); box-shadow: var(--shadow-card); }
+:root[data-contrast='high'] .signup-page .auth-steps,
+:root[data-contrast='high'] .signup-page form { outline: 2px solid var(--c-border); }

@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Icon } from '../ui';
 import type { IconName } from '../ui';
 import { useDisplay } from '../ui/Display';
@@ -49,27 +50,35 @@ function ScrollToTop() {
   useEffect(() => {
     window.scrollTo(0, 0);
     const fixed = routeTitle(pathname);
+    let pendingFocus = !first.current;
+    first.current = false;
     const apply = () => {
-      const h1 = document.querySelector('h1');
+      const main = document.getElementById('main');
+      const h1 = main?.querySelector<HTMLElement>('h1');
       const name = fixed ?? h1?.textContent?.trim();
       document.title = name ? `${name} - ${SERVICE}` : SERVICE;
+      // Suspense and API loading can each finish after the route effect.
+      // Wait for the actual content, rather than focusing the header or spinner.
+      if (!pendingFocus || !main || main.querySelector('[aria-busy="true"]')) return;
+      const target = h1 ?? main;
+      pendingFocus = false;
+      target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
     };
+    // Once someone starts interacting, late content must not steal focus.
+    const cancelFocus = () => { pendingFocus = false; };
+    document.addEventListener('pointerdown', cancelFocus, true);
+    document.addEventListener('keydown', cancelFocus, true);
     apply();
     // 상세 화면처럼 제목이 데이터를 받은 뒤 정해지면 h1 변화를 따라간다.
     const observer = new MutationObserver(apply);
     const root = document.getElementById('root');
-    if (fixed === null && root) observer.observe(root, { childList: true, subtree: true, characterData: true });
-
-    if (first.current) {
-      first.current = false;
-    } else {
-      const target = document.querySelector<HTMLElement>('h1') ?? document.getElementById('main');
-      if (target) {
-        target.setAttribute('tabindex', '-1');
-        target.focus({ preventScroll: true });
-      }
-    }
-    return () => observer.disconnect();
+    if (root) observer.observe(root, { childList: true, subtree: true, characterData: true });
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('pointerdown', cancelFocus, true);
+      document.removeEventListener('keydown', cancelFocus, true);
+    };
   }, [pathname]);
   return null;
 }
@@ -82,20 +91,108 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/account', label: '내 정보', icon: 'user' },
 ];
 
+/** 레일(데스크톱)인지: 표시줄이 움직이는 축이 가로(하단 탭바)에서 세로(레일)로 바뀐다 */
+const RAIL_QUERY = '(min-width: 1024px)';
+
+interface Mark {
+  pos: number;
+  size: number;
+}
+
+/**
+ * 활성 탭 표시줄. layoutId(화면 전체 좌표로 재는 공유 레이아웃) 대신
+ * 목록 안에서의 offset 값만 읽어 한 축으로만 움직인다.
+ * 스크롤 위치와 무관해서, 스크롤한 뒤 탭을 바꿔도 아래에서 올라오지 않는다.
+ */
+function useActiveMark(listRef: RefObject<HTMLUListElement | null>): { mark: Mark | null; rail: boolean } {
+  const { pathname } = useLocation();
+  const [mark, setMark] = useState<Mark | null>(null);
+  const [rail, setRail] = useState(() => window.matchMedia(RAIL_QUERY).matches);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const mq = window.matchMedia(RAIL_QUERY);
+    const measure = () => {
+      const isRail = mq.matches;
+      setRail(isRail);
+      const item = list.querySelector<HTMLElement>('.tabbar__item[aria-current="page"]');
+      if (!item) return setMark(null);
+      setMark(
+        isRail
+          ? { pos: item.offsetTop, size: item.offsetHeight }
+          : // 하단 탭바: 칸 가운데 56% 폭의 선
+            { pos: item.offsetLeft + item.offsetWidth * 0.22, size: item.offsetWidth * 0.56 },
+      );
+    };
+    measure();
+    // 글자 확대·좁은 폭 단계(활성 칸이 넓어짐)로 칸 크기가 바뀌면 다시 잰다
+    const ro = new ResizeObserver(measure);
+    ro.observe(list);
+    mq.addEventListener('change', measure);
+    return () => {
+      ro.disconnect();
+      mq.removeEventListener('change', measure);
+    };
+  }, [listRef, pathname]);
+
+  return { mark, rail };
+}
+
 export function TabBar() {
+  const listRef = useRef<HTMLUListElement>(null);
+  const { mark, rail } = useActiveMark(listRef);
+  const reduce = useReducedMotion();
+  const first = useRef(true);
+  // 첫 표시는 제자리에, 이후에는 같은 직선 위를 일정한 속도(linear)로 이동
+  const markTransition = reduce || first.current ? { duration: 0 } : { duration: 0.2, ease: 'linear' as const };
+  useEffect(() => {
+    if (mark) first.current = false;
+  }, [mark]);
+
   return (
-    <nav className="tabbar" aria-label="주요 메뉴">
-      <ul className="tabbar__list">
+    <motion.nav
+      className="tabbar"
+      aria-label="주요 메뉴"
+      initial={false}
+    >
+      {/* 데스크톱 레일 머리의 로고타입 (모바일에서는 CSS로 숨김) */}
+      <Link to="/" className="tabbar__brand" aria-label="상상Book-E 홈">
+        <span>
+          상상Book<i>-</i>E
+        </span>
+      </Link>
+      <ul className="tabbar__list" ref={listRef}>
+        {mark && (
+          <motion.li
+            aria-hidden="true"
+            className="tabbar__pill"
+            initial={false}
+            // 하단 탭바는 가로(x)·폭만, 레일은 세로(y)·높이만 움직인다. 나머지 축은 CSS 가 고정한다
+            animate={rail ? { x: 0, y: mark.pos, height: mark.size, width: '100%' } : { x: mark.pos, y: 0, width: mark.size }}
+            transition={markTransition}
+          />
+        )}
         {TABS.map((t) => (
-          <li key={t.to} style={{ display: 'contents' }}>
+          <li key={t.to}>
             <NavLink to={t.to} end={t.end} className="tabbar__item">
               <Icon name={t.icon} className="tabbar__icon" />
-              <span>{t.label}</span>
+              <span className="tabbar__label">{t.label}</span>
             </NavLink>
           </li>
         ))}
       </ul>
-    </nav>
+    </motion.nav>
+  );
+}
+
+/** 화면이 바뀔 때마다 새 화면을 살짝 띄워 올린다 (경로가 키라서 같은 화면 안의 상태 변화에는 반응하지 않는다) */
+function PageTransition({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return (
+    <div key={pathname} className="app-page">
+      {children}
+    </div>
   );
 }
 
@@ -110,11 +207,23 @@ export function AppFrame({ children, tabs = true }: { children: ReactNode; tabs?
       </a>
       <ScrollToTop />
       <div className={`app-frame${showTabs ? ' has-tabbar' : ''}`}>
-        {children}
-        {showTabs && <TabBar />}
+        <PageTransition>{children}</PageTransition>
+        <AnimatePresence>{showTabs && <TabBar key="tabbar" />}</AnimatePresence>
       </div>
     </ShellContext.Provider>
   );
+}
+
+/** 페이지가 조금이라도 스크롤되면 true — 헤더 아래 구분선을 그때만 보인다 */
+function useScrolled(): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return scrolled;
 }
 
 /* ── 상단 헤더 ─────────────────────────────────────────────── */
@@ -137,9 +246,12 @@ export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppH
   const loungeProfile = useLoungeOptional()?.profile ?? null;
   const hasBack = title !== undefined;
   const showAvatar = !hasBack && !bare && user;
+  const scrolled = useScrolled();
 
   return (
-    <header className={`app-header${hasBack ? ' app-header--back' : ''}${bare ? ' app-header--bare' : ''}`}>
+    <header
+      className={`app-header${hasBack ? ' app-header--back' : ''}${bare ? ' app-header--bare' : ''}${scrolled ? ' is-scrolled' : ''}`}
+    >
       {hasBack ? (
         <>
           {backTo ? (
@@ -164,7 +276,9 @@ export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppH
         <>
           <Link to="/" className="app-header__brand" aria-label="상상Book-E 홈">
             <img className="app-header__mark" src="/brand/mark.png" alt="" width="32" height="32" />
-            <span>상상Book-E</span>
+            <span>
+              상상Book<i>-</i>E
+            </span>
           </Link>
           <span className="app-header__spacer" />
         </>

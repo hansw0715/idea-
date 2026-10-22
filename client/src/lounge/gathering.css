@@ -465,6 +465,14 @@
   grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr));
   gap: var(--sp-3);
 }
+.lounge-gath-form .tag,
+.lounge-gath-form .tag[aria-pressed='true'] {
+  font-weight: var(--fw-medium);
+}
+.lounge-gath-form .tag[aria-pressed='false'] .tag__check {
+  visibility: hidden;
+}
+
 .lounge-gath-pick {
   position: relative;
   display: grid;
@@ -483,15 +491,16 @@
 }
 .lounge-gath-pick__check {
   position: absolute;
-  top: -0.7rem;
-  right: -0.7rem;
+  top: 0.2rem;
+  right: 0.2rem;
   display: grid;
   place-items: center;
   width: 2.2rem;
   height: 2.2rem;
   border-radius: var(--r-pill);
-  background: var(--c-action);
-  color: var(--c-on-action);
+  border: 1px solid var(--c-action);
+  background: var(--c-action-bg-strong);
+  color: var(--c-ink);
 }
 .lounge-gath-pick__check svg {
   width: 1.4rem;

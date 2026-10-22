@@ -8,3 +8,4 @@ export { ConfirmProvider, useConfirm } from './Confirm';
 export type { ConfirmOptions } from './Confirm';
 export { ToastProvider, useToast } from './Toast';
 export { DisplayProvider, useDisplay } from './Display';
+export { StaggerList, StaggerItem, Reveal, pageVariants, listVariants, itemVariants, SPRING, EASE_OUT } from './motion';

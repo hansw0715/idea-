@@ -99,7 +99,7 @@
 .account-danger {
   margin-top: var(--sp-10);
   padding-top: var(--sp-8);
-  border-top: 1px solid var(--c-border-strong);
+  border-top: 0;
 }
 .account-danger__text {
   color: var(--c-text-sub);
@@ -220,4 +220,31 @@
   display: grid;
   gap: var(--sp-3);
   margin-bottom: var(--sp-4);
+}
+
+.account-page .page-head { padding-top: var(--sp-5); }
+.account-page .eyebrow { margin-bottom: var(--sp-3); }
+.account-page { padding-inline: min(var(--gutter), 5vw); }
+.account-page .lounge-acct-who { flex-wrap: wrap; }
+.account-page .lounge-acct-who__text { flex-basis: 12rem; overflow-wrap: anywhere; }
+.account-page .lounge-acct-line .lounge-temp { flex-wrap: wrap; }
+.account-identity { position: relative; padding-top: var(--sp-7); }
+.account-page .account-identity { padding-top: var(--sp-4); }
+.account-page .account-monogram { width: 4.4rem; height: 4.4rem; margin-bottom: var(--sp-3); font-size: var(--fs-lg); }
+.account-secondary { border-block: 1px solid var(--c-divider); }
+.account-secondary > summary { min-height: var(--touch); padding: var(--sp-4); cursor: pointer; font-weight: var(--fw-bold); }
+.account-secondary > summary:focus-visible { outline: 2px solid var(--c-action); outline-offset: 2px; }
+.account-monogram { display: grid; place-items: center; width: 6.4rem; height: 6.4rem; margin-bottom: var(--sp-6); border: 0; border-radius: var(--r-lg); background: var(--c-action-bg); color: var(--c-ink); font-size: 2.8rem; font-weight: var(--fw-bold); }
+.account-page .account-info__val--name { font-size: var(--fs-h2); letter-spacing: -0.03em; }
+.account-page .account-menu .list__item { min-height: 8rem; gap: var(--sp-4); }
+.account-page .account-menu .list__item:first-child { border-radius: var(--r-lg) var(--r-lg) 0 0; }
+.account-page .account-menu .list__item:last-child { border-radius: 0 0 var(--r-lg) var(--r-lg); }
+.account-page .account-menu__icon { box-sizing: content-box; padding: var(--sp-3); border-radius: var(--r); background: var(--c-surface); color: var(--c-text); }
+@media (max-width: 360px) { .account-page .account-info__row { grid-template-columns: 1fr; } }
+
+/* 내 정보는 짧은 설정 목록이라 넓은 화면에서 1120px 를 다 쓰면 이름과 값이 멀어진다 */
+@media (min-width: 1024px) {
+  .app-frame.has-tabbar .account-page {
+    max-width: 84rem;
+  }
 }

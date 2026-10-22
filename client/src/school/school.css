@@ -363,6 +363,7 @@
 /* 내 정보 카드(연동됨): 학번·소속 한 줄 + 배지, 연동한 날, 바로가기 두 개, 맨 아래 작은 관리 버튼 */
 .school-card__who {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
@@ -421,6 +422,13 @@
   .school-card__unlink:hover {
     background: var(--c-surface);
   }
+}
+.school-card__who > .badge {
+  max-width: 100%;
+  height: auto;
+  min-height: 2.4rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .school-card__split {
   display: flex;

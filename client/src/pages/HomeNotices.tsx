@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
-import { Icon } from '../ui';
 import type { NoticeItem, NoticeSection, NoticesResponse } from '../../../shared/notices/types';
 
 /** 처음에 보여 주는 공지 수. 나머지는 "모두 보기"로 펼친다 */
@@ -58,14 +57,13 @@ export default function HomeNotices() {
           today={today}
         />
       ) : (
-        <section className="home-table" aria-labelledby="home-notice-dept">
-          <div className="home-sum__head">
-            <h2 className="home-sum__title" id="home-notice-dept">
+        <section className="home-panel home-panel--notice" aria-labelledby="home-notice-dept">
+          <div className="home-panel__head">
+            <h2 className="home-panel__title" id="home-notice-dept">
               {data?.departmentName ? `${data.departmentName} 공지` : '학과 공지'}
             </h2>
           </div>
-          <div className="home-table__box">
-            <p className="home-sum__empty">
+          <p className="home-panel__empty">
               {!data && !failed ? (
                 '불러오는 중이에요.'
               ) : failed ? (
@@ -76,9 +74,8 @@ export default function HomeNotices() {
                 <>
                   학교 계정을 연동하면 내 학과 공지를 볼 수 있어요. <Link to="/account">연동하기</Link>
                 </>
-              )}
-            </p>
-          </div>
+            )}
+          </p>
         </section>
       )}
     </>
@@ -106,36 +103,33 @@ function NoticeTable({ id, title, section, loading, failed, days, today }: Notic
   else if (items.length === 0) empty = `최근 ${days}일 동안 올라온 공지가 없어요.`;
 
   return (
-    <section className="home-table" aria-labelledby={id}>
-      <div className="home-sum__head">
-        <h2 className="home-sum__title" id={id}>
+    <section className="home-panel home-panel--notice" aria-labelledby={id}>
+      <div className="home-panel__head">
+        <h2 className="home-panel__title" id={id}>
           {title}
         </h2>
+        {items.length > 0 && <span className="home-panel__count tabular">{items.length}건</span>}
         {section && (
-          <a href={section.url} target="_blank" rel="noreferrer" className="home-sum__link">
-            더 보기
-            <Icon name="chevron-right" />
+          <a href={section.url} target="_blank" rel="noreferrer" className="home-panel__link">
+            학교 홈페이지
           </a>
         )}
       </div>
       {empty ? (
-        <div className="home-table__box">
-          <p className="home-sum__empty">{empty}</p>
-        </div>
+        <p className="home-panel__empty">{empty}</p>
       ) : (
-        <ul className="home-table__box">
-          {shown.map((n) => (
-            <NoticeRow key={n.id} notice={n} isNew={n.date === today} />
-          ))}
+        <>
+          <ul className="home-rows">
+            {shown.map((n) => (
+              <NoticeRow key={n.id} notice={n} isNew={n.date === today} />
+            ))}
+          </ul>
           {items.length > SHOW && (
-            <li>
-              <button type="button" className="home-table__toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-                {open ? '접기' : `최근 ${days}일 공지 ${items.length}건 모두 보기`}
-                <Icon name={open ? 'chevron-up' : 'chevron-down'} />
-              </button>
-            </li>
+            <button type="button" className="home-panel__more" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+              {open ? '접기' : `최근 ${days}일 공지 ${items.length}건 모두 보기`}
+            </button>
           )}
-        </ul>
+        </>
       )}
     </section>
   );
@@ -145,14 +139,16 @@ function NoticeTable({ id, title, section, loading, failed, days, today }: Notic
 function NoticeRow({ notice, isNew }: { notice: NoticeItem; isNew: boolean }) {
   return (
     <li>
-      <a href={notice.url} target="_blank" rel="noreferrer" className="home-table__row" title={notice.title}>
-        <span className="home-table__preview home-notice__title">{notice.title}</span>
-        <span className="home-notice__date tabular">{shortDate(notice.date)}</span>
+      <a href={notice.url} target="_blank" rel="noreferrer" className="home-row" title={notice.title}>
+        <span className="home-row__body">
+          <span className="home-notice__title">{notice.title}</span>
+        </span>
         {isNew && (
-          <span className="home-table__count" aria-label="오늘 올라온 공지">
+          <span className="home-notice__new" aria-label="오늘 올라온 공지">
             N
           </span>
         )}
+        <span className="home-notice__date tabular">{shortDate(notice.date)}</span>
       </a>
     </li>
   );
