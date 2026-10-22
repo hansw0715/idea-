@@ -74,6 +74,7 @@ export function toPresenceUser(row: PresenceRow, now: Date): PresenceUser {
       college: row.college,
       department: row.department,
       admissionYear: row.admissionYear,
+      gender: row.gender === 'male' || row.gender === 'female' ? row.gender : null,
       avatar: isAvatar(row.avatar) ? row.avatar : DEFAULT_AVATAR,
       avatarColor: isColor(row.avatarColor) ? row.avatarColor : 'm1',
       temperature: row.temperature,

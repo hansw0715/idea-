@@ -242,6 +242,8 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
     name: p.name,
     department: p.department,
     admissionYear: admissionYearOf(p.studentId, Number(kstDate(now()).slice(0, 4))),
+    // 포털에서 성별을 읽었을 때만 붙인다 (못 읽으면 응답에 없다)
+    ...(p.gender ? { gender: p.gender } : {}),
   });
 
   type LinkRow = { hint: string | null; hash: string | null };
@@ -342,9 +344,9 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
       saved = await run(
         `UPDATE users
             SET school_cipher = ?, school_hint = ?, school_student_hash = ?, school_linked_at = now(),
-                school_department = ?, school_admission_year = ?
+                school_department = ?, school_admission_year = ?, school_gender = COALESCE(?, school_gender)
           WHERE id = ?`,
-        [JSON.stringify({ v: cipher.v, iv: cipher.iv, ct: cipher.ct }), hint, linkHash, profile.department, profile.admissionYear, uid],
+        [JSON.stringify({ v: cipher.v, iv: cipher.iv, ct: cipher.ct }), hint, linkHash, profile.department, profile.admissionYear, profile.gender ?? null, uid],
       );
     } catch (err) {
       // 학번 하나당 계정 하나(uq_users_school_student_hash): 학교 인증에 성공한 뒤에만 알려 주므로 남의 학번 여부를 캐내는 데 쓸 수 없다
@@ -379,7 +381,7 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
     await run(
       `UPDATE users
           SET school_cipher = NULL, school_hint = NULL, school_student_hash = NULL, school_linked_at = NULL,
-              school_department = NULL, school_admission_year = NULL,
+              school_department = NULL, school_admission_year = NULL, school_gender = NULL,
               profile_done = FALSE
         WHERE id = ?`,
       [uid],

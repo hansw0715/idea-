@@ -156,6 +156,8 @@ type TicketClaims = {
   department: string;
   admissionYear: number | null;
   hint: string;
+  /** 포털에서 읽은 성별 (못 읽으면 없음) */
+  gender?: 'male' | 'female';
 };
 
 function signTicket(c: TicketClaims): string {
@@ -172,7 +174,8 @@ function readTicket(value: unknown): TicketClaims | null {
     if (typeof p.name !== 'string' || typeof p.department !== 'string' || typeof p.hint !== 'string') return null;
     const ay = p.admissionYear;
     if (ay !== null && !(typeof ay === 'number' && Number.isInteger(ay))) return null;
-    return { sh: p.sh, name: p.name, department: p.department, admissionYear: ay as number | null, hint: p.hint };
+    const gender = p.gender === 'male' || p.gender === 'female' ? p.gender : undefined;
+    return { sh: p.sh, name: p.name, department: p.department, admissionYear: ay as number | null, hint: p.hint, ...(gender ? { gender } : {}) };
   } catch {
     return null;
   }
@@ -260,6 +263,7 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
           department: profile.department,
           admissionYear: profile.admissionYear,
           hint,
+          ...(profile.gender ? { gender: profile.gender } : {}),
         }),
         hint,
         profile,
@@ -309,9 +313,9 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
       try {
         id = await insert(
           `INSERT INTO users (username, name, password_hash, school_cipher, school_hint, school_student_hash,
-                              school_linked_at, school_department, school_admission_year,
+                              school_linked_at, school_department, school_admission_year, school_gender,
                               nickname, college, department, admission_year, profile_done)
-           VALUES (?, ?, ?, ?, ?, ?, now(), ?, ?, ?, '', ?, ?, TRUE) RETURNING id`,
+           VALUES (?, ?, ?, ?, ?, ?, now(), ?, ?, ?, ?, '', ?, ?, TRUE) RETURNING id`,
           [
             username,
             realName,
@@ -321,6 +325,7 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
             ticket.sh,
             ticket.department,
             ticket.admissionYear,
+            ticket.gender ?? null,
             // 라운지 프로필 = 학교 계정 정보 (실명을 가린 닉네임·학과·입학년도)
             profile.nickname,
             profile.department,

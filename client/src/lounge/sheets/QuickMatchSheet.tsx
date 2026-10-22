@@ -4,6 +4,8 @@
  *
  * 흐름: 인원 고르기 → 시작 → (위치 허용) → 모으는 중(모인 사람이 자리에 하나씩 보인다) → 다 모임(수락/거절)
  *      → 확정(단톡방) | 누군가 거절·시간 초과 | 근처에 아무도 없음
+ * 3·4명을 고르고 나 말고 한 명 이상 모였으면 "N명으로 바로 시작"으로 지금 인원만으로 방을 열 수 있다.
+ * 밥약은 실제로 만날 사람끼리라 모인 사람의 실명을 보여 준다.
  * 진실은 서버다. 소켓이 없어서 열려 있는 동안 2초마다 상태를 묻는다(탭이 보일 때만). 시트를 닫아도 대기는 서버에 남는다.
  * 내 위치는 매칭에만 쓰이고 매칭이 끝나면 서버가 지운다. 상대에게는 거리도 보이지 않는다.
  */
@@ -11,7 +13,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QUICK_WAIT_MIN } from '../../../../shared/lounge';
-import type { PublicUser, QuickState } from '../../../../shared/lounge';
+import type { QuickMember, QuickState } from '../../../../shared/lounge';
 import { Alert, Button, Icon, LoadingBlock, Segmented, Sheet, useConfirm } from '../../ui';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
@@ -60,6 +62,9 @@ const geoMessage = (err: unknown): string => {
   return '내 위치를 확인하지 못했어요. 위치 기능을 켜고 다시 눌러 주세요.';
 };
 
+/** 밥약에서는 실명을 보여 준다. 실명이 없으면(탈퇴 등) 닉네임 */
+const displayName = (u: QuickMember): string => u.name || u.nickname;
+
 function phaseOf(state: QuickState | null): Phase {
   if (!state) return 'idle';
   if (state.gatheringId || state.room?.status === 'confirmed') return 'confirmed';
@@ -75,7 +80,7 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
 
   const [state, setState] = useState<QuickState | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [busy, setBusy] = useState<null | 'locating' | 'start' | 'answer'>(null);
+  const [busy, setBusy] = useState<null | 'locating' | 'start' | 'answer' | 'startNow'>(null);
   const [error, setError] = useState<string | null>(null);
   const [ended, setEnded] = useState<Ended>(null);
   const [size, setSize] = useState<PartySize>('2');
@@ -164,6 +169,20 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
     if (ok) setEnded('cancelled');
   }
 
+  /** 3·4명을 찾다가 지금 모인 사람으로 바로 시작 — 이후는 다 모였을 때처럼 모두 수락하면 확정 */
+  async function startNow() {
+    if (busy) return;
+    setError(null);
+    setBusy('startNow');
+    try {
+      apply(await loungeApi.startQuickNow());
+    } catch (err) {
+      if (!handleError(err)) setError(err instanceof Error ? err.message : '바로 시작하지 못했어요.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function answer(a: 'accepted' | 'declined') {
     const room = state?.room;
     if (!room || busy) return;
@@ -192,12 +211,14 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
   }
 
   const room = state?.room ?? null;
-  const members: PublicUser[] = state?.members ?? [];
+  const members: QuickMember[] = state?.members ?? [];
   const iAccepted = room && state ? room.answers[state.meId] === 'accepted' : false;
   // 찾는 중: 고른 인원만큼 자리를 그리고, 모인 사람(나 포함)을 먼저 온 순으로 앉힌다
   const wanted = state?.request?.size ?? Number(size);
-  const forming: PublicUser[] = state?.forming ?? [];
-  const seats: (PublicUser | null)[] = Array.from({ length: wanted }, (_, i) => forming[i] ?? null);
+  const forming: QuickMember[] = state?.forming ?? [];
+  const seats: (QuickMember | null)[] = Array.from({ length: wanted }, (_, i) => forming[i] ?? null);
+  // 3·4명을 찾는 중에 나 말고 한 명 이상 모였으면 지금 모인 인원으로 바로 시작할 수 있다
+  const canStartNow = wanted > 2 && forming.length >= 2 && forming.length < wanted;
 
   let footer: ReactNode = null;
   if (phase === 'idle' || phase === 'ended') {
@@ -207,7 +228,16 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
       </Button>
     );
   } else if (phase === 'searching') {
-    footer = (
+    footer = canStartNow ? (
+      <div className="lounge-quick-foot">
+        <Button variant="secondary" size="lg" disabled={busy !== null} onClick={() => void cancel()}>
+          그만 찾기
+        </Button>
+        <Button size="lg" loading={busy === 'startNow'} onClick={() => void startNow()}>
+          {forming.length}명으로 바로 시작
+        </Button>
+      </div>
+    ) : (
       <Button variant="tertiary" size="lg" block onClick={() => void cancel()}>
         그만 찾기
       </Button>
@@ -293,7 +323,9 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
                     {u ? (
                       <>
                         <Avatar user={u} size="lg" />
-                        <span className="lounge-quick-seat__name">{u.id === state?.meId ? '나' : u.nickname}</span>
+                        <span className="lounge-quick-seat__name">
+                          {u.id === state?.meId ? '나' : displayName(u)}
+                        </span>
                         {u.id !== state?.meId && <span className="lounge-quick-seat__fact">{factLine(u)}</span>}
                       </>
                     ) : (
@@ -308,7 +340,9 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
                 ))}
               </ul>
               <p className="text-sub text-sm">
-                {wanted - Math.max(1, forming.length)}명 더 모이면 바로 연결돼요. 이 창을 닫아도 계속 찾고 있어요.
+                {canStartNow
+                  ? `${wanted - forming.length}명 더 모이면 바로 연결돼요. 기다리지 않고 지금 ${forming.length}명으로 시작할 수도 있어요.`
+                  : `${wanted - Math.max(1, forming.length)}명 더 모이면 바로 연결돼요. 이 창을 닫아도 계속 찾고 있어요.`}
               </p>
             </div>
           )}
@@ -325,7 +359,7 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
                     <li key={u.id} className="lounge-quick-peer__card">
                       <Avatar user={u} size="lg" />
                       <div className="lounge-quick-peer__who">
-                        <p className="bold">{u.id === state?.meId ? `${u.nickname} (나)` : u.nickname}</p>
+                        <p className="bold">{u.id === state?.meId ? `${displayName(u)} (나)` : displayName(u)}</p>
                         <p className="text-sub text-sm">{factLine(u)}</p>
                       </div>
                       <span className={`badge ${accepted ? 'badge--success' : 'badge--gray'}`}>

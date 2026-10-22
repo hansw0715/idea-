@@ -46,7 +46,7 @@ import type { Answer, QuickLocation, QuickRequest, QuickRoom } from '../domain/q
 import { run } from '../../db.js';
 import { findGathering, insertGathering, mutateGathering } from '../repo/gatherings.js';
 import * as repo from '../repo/quick.js';
-import { banReason, loadUsers, toPublicUser, unknownUser } from '../users.js';
+import { banReason, loadUsers, toQuickMember, unknownUser } from '../users.js';
 import type { LoungeUser } from '../users.js';
 import { openRoomIfNeeded } from './chat.js';
 import { blockChecker } from './safety.js';
@@ -191,7 +191,7 @@ async function buildState(userId: string, now: ISODateTime): Promise<QuickState>
     members: room
       ? room.memberIds.map((id) => {
           const u = users.get(id);
-          return u ? toPublicUser(u) : unknownUser(id);
+          return u ? toQuickMember(u) : { ...unknownUser(id), name: '' };
         })
       : [],
     gatheringId: room?.gatheringId ?? null,
@@ -208,7 +208,7 @@ async function formingFor(request: QuickRequest | null, now: ISODateTime): Promi
   const users = await loadUsers(mine.map((r) => r.userId));
   return mine.map((r) => {
     const u = users.get(r.userId);
-    return u ? toPublicUser(u) : unknownUser(r.userId);
+    return u ? toQuickMember(u) : { ...unknownUser(r.userId), name: '' };
   });
 }
 
@@ -394,14 +394,15 @@ async function tryMatch(requestId: string, now: ISODateTime): Promise<boolean> {
  * 방 저장 → 오래된 순 선점 → 하나라도 놓치면 되돌리고 다시 — 위 tryMatch 와 같은 순서다.
  * 선점(claimWaiting)은 위치를 지우므로, 되돌릴 때는 우리가 들고 있던 위치를 함께 돌려놓는다.
  */
-async function tryMatchInstant(requestId: string, now: ISODateTime): Promise<boolean> {
+async function tryMatchInstant(requestId: string, now: ISODateTime, startNow = false): Promise<boolean> {
   const hidden = await blockChecker();
   for (let attempt = 0; attempt < MATCH_ATTEMPTS; attempt++) {
     const waiting = (await repo.listWaiting()).filter((r) => r.instant);
     const target = waiting.find((r) => r.id === requestId);
     if (!target) return false; // 이미 다른 방에 들어갔거나 취소·만료됐다
     const group = formInstantGroups(waiting, hidden, now).find((g) => g.some((r) => r.id === requestId));
-    if (!group || group.length < target.size) return false;
+    // 바로 시작(startNow)이면 고른 인원이 덜 찼어도 2명 이상이면 지금 모인 사람으로 방을 만든다
+    if (!group || group.length < (startNow ? 2 : target.size)) return false;
 
     const room = createInstantRoom(randomUUID(), group, groupDistanceM(group), now);
     await repo.insertRoom(room);
@@ -421,6 +422,27 @@ async function tryMatchInstant(requestId: string, now: ISODateTime): Promise<boo
     await repo.deleteRoom(room.id);
   }
   return false;
+}
+
+/**
+ * 3·4명을 찾다가 "바로 시작" — 지금 내 무리에 모인 사람(나 포함 2명 이상)으로 후보 방을 만든다.
+ * 이후는 다 모였을 때와 같다: 모인 사람 모두 수락하면 확정. 무리의 누구나 누를 수 있다.
+ */
+export async function startQuickNow(userId: string, now: ISODateTime = nowISO()): Promise<Result<QuickState>> {
+  await sweep(now);
+  const ticket = await currentTicket(userId, now);
+  const request = ticket?.request;
+  if (!request?.instant || request.status !== 'waiting') return fail('NOT_OPEN', '찾는 중인 밥약이 없어요.');
+  const group = formInstantGroups(await repo.listWaiting(), await blockChecker(), now).find((g) =>
+    g.some((r) => r.id === request.id),
+  );
+  if (!group || group.length < 2) return fail('INVALID', '아직 모인 사람이 없어요. 한 명 이상 모이면 바로 시작할 수 있어요.');
+  if (!(await tryMatchInstant(request.id, now, true))) {
+    // 그 사이 다른 사람이 먼저 시작했거나 무리가 바뀌었다 — 지금 상태를 보여 주면 된다
+    const state = await buildState(userId, now);
+    return state.room ? ok(state) : fail('CONFLICT', '모인 사람이 바뀌었어요. 다시 눌러 주세요.');
+  }
+  return ok(await buildState(userId, now));
 }
 
 // ───────────── 후보 방 ─────────────

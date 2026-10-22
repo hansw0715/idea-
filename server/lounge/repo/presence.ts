@@ -18,6 +18,8 @@ export type PresenceRow = {
   college: string;
   department: string;
   admissionYear: number | null;
+  /** 'male' | 'female' | null (학교 값 우선) */
+  gender: string | null;
   avatar: string | null;
   avatarColor: string | null;
   temperature: number;
@@ -35,6 +37,7 @@ interface RawRow {
   college: string | null;
   department: string | null;
   admission_year: number | null;
+  gender: string | null;
   avatar: string | null;
   avatar_color: string | null;
   temperature: number | null;
@@ -90,7 +93,7 @@ export async function listPresent(opts: {
   const rows = await all<RawRow>(
     `${purge}
      SELECT p.user_id, p.x, p.y, p.zone, p.emote, p.emote_at, p.seen_at,
-            u.nickname, u.college, u.department, u.admission_year, u.avatar, u.avatar_color, u.temperature
+            u.nickname, u.college, u.department, u.admission_year, COALESCE(u.school_gender, u.gender) AS gender, u.avatar, u.avatar_color, u.temperature
        FROM lounge_presence p
        JOIN users u ON u.id = p.user_id
       WHERE p.seen_at > ?::timestamptz
@@ -113,6 +116,7 @@ export async function listPresent(opts: {
     college: r.college ?? '',
     department: r.department ?? '',
     admissionYear: r.admission_year ?? null,
+    gender: r.gender ?? null,
     avatar: r.avatar,
     avatarColor: r.avatar_color,
     temperature: r.temperature ?? 0,

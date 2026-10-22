@@ -25,8 +25,12 @@ import { findGathering } from '../repo/gatherings.js';
 import { findUser } from '../users.js';
 import type { LoungeUser } from '../users.js';
 import { roomView, sendMessage } from './chat.js';
-import { applyToGathering, approveApplicant, createGathering, getGatheringView, joinGathering, mineViews } from './gathering.js';
+import { applyToGathering, approveApplicant, createGathering, getGatheringView, joinGathering as joinRaw, mineViews } from './gathering.js';
 import { WITHDRAWN_MESSAGE_TEXT, pickHeir, releaseLoungeForWithdrawal } from './withdraw.js';
+
+/** 미팅 자리는 위(host) = 남자, 아래(guest) = 여자만 앉는다. 이 파일은 탈퇴 규칙을 보므로 자리에 맞는 성별을 붙여 앉힌다 */
+const joinGathering: typeof joinRaw = (user, id, slotKey) =>
+  joinRaw({ ...user, gender: slotKey === 'host' ? 'male' : slotKey === 'guest' ? 'female' : user.gender }, id, slotKey);
 
 let tmp: string;
 let server: Server;
@@ -64,8 +68,8 @@ async function makeUser(over: { banned?: boolean; admin?: boolean } = {}): Promi
   const email = `wd${seq}-${randomUUID().slice(0, 6)}@hansung.ac.kr`;
   const id = await insert(
     `INSERT INTO users (email, username, name, password_hash, nickname, college, department, admission_year,
-                        avatar, avatar_color, profile_done, banned, is_admin)
-     VALUES (?, ?, ?, ?, ?, 'IT공과대학', ?, 2024, 'turtle-smile', 'm1', TRUE, ?, ?) RETURNING id`,
+                        avatar, avatar_color, profile_done, banned, is_admin, gender)
+     VALUES (?, ?, ?, ?, ?, 'IT공과대학', ?, 2024, 'turtle-smile', 'm1', TRUE, ?, ?, 'male') RETURNING id`,
     [email, email.split('@')[0], `실명${seq}`, HASH, `닉${seq}`, `학과${seq}`, over.banned ?? false, over.admin ?? false],
   );
   const user = await findUser(id);

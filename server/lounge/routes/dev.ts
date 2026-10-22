@@ -13,7 +13,7 @@ import {
   MEETUP_PRESETS,
 } from '../../../shared/lounge/constants.js';
 import type { AvatarColor, AvatarKey } from '../../../shared/lounge/constants.js';
-import type { Gathering, GatheringMeta } from '../../../shared/lounge/gathering.js';
+import type { Gathering, GatheringMeta, Gender } from '../../../shared/lounge/gathering.js';
 import { toKst } from '../../../shared/lounge/format.js';
 import { apply, createGathering, isFull, join } from '../domain/gathering.js';
 import type { CreateGatheringInput } from '../domain/gathering.js';
@@ -60,21 +60,24 @@ export type DemoUser = {
   avatar: AvatarKey;
   avatarColor: AvatarColor;
   temperature: number;
+  /** 미팅 자리(위 남자 / 아래 여자)에 맞게 앉도록 정해 둔다 */
+  gender: Gender;
 };
 
 /**
  * 1번과 2번은 같은 학과다 — "같은 학과 제외" 미팅과 "같은 과만" 밥약을 눈으로 확인할 수 있게.
+ * 성별은 샘플 미팅의 자리(위 남자 / 아래 여자)와 맞게 정했다 (2·5·8번이 여자).
  * 단과대·학년·온도도 일부러 고르게 흩었다.
  */
 export const DEMO_USERS: DemoUser[] = [
-  { email: 'demo1@hansung.ac.kr', name: '데모1', nickname: '하늘', college: 'IT공과대학', department: '컴퓨터공학부', yearsAgo: 0, avatar: 'turtle-smile', avatarColor: 'm1', temperature: 36.5 },
-  { email: 'demo2@hansung.ac.kr', name: '데모2', nickname: '보리', college: 'IT공과대학', department: '컴퓨터공학부', yearsAgo: 1, avatar: 'turtle-laugh', avatarColor: 'm2', temperature: 37.4 },
-  { email: 'demo3@hansung.ac.kr', name: '데모3', nickname: '모찌', college: '사회과학대학', department: '경영학부', yearsAgo: 1, avatar: 'cat-surprised', avatarColor: 'm3', temperature: 39.1 },
-  { email: 'demo4@hansung.ac.kr', name: '데모4', nickname: '도토리', college: '디자인대학', department: '패션디자인트랙', yearsAgo: 2, avatar: 'cat-think', avatarColor: 'm4', temperature: 36.5 },
-  { email: 'demo5@hansung.ac.kr', name: '데모5', nickname: '구름', college: '크리에이티브인문예술대학', department: '영미문화콘텐츠트랙', yearsAgo: 1, avatar: 'turtle-cool', avatarColor: 'm5', temperature: 41 },
-  { email: 'demo6@hansung.ac.kr', name: '데모6', nickname: '콩이', college: '미래융합사회과학대학', department: '융합행정학부', yearsAgo: 3, avatar: 'frog-tongue', avatarColor: 'm6', temperature: 35.2 },
-  { email: 'demo7@hansung.ac.kr', name: '데모7', nickname: '새봄', college: 'IT공과대학', department: 'AI응용학과', yearsAgo: 2, avatar: 'chick-love', avatarColor: 'm7', temperature: 38 },
-  { email: 'demo8@hansung.ac.kr', name: '데모8', nickname: '다람', college: '디자인대학', department: '인터랙션디자인트랙', yearsAgo: 0, avatar: 'turtle-shy', avatarColor: 'm8', temperature: 36.5 },
+  { email: 'demo1@hansung.ac.kr', name: '데모1', gender: 'male', nickname: '하늘', college: 'IT공과대학', department: '컴퓨터공학부', yearsAgo: 0, avatar: 'turtle-smile', avatarColor: 'm1', temperature: 36.5 },
+  { email: 'demo2@hansung.ac.kr', name: '데모2', gender: 'female', nickname: '보리', college: 'IT공과대학', department: '컴퓨터공학부', yearsAgo: 1, avatar: 'turtle-laugh', avatarColor: 'm2', temperature: 37.4 },
+  { email: 'demo3@hansung.ac.kr', name: '데모3', gender: 'male', nickname: '모찌', college: '사회과학대학', department: '경영학부', yearsAgo: 1, avatar: 'cat-surprised', avatarColor: 'm3', temperature: 39.1 },
+  { email: 'demo4@hansung.ac.kr', name: '데모4', gender: 'male', nickname: '도토리', college: '디자인대학', department: '패션디자인트랙', yearsAgo: 2, avatar: 'cat-think', avatarColor: 'm4', temperature: 36.5 },
+  { email: 'demo5@hansung.ac.kr', name: '데모5', gender: 'female', nickname: '구름', college: '크리에이티브인문예술대학', department: '영미문화콘텐츠트랙', yearsAgo: 1, avatar: 'turtle-cool', avatarColor: 'm5', temperature: 41 },
+  { email: 'demo6@hansung.ac.kr', name: '데모6', gender: 'male', nickname: '콩이', college: '미래융합사회과학대학', department: '융합행정학부', yearsAgo: 3, avatar: 'frog-tongue', avatarColor: 'm6', temperature: 35.2 },
+  { email: 'demo7@hansung.ac.kr', name: '데모7', gender: 'male', nickname: '새봄', college: 'IT공과대학', department: 'AI응용학과', yearsAgo: 2, avatar: 'chick-love', avatarColor: 'm7', temperature: 38 },
+  { email: 'demo8@hansung.ac.kr', name: '데모8', gender: 'female', nickname: '다람', college: '디자인대학', department: '인터랙션디자인트랙', yearsAgo: 0, avatar: 'turtle-shy', avatarColor: 'm8', temperature: 36.5 },
 ];
 
 export const demoAdmissionYear = (u: DemoUser, now: Date): number =>
@@ -168,7 +171,7 @@ export const SAMPLE_PLANS: SamplePlan[] = [
     seated: [
       { user: 6, slot: MEETUP_HOST_SLOT },
       { user: 7, slot: MEETUP_GUEST_SLOT },
-      { user: 0, slot: MEETUP_GUEST_SLOT },
+      { user: 1, slot: MEETUP_GUEST_SLOT },
     ],
   },
   {
@@ -215,6 +218,7 @@ export function buildSampleGatherings(userIds: string[], now: Date): Gathering[]
       {
         id: plan.id,
         hostId: userIds[plan.host],
+        hostGender: DEMO_USERS[plan.host].gender,
         kind: plan.kind,
         title: plan.title,
         body: plan.body,
@@ -232,12 +236,12 @@ export function buildSampleGatherings(userIds: string[], now: Date): Gathering[]
     let g = created.value;
 
     for (const p of plan.seated ?? []) {
-      const joined = join(g, { id: userIds[p.user], banned: false, warnings: 0 }, p.slot, nowIso);
+      const joined = join(g, { id: userIds[p.user], banned: false, warnings: 0, gender: DEMO_USERS[p.user].gender }, p.slot, nowIso);
       if (!joined.ok) throw new Error(`[dev-seed] ${plan.id}: ${joined.error.message}`);
       g = joined.value;
     }
     for (const a of plan.applicants ?? []) {
-      const applied = apply(g, { id: userIds[a.user], banned: false, warnings: 0 }, a.slot, a.message, nowIso);
+      const applied = apply(g, { id: userIds[a.user], banned: false, warnings: 0, gender: DEMO_USERS[a.user].gender }, a.slot, a.message, nowIso);
       if (!applied.ok) throw new Error(`[dev-seed] ${plan.id}: ${applied.error.message}`);
       g = applied.value;
     }
@@ -259,15 +263,17 @@ async function ensureUser(u: DemoUser, passwordHash: string, now: Date): Promise
   const inserted = await get<{ id: number }>(
     // 로그인 아이디는 이메일의 앞부분(demo1). 이메일·아이디 어느 쪽이 겹쳐도 건드리지 않는다.
     `INSERT INTO users (email, username, name, password_hash, nickname, college, department, admission_year,
-                        avatar, avatar_color, temperature, profile_done)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)
+                        avatar, avatar_color, temperature, gender, profile_done)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)
      ON CONFLICT DO NOTHING
      RETURNING id`,
-    [u.email, u.email.split('@')[0].toLowerCase(), u.name, passwordHash, u.nickname, u.college, u.department, demoAdmissionYear(u, now), u.avatar, u.avatarColor, u.temperature],
+    [u.email, u.email.split('@')[0].toLowerCase(), u.name, passwordHash, u.nickname, u.college, u.department, demoAdmissionYear(u, now), u.avatar, u.avatarColor, u.temperature, u.gender],
   );
   if (inserted) return { id: String(inserted.id), created: true };
   const existing = await get<{ id: number }>('SELECT id FROM users WHERE email = ?', [u.email]);
   if (!existing) throw new Error(`[dev-seed] ${u.email} 를 만들지도 찾지도 못했습니다.`);
+  // 성별이 생기기 전에 만든 데모 계정에도 채워 준다 (비어 있을 때만)
+  await run('UPDATE users SET gender = ? WHERE id = ? AND gender IS NULL', [u.gender, existing.id]);
   return { id: String(existing.id), created: false };
 }
 

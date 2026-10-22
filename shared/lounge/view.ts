@@ -4,11 +4,12 @@
  * 도메인 모델(Gathering)은 userId 만 들고 있어서 화면에 그대로 못 쓴다.
  * 서버가 닉네임·아바타를 붙이고, "내가 지금 참여할 수 있나?" 같은 판단까지 끝내서
  * 클라이언트가 규칙을 다시 구현하지 않게 한다. (규칙이 두 군데 있으면 반드시 어긋난다)
- * 실명·이메일은 절대 내려보내지 않는다. 닉네임은 실명을 가린 표기("박○재")이고, 학과·입학년도는 학교 계정에서 읽은 사실이다.
+ * 이메일은 절대 내려보내지 않는다. 실명도 내려보내지 않되, 밥약 매칭(QuickMember)에서만 같은 무리·방 사람에게 보여 준다.
+ * 닉네임은 실명을 가린 표기("박○재")이고, 학과·입학년도는 학교 계정에서 읽은 사실이다.
  */
 import type { ISODateTime } from './types.js';
 import type { AvatarColor, AvatarKey, EmoteKey, PlaceType, ReportReason, ReportStatus, Zone } from './constants.js';
-import type { GatheringKind, GatheringMeta, GatheringStatusView, JoinPolicy, ReviewMark } from './gathering.js';
+import type { Gender, GatheringKind, GatheringMeta, GatheringStatusView, JoinPolicy, ReviewMark } from './gathering.js';
 
 // ───────────── 사용자 ─────────────
 
@@ -22,6 +23,8 @@ export type PublicUser = {
   department: string;
   /** 입학년도(4자리). 화면에는 "26학번"처럼 보인다. 학교에서 읽지 못했으면 null */
   admissionYear: number | null;
+  /** 성별. 학교 계정에서 읽었거나 내 정보에서 골랐다. 모르면 null */
+  gender: Gender | null;
   avatar: AvatarKey;
   avatarColor: AvatarColor;
   /** 매너온도 */
@@ -34,6 +37,8 @@ export type Profile = PublicUser & {
   banned: boolean;
   /** 정지 사유 문구 (banned 일 때만) */
   banReason: string | null;
+  /** 성별이 학교 계정에서 온 값이면 true — 이때는 내 정보에서 바꿀 수 없다 */
+  genderFromSchool: boolean;
 };
 
 export type MeResponse = {
@@ -50,6 +55,8 @@ export type MeResponse = {
 export type ProfileInput = {
   avatar: AvatarKey;
   avatarColor: AvatarColor;
+  /** 학교 계정에서 성별을 읽지 못한 경우에만 직접 고를 수 있다 */
+  gender?: Gender;
 };
 
 // ───────────── 모임 ─────────────
@@ -58,6 +65,8 @@ export type SlotView = {
   key: string;
   label: string;
   capacity: number;
+  /** 이 성별만 앉을 수 있다. 없으면 누구나 */
+  gender?: Gender;
   members: PublicUser[];
   seatsLeft: number;
 };
@@ -211,11 +220,17 @@ export type QuickRoomView = {
   meetAt?: ISODateTime;
 };
 
+/** 밥약 매칭에서 보이는 사람 — 밥약은 실제로 만날 사람이라 실명(name)까지 공개한다 */
+export type QuickMember = PublicUser & {
+  /** 실명. 탈퇴한 사용자는 '' */
+  name: string;
+};
+
 export type QuickState = {
   request: QuickRequestView | null;
   room: QuickRoomView | null;
-  /** 방 멤버 표시용 */
-  members: PublicUser[];
+  /** 방 멤버 표시용 (실명 포함) */
+  members: QuickMember[];
   gatheringId: string | null;
   waitingCount: number;
   /** 방이 열린 상태에서의 "나". 투표·수락 표시에 쓴다. */
@@ -224,8 +239,10 @@ export type QuickState = {
    * 즉시 매칭으로 찾는 중일 때 지금까지 내 무리에 모인 사람(나 포함, 먼저 온 순). 인원이 다 차면 후보 방이 된다.
    * 찾는 중이 아니면 빈 배열.
    */
-  forming: PublicUser[];
+  forming: QuickMember[];
 };
+
+/** `POST /api/lounge/meals/quick/start` — 3·4명을 찾다가 지금 모인 사람(2명 이상)으로 바로 시작한다. 본문 없음 */
 
 /** `PATCH /api/lounge/meals/quick` — 둘 중 하나만 보낸다 */
 export type QuickPatchBody = { roomId: string; bands: string[] } | { roomId: string; answer: 'accepted' | 'declined' };

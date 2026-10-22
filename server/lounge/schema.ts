@@ -28,6 +28,9 @@ export const LOUNGE_MIGRATIONS = `
   ALTER TABLE users ADD COLUMN IF NOT EXISTS college TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS department TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS admission_year INTEGER;
+  -- 성별: gender = 내 정보에서 고른 값, school_gender = 학교 계정에서 읽은 값(있으면 이쪽이 우선이고 바꿀 수 없다)
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS school_gender TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT NOT NULL DEFAULT 'bear';
   -- 아바타는 캐릭터 이미지로 바뀌었다(키: turtle-smile …). 옛 키(bear 등)는 읽을 때 기본 캐릭터로 보이고, 새 행의 기본값은 새 키다.
   ALTER TABLE users ALTER COLUMN avatar SET DEFAULT 'turtle-smile';

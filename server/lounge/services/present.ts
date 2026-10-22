@@ -93,6 +93,7 @@ export function toView(
     key: s.key,
     label: s.label,
     capacity: s.capacity,
+    ...(s.gender ? { gender: s.gender } : {}),
     seatsLeft: seatsLeft(s),
     members: s.memberIds.map((id) => userView(users, id)),
   }));

@@ -11,6 +11,9 @@ import type { GatheringId, ISODateTime, UserId } from './types.js';
 
 export type GatheringKind = 'meetup' | 'meal' | 'team';
 
+/** 성별 — 학교 계정에서 읽었거나 내 정보에서 고른 값. 미팅 자리(남자 쪽/여자 쪽)를 가르는 데 쓴다 */
+export type Gender = 'male' | 'female';
+
 /** auto = 누르면 바로 확정(선착순) / approval = 신청 후 주최자가 승인 */
 export type JoinPolicy = 'auto' | 'approval';
 
@@ -31,6 +34,8 @@ export type Slot = {
   label: string;
   capacity: number;
   memberIds: UserId[];
+  /** 이 성별만 앉을 수 있다 (미팅: 위 = 남자, 아래 = 여자). 없으면 누구나 */
+  gender?: Gender;
 };
 
 /** approval 정책에서 승인 대기 중인 신청자. 대기 중엔 자리를 차지하지 않는다. */
@@ -81,7 +86,7 @@ export type Gathering = {
   createdAt: ISODateTime;
 };
 
-export type SlotSpec = { key: string; label: string; capacity: number };
+export type SlotSpec = { key: string; label: string; capacity: number; gender?: Gender };
 
 /** `POST /api/lounge/gatherings` 요청 본문 (hostId·id 는 서버가 채운다) */
 export type CreateGatheringBody = {

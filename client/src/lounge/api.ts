@@ -61,6 +61,7 @@ export const loungeApi = {
   requestQuick: (input: QuickInput) => api.post<{ state: QuickState }>(`${L}/meals/quick`, input).then((r) => r.state),
   patchQuick: (body: QuickPatchBody) => api.patch<{ state: QuickState }>(`${L}/meals/quick`, body).then((r) => r.state),
   cancelQuick: () => api.del<{ state: QuickState }>(`${L}/meals/quick`).then((r) => r.state),
+  startQuickNow: () => api.post<{ state: QuickState }>(`${L}/meals/quick/start`, {}).then((r) => r.state),
 
   // 안전
   blocks: () => api.get<{ blocked: PublicUser[] }>(`${L}/blocks`).then((r) => r.blocked),

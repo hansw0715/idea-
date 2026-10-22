@@ -188,6 +188,7 @@ export function prepareGathering(
       id: randomUUID(),
       kind: body.kind,
       hostId: host.id,
+      hostGender: host.gender,
       title: title.value,
       body: text,
       place: place.value,

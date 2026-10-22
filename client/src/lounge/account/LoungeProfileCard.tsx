@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { BAN_NOTICE_GENERIC } from '../../../../shared/lounge';
-import { Alert, Button, EmptyState, LoadingBlock } from '../../ui';
+import { BAN_NOTICE_GENERIC, GENDER_LABEL } from '../../../../shared/lounge';
+import type { Gender } from '../../../../shared/lounge';
+import { Alert, Button, EmptyState, LoadingBlock, Segmented, useToast } from '../../ui';
+import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
 import Avatar, { TemperatureBadge } from '../parts/Avatar';
 import { factLine } from '../parts/fact';
@@ -11,8 +13,26 @@ import { factLine } from '../parts/fact';
  * 스타일: pages/account.css (접두사 lounge-acct-)
  */
 export default function LoungeProfileCard() {
-  const { profile, needsProfile, loading, error, refresh, openProfileSheet } = useLounge();
+  const { profile, needsProfile, loading, error, refresh, openProfileSheet, setProfile } = useLounge();
   const [retrying, setRetrying] = useState(false);
+  const [savingGender, setSavingGender] = useState(false);
+  const [genderError, setGenderError] = useState<string | null>(null);
+  const toast = useToast();
+
+  /** 학교 계정에서 성별을 못 읽은 경우에만 직접 고른다. 미팅에서 남자/여자 자리를 고를 때 쓴다 */
+  async function saveGender(gender: Gender) {
+    if (!profile || savingGender || profile.gender === gender) return;
+    setSavingGender(true);
+    setGenderError(null);
+    try {
+      setProfile(await loungeApi.saveProfile({ avatar: profile.avatar, avatarColor: profile.avatarColor, gender }));
+      toast('성별을 저장했어요.');
+    } catch (err) {
+      setGenderError(err instanceof Error ? err.message : '성별을 저장하지 못했어요.');
+    } finally {
+      setSavingGender(false);
+    }
+  }
 
   async function retry() {
     setRetrying(true);
@@ -42,6 +62,34 @@ export default function LoungeProfileCard() {
               <TemperatureBadge value={profile.temperature} />
             </p>
           </div>
+        </div>
+
+        <div className="lounge-acct-gender">
+          {profile.genderFromSchool && profile.gender ? (
+            <p className="lounge-acct-help">
+              성별: <strong>{GENDER_LABEL[profile.gender]}</strong> (학교 계정에서 가져왔어요)
+            </p>
+          ) : (
+            <Segmented
+              label="성별"
+              value={profile.gender ?? ('' as Gender)}
+              onChange={(g) => void saveGender(g)}
+              options={[
+                { value: 'male', label: '남' },
+                { value: 'female', label: '여' },
+              ]}
+              help={
+                profile.gender
+                  ? '미팅에서는 남자는 위, 여자는 아래 자리에 앉아요.'
+                  : '미팅에 참여하려면 성별을 골라 주세요. 남자는 위, 여자는 아래 자리에 앉아요.'
+              }
+            />
+          )}
+          {genderError && (
+            <Alert tone="danger" title="저장하지 못했어요">
+              {genderError}
+            </Alert>
+          )}
         </div>
 
         <p className="lounge-acct-help">이름·학과·학번은 학교 계정에서 가져와요.</p>

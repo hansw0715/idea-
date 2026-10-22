@@ -46,7 +46,8 @@ function meetup(): Gathering {
       meetAt: MEET_AT,
       joinDeadline: DEADLINE,
       joinPolicy: 'auto',
-      slots: MEETUP_PRESETS['2:2'].slots,
+      // 이 파일의 시험은 정원·마감·평가 규칙을 본다. 성별 자리 규칙은 아래 '미팅 성별 자리'에서 따로 본다.
+      slots: MEETUP_PRESETS['2:2'].slots.map(({ gender: _gender, ...slot }) => slot),
     },
     NOW,
   );
@@ -140,7 +141,7 @@ describe('생성', () => {
       joinPolicy: 'auto' as const,
       slots: MEETUP_PRESETS['2:2'].slots,
     };
-    const guestSide = createGathering({ ...base, hostSlotKey: 'guest' }, NOW);
+    const guestSide = createGathering({ ...base, hostSlotKey: 'guest', hostGender: 'female' }, NOW);
     expect(guestSide.ok && guestSide.value.slots[1].memberIds).toEqual([host.id]);
     const nowhere = createGathering({ ...base, hostSlotKey: 'nope' }, NOW);
     expect(nowhere.ok).toBe(false);
@@ -491,6 +492,7 @@ describe('시각 경계', () => {
       place: 'p',
       joinPolicy: 'auto' as const,
       slots: MEETUP_PRESETS['1:1'].slots,
+      hostGender: 'male' as const,
     };
     const atNow = createGathering({ ...base, meetAt: NOW, joinDeadline: NOW }, NOW);
     expect(atNow.ok).toBe(false);
@@ -513,5 +515,51 @@ describe('상태', () => {
     expect(currentStatus(g, NOW)).toBe('full');
     // 정원이 차 있으면 마감이 지나도 full 로 보인다 (자리가 없다는 게 더 중요한 정보)
     expect(currentStatus(g, '2026-09-02T10:00:00.000Z')).toBe('full');
+  });
+});
+
+describe('미팅 성별 자리 (위 = 남자, 아래 = 여자)', () => {
+  const base = {
+    id: 'gx',
+    kind: 'meetup' as const,
+    hostId: host.id,
+    title: '2:2',
+    body: '',
+    place: 'p',
+    meetAt: MEET_AT,
+    joinDeadline: DEADLINE,
+    joinPolicy: 'auto' as const,
+    slots: MEETUP_PRESETS['2:2'].slots,
+  };
+
+  it('프리셋은 위가 남자, 아래가 여자 자리다', () => {
+    expect(MEETUP_PRESETS['2:2'].slots.map((s) => [s.label, s.gender])).toEqual([
+      ['남자', 'male'],
+      ['여자', 'female'],
+    ]);
+  });
+
+  it('주최자는 자기 성별 쪽에 앉고, 성별을 모르면 만들 수 없다', () => {
+    const byWoman = createGathering({ ...base, hostGender: 'female' }, NOW);
+    expect(byWoman.ok && byWoman.value.slots.map((s) => s.memberIds)).toEqual([[], [host.id]]);
+    const byMan = createGathering({ ...base, hostGender: 'male' }, NOW);
+    expect(byMan.ok && byMan.value.slots.map((s) => s.memberIds)).toEqual([[host.id], []]);
+    const unknown = createGathering(base, NOW);
+    expect(unknown.ok).toBe(false);
+    const wrongSide = createGathering({ ...base, hostGender: 'male', hostSlotKey: 'guest' }, NOW);
+    expect(wrongSide.ok).toBe(false);
+  });
+
+  it('남자 자리에는 남학생만, 여자 자리에는 여학생만 앉는다', () => {
+    const created = createGathering({ ...base, hostGender: 'male' }, NOW);
+    if (!created.ok) throw new Error(created.error.message);
+    const g = created.value;
+    expect(join(g, user('m', { gender: 'male' }), 'host', NOW).ok).toBe(true);
+    expect(join(g, user('f', { gender: 'female' }), 'guest', NOW).ok).toBe(true);
+    const manDown = join(g, user('m2', { gender: 'male' }), 'guest', NOW);
+    expect(manDown.ok).toBe(false);
+    if (!manDown.ok) expect(manDown.error.code).toBe('FORBIDDEN');
+    expect(join(g, user('f2', { gender: 'female' }), 'host', NOW).ok).toBe(false);
+    expect(join(g, user('x'), 'guest', NOW).ok).toBe(false); // 성별을 모르면 못 앉는다
   });
 });

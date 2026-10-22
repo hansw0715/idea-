@@ -17,6 +17,8 @@ const user = (over: Partial<LoungeUser> = {}): LoungeUser => ({
   college: 'IT공과대학',
   department: '컴퓨터공학부',
   admissionYear: 2024,
+  gender: null,
+  genderFromSchool: false,
   avatar: 'turtle-smile',
   avatarColor: 'm1',
   temperature: 36.5,

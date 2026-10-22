@@ -64,8 +64,8 @@ async function makeUser(
   const n = ++seq;
   const id = await insert(
     `INSERT INTO users (email, name, password_hash, nickname, college, department, admission_year,
-                        avatar, avatar_color, profile_done, banned, warnings, temperature)
-     VALUES (?, ?, 'x', ?, 'IT공과대학', ?, 2024, 'turtle-smile', 'm1', ?, ?, ?, ?) RETURNING id`,
+                        avatar, avatar_color, profile_done, banned, warnings, temperature, gender)
+     VALUES (?, ?, 'x', ?, 'IT공과대학', ?, 2024, 'turtle-smile', 'm1', ?, ?, ?, ?, 'male') RETURNING id`,
     [
       `t${n}-${randomUUID().slice(0, 6)}@hansung.ac.kr`,
       `실명${n}`,
@@ -82,6 +82,13 @@ async function makeUser(
   created.push(user);
   return user;
 }
+
+/**
+ * 미팅 자리는 위(host) = 남자, 아래(guest) = 여자만 앉는다. 이 파일의 다른 시험은 자리 규칙 자체가 아니라
+ * 정원·마감·평가 같은 규칙을 보므로, 앉으려는 자리에 맞는 성별을 붙여서 앉힌다. (성별 규칙은 따로 시험한다)
+ */
+const joinAs = (user: LoungeUser, id: string, slotKey: string) =>
+  svc.joinGathering({ ...user, gender: slotKey === 'host' ? 'male' : slotKey === 'guest' ? 'female' : user.gender }, id, slotKey);
 
 const inHours = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
 
@@ -128,6 +135,7 @@ async function seedPast(hostId: string, guests: string[], kind: 'meetup' | 'meal
             id: randomUUID(),
             kind,
             hostId,
+            hostGender: 'male',
             title: '지난 미팅',
             body: '',
             place: '삼선교',
@@ -153,7 +161,8 @@ async function seedPast(hostId: string, guests: string[], kind: 'meetup' | 'meal
   );
   for (const [i, id] of guests.entries()) {
     const slot = kind === 'meal' ? MEAL_SLOT : i % 2 === 0 ? 'guest' : 'host';
-    g = must(G.join({ ...g, joinPolicy: 'auto' }, { id, banned: false, warnings: 0 }, slot, past(40)));
+    const gender = slot === 'host' ? 'male' : slot === 'guest' ? 'female' : null;
+    g = must(G.join({ ...g, joinPolicy: 'auto' }, { id, banned: false, warnings: 0, gender }, slot, past(40)));
     g = { ...g, joinPolicy: kind === 'meal' ? 'approval' : 'auto' };
   }
   await insertGathering(g);
@@ -179,7 +188,7 @@ describe('동시성 — 같은 자리에 동시에 앉기', () => {
     const g = await makeMeetup(host);
     const users = await Promise.all(Array.from({ length: 12 }, () => makeUser()));
 
-    const results = await Promise.all(users.map((u) => svc.joinGathering(u, g.id, 'guest')));
+    const results = await Promise.all(users.map((u) => joinAs(u, g.id, 'guest')));
 
     expect(results.filter((r) => r.ok)).toHaveLength(2);
     expect(results.filter((r) => errCode(r) === 'SLOT_FULL')).toHaveLength(10);
@@ -201,7 +210,7 @@ describe('동시성 — 같은 자리에 동시에 앉기', () => {
     const g = await makeMeetup(host);
     const users = await Promise.all(Array.from({ length: 12 }, () => makeUser()));
 
-    const results = await Promise.all(users.map((u, i) => svc.joinGathering(u, g.id, i % 2 === 0 ? 'host' : 'guest')));
+    const results = await Promise.all(users.map((u, i) => joinAs(u, g.id, i % 2 === 0 ? 'host' : 'guest')));
 
     // host 쪽 1자리 + guest 쪽 2자리
     expect(results.filter((r) => r.ok)).toHaveLength(3);
@@ -225,7 +234,7 @@ describe('동시성 — 같은 자리에 동시에 앉기', () => {
     const g = await makeMeetup(host);
     const user = await makeUser();
 
-    const results = await Promise.all(Array.from({ length: 8 }, () => svc.joinGathering(user, g.id, 'guest')));
+    const results = await Promise.all(Array.from({ length: 8 }, () => joinAs(user, g.id, 'guest')));
 
     expect(results.filter((r) => r.ok)).toHaveLength(1);
     expect(results.filter((r) => errCode(r) === 'ALREADY_JOINED')).toHaveLength(7);
@@ -276,7 +285,7 @@ describe('mutateGathering — 낙관적 잠금', () => {
     const host = await makeUser();
     const g = await makeMeetup(host);
     const before = await get<{ version: number }>('SELECT version FROM lounge_gatherings WHERE id = ?', [g.id]);
-    const r = await svc.joinGathering(host, g.id, 'guest'); // 주최자는 이미 참여 중
+    const r = await joinAs(host, g.id, 'guest'); // 주최자는 이미 참여 중
     expect(errCode(r)).toBe('ALREADY_JOINED');
     const after = await get<{ version: number }>('SELECT version FROM lounge_gatherings WHERE id = ?', [g.id]);
     expect(after!.version).toBe(before!.version);
@@ -480,7 +489,7 @@ describe('평판 — 멱등 반영', () => {
     const banned = (await findUser(a.id))!;
     expect(errCode(await svc.createGathering(banned, meetupBody()))).toBe('BANNED');
     const open = await makeMeetup(host);
-    expect(errCode(await svc.joinGathering(banned, open.id, 'guest'))).toBe('BANNED');
+    expect(errCode(await joinAs(banned, open.id, 'guest'))).toBe('BANNED');
   });
 
   // 회귀(보안): 둘뿐인 모임에서 상대 한 명의 noshow 한 번으로 벌점이 확정되던 문제.
@@ -539,7 +548,7 @@ describe('평판 — 멱등 반영', () => {
     expect(errCode(await blockUser(a.id, b.id))).toBe('OK');
     expect(errCode(await svc.createGathering(bannedA, meetupBody()))).toBe('BANNED');
     const open = await makeMeetup(host);
-    expect(errCode(await svc.joinGathering(bannedA, open.id, 'guest'))).toBe('BANNED');
+    expect(errCode(await joinAs(bannedA, open.id, 'guest'))).toBe('BANNED');
 
     // 정지 사용자 한 명의 신고만으로는 대상이 자동 정지되지 않는다 (서로 다른 3명 필요)
     expect((await stat(b.id)).banned).toBe(false);
@@ -550,7 +559,7 @@ describe('평판 — 멱등 반영', () => {
     const a = await makeUser();
     const outsider = await makeUser();
     const future = await makeMeetup(host);
-    must(await svc.joinGathering(a, future.id, 'guest'));
+    must(await joinAs(a, future.id, 'guest'));
     expect(errCode(await svc.reviewParticipant(host, future.id, a.id, 'good'))).toBe('TOO_EARLY');
 
     const past = await seedPast(host.id, [a.id]);
@@ -598,14 +607,14 @@ describe('단톡방', () => {
     const [a, b, c] = await Promise.all([makeUser(), makeUser(), makeUser()]);
     const g = await makeMeetup(host);
 
-    must(await svc.joinGathering(a, g.id, 'guest'));
-    must(await svc.joinGathering(b, g.id, 'guest'));
+    must(await joinAs(a, g.id, 'guest'));
+    must(await joinAs(b, g.id, 'guest'));
     expect(await messageCount(g.id)).toBe(0); // 아직 자리가 남았다
-    must(await svc.joinGathering(c, g.id, 'host'));
+    must(await joinAs(c, g.id, 'host'));
     expect(await messageCount(g.id)).toBe(1);
 
     must(await svc.leaveGathering(c, g.id));
-    must(await svc.joinGathering(c, g.id, 'host'));
+    must(await joinAs(c, g.id, 'host'));
     expect(await messageCount(g.id)).toBe(1);
 
     // 방 열기를 직접 여러 번(동시에) 불러도 마찬가지
@@ -624,14 +633,14 @@ describe('단톡방', () => {
     const host = await makeUser();
     const [a, b, c, outsider] = await Promise.all([makeUser(), makeUser(), makeUser(), makeUser()]);
     const g = await makeMeetup(host);
-    must(await svc.joinGathering(a, g.id, 'guest'));
+    must(await joinAs(a, g.id, 'guest'));
 
     // 자리가 남은 모임: 방이 없다
     expect(errCode(await roomView(host, g.id))).toBe('NOT_OPEN');
     expect(errCode(await sendMessage(host, g.id, '안녕'))).toBe('FORBIDDEN');
 
-    must(await svc.joinGathering(b, g.id, 'guest'));
-    must(await svc.joinGathering(c, g.id, 'host'));
+    must(await joinAs(b, g.id, 'guest'));
+    must(await joinAs(c, g.id, 'host'));
 
     expect(errCode(await roomView(outsider, g.id))).toBe('FORBIDDEN');
     expect(errCode(await sendMessage(outsider, g.id, '안녕'))).toBe('FORBIDDEN');
@@ -658,7 +667,7 @@ describe('단톡방', () => {
     const host = await makeUser();
     const [a, b, c] = await Promise.all([makeUser(), makeUser(), makeUser()]);
     const g = await makeMeetup(host);
-    for (const [u, slot] of [[a, 'guest'], [b, 'guest'], [c, 'host']] as const) must(await svc.joinGathering(u, g.id, slot));
+    for (const [u, slot] of [[a, 'guest'], [b, 'guest'], [c, 'host']] as const) must(await joinAs(u, g.id, slot));
 
     must(await sendMessage(host, g.id, '  안녕하세요  '));
     const first = must(await roomView(a, g.id));
@@ -684,7 +693,7 @@ describe('단톡방', () => {
     const host = await makeUser();
     const [a, b, c] = await Promise.all([makeUser(), makeUser(), makeUser()]);
     const g = await makeMeetup(host);
-    for (const [u, slot] of [[a, 'guest'], [b, 'guest'], [c, 'host']] as const) must(await svc.joinGathering(u, g.id, slot));
+    for (const [u, slot] of [[a, 'guest'], [b, 'guest'], [c, 'host']] as const) must(await joinAs(u, g.id, slot));
     must(await sendMessage(a, g.id, 'a 말'));
     must(await sendMessage(b, g.id, 'b 말'));
     await run('DELETE FROM users WHERE id = ?', [Number(a.id)]);
@@ -705,7 +714,7 @@ describe('단톡방', () => {
     const host = await makeUser();
     const [a, b, c] = await Promise.all([makeUser(), makeUser(), makeUser()]);
     const g = await makeMeetup(host);
-    for (const [u, slot] of [[a, 'guest'], [b, 'guest'], [c, 'host']] as const) must(await svc.joinGathering(u, g.id, slot));
+    for (const [u, slot] of [[a, 'guest'], [b, 'guest'], [c, 'host']] as const) must(await joinAs(u, g.id, slot));
     must(await sendMessage(a, g.id, '비밀 이야기'));
     must(await sendMessage(b, g.id, '안녕'));
 
@@ -748,17 +757,17 @@ describe('차단', () => {
     expect(errCode(await svc.getGatheringView(c, ga.id))).toBe('OK');
 
     // 내가 차단한 사람의 모임: 내가 한 일이라 사유를 말해 준다.
-    const joined = await svc.joinGathering(b, ga.id, 'guest');
+    const joined = await joinAs(b, ga.id, 'guest');
     expect(joined.ok).toBe(false);
     if (!joined.ok) expect(joined.error).toMatchObject({ code: 'FORBIDDEN', message: '차단한 사용자가 있는 모임이에요.' });
     // 나를 차단한 사람의 모임: 없는 모임과 똑같이 답한다 — 모임 id 를 아는 사람이 자기가 차단당했는지 알아낼 수 없어야 한다.
-    expect(await svc.joinGathering(a, gb.id, 'guest')).toEqual(await svc.joinGathering(a, randomUUID(), 'guest'));
-    expect(errCode(await svc.joinGathering(a, gb.id, 'guest'))).toBe('NOT_FOUND');
+    expect(await joinAs(a, gb.id, 'guest')).toEqual(await joinAs(a, randomUUID(), 'guest'));
+    expect(errCode(await joinAs(a, gb.id, 'guest'))).toBe('NOT_FOUND');
 
     // 해제하면 다시 보인다
     must(await unblockUser(b.id, a.id));
     expect(await ids(b)).toContain(ga.id);
-    expect(errCode(await svc.joinGathering(b, ga.id, 'guest'))).toBe('OK');
+    expect(errCode(await joinAs(b, ga.id, 'guest'))).toBe('OK');
   });
 
   // 회귀(프라이버시): 나를 차단한 사람이 주최한 밥약에 신청하면 403 '차단한 사용자가 있는 모임이에요.' 가 와서 차단당한 걸 알 수 있었다.
@@ -787,7 +796,7 @@ describe('차단', () => {
   it('이미 함께 앉은 모임은 차단해도 내 목록에서 사라지지 않는다 (나갈 방법이 있어야 한다)', async () => {
     const [a, b] = await Promise.all([makeUser(), makeUser()]);
     const g = await makeMeetup(a);
-    must(await svc.joinGathering(b, g.id, 'guest'));
+    must(await joinAs(b, g.id, 'guest'));
     must(await blockUser(b.id, a.id));
 
     expect((await svc.listGatheringViews(b)).map((v) => v.id)).toContain(g.id);
@@ -814,7 +823,7 @@ describe('차단', () => {
     const list = await myBlocks(a.id);
     expect(list.map((u) => u.id)).toEqual([b.id]);
     expect(Object.keys(list[0]).sort()).toEqual(
-      ['admissionYear', 'avatar', 'avatarColor', 'college', 'department', 'id', 'nickname', 'temperature'].sort(),
+      ['admissionYear', 'avatar', 'avatarColor', 'college', 'department', 'gender', 'id', 'nickname', 'temperature'].sort(),
     );
     expect(await myBlocks(b.id)).toEqual([]); // 차단당한 사람의 목록에는 드러나지 않는다
 
@@ -1045,13 +1054,13 @@ describe('참여 자격', () => {
     const other = await makeUser({ department: '시각디자인전공' });
     const otherSameAsOther = await makeUser({ department: '시각디자인전공' });
 
-    const blocked = await svc.joinGathering(sameDept, g.id, 'guest');
+    const blocked = await joinAs(sameDept, g.id, 'guest');
     expect(blocked.ok).toBe(false);
     if (!blocked.ok) expect(blocked.error).toMatchObject({ code: 'FORBIDDEN', message: '같은 학과는 참여할 수 없는 미팅이에요.' });
 
-    must(await svc.joinGathering(other, g.id, 'guest'));
+    must(await joinAs(other, g.id, 'guest'));
     // 이미 앉은 사람과 같은 학과도 막는다
-    expect(errCode(await svc.joinGathering(otherSameAsOther, g.id, 'guest'))).toBe('FORBIDDEN');
+    expect(errCode(await joinAs(otherSameAsOther, g.id, 'guest'))).toBe('FORBIDDEN');
 
     // 화면에서도 미리 알 수 있다 (버튼 옆 사유)
     const view = await svc.viewOf(sameDept, (await findGathering(g.id))!);
@@ -1064,7 +1073,7 @@ describe('참여 자격', () => {
     const host = await makeUser({ department: '같은과' });
     const g = await makeMeetup(host);
     const same = await makeUser({ department: '같은과' });
-    expect(errCode(await svc.joinGathering(same, g.id, 'guest'))).toBe('OK');
+    expect(errCode(await joinAs(same, g.id, 'guest'))).toBe('OK');
   });
 
   it('선착순 모임에 신청하거나 승인제 모임에 바로 앉을 수 없다', async () => {
@@ -1073,9 +1082,9 @@ describe('참여 자격', () => {
     const meetup = await makeMeetup(host);
     const meal = await makeMeal(host);
     expect(errCode(await svc.applyToGathering(u, meetup.id, 'guest', ''))).toBe('FORBIDDEN');
-    expect(errCode(await svc.joinGathering(u, meal.id, MEAL_SLOT))).toBe('FORBIDDEN');
-    expect(errCode(await svc.joinGathering(u, randomUUID(), 'guest'))).toBe('NOT_FOUND');
-    expect(errCode(await svc.joinGathering(u, meetup.id, 'balcony'))).toBe('SLOT_NOT_FOUND');
+    expect(errCode(await joinAs(u, meal.id, MEAL_SLOT))).toBe('FORBIDDEN');
+    expect(errCode(await joinAs(u, randomUUID(), 'guest'))).toBe('NOT_FOUND');
+    expect(errCode(await joinAs(u, meetup.id, 'balcony'))).toBe('SLOT_NOT_FOUND');
   });
 
   it('밥약: 신청 → 승인 → 앉음, 거절하면 사라진다. 승인 전에는 방이 없다', async () => {
@@ -1129,7 +1138,7 @@ describe('참여 자격', () => {
     const host = await makeUser();
     const a = await makeUser();
     const g = await makeMeetup(host);
-    must(await svc.joinGathering(a, g.id, 'guest'));
+    must(await joinAs(a, g.id, 'guest'));
     expect(errCode(await svc.leaveGathering(host, g.id))).toBe('HOST_CANNOT_LEAVE');
     expect(errCode(await svc.cancelGathering(a, g.id))).toBe('FORBIDDEN');
     must(await svc.leaveGathering(a, g.id));
@@ -1137,7 +1146,7 @@ describe('참여 자격', () => {
 
     must(await svc.cancelGathering(host, g.id));
     expect(errCode(await svc.cancelGathering(host, g.id))).toBe('NOT_OPEN');
-    expect(errCode(await svc.joinGathering(a, g.id, 'guest'))).toBe('NOT_OPEN');
+    expect(errCode(await joinAs(a, g.id, 'guest'))).toBe('NOT_OPEN');
   });
 });
 
@@ -1148,7 +1157,7 @@ describe('화면 DTO (toView)', () => {
     const host = await makeUser();
     const [a, b] = await Promise.all([makeUser(), makeUser()]);
     const g = await makeMeetup(host);
-    must(await svc.joinGathering(a, g.id, 'guest'));
+    must(await joinAs(a, g.id, 'guest'));
     const stored = (await findGathering(g.id))!;
 
     const asHost = await svc.viewOf(host, stored);
@@ -1169,7 +1178,7 @@ describe('화면 DTO (toView)', () => {
     const host = await makeUser();
     const [a, b, c] = await Promise.all([makeUser(), makeUser(), makeUser()]);
     const g = await makeMeetup(host);
-    for (const [u, slot] of [[a, 'guest'], [b, 'guest'], [c, 'host']] as const) must(await svc.joinGathering(u, g.id, slot));
+    for (const [u, slot] of [[a, 'guest'], [b, 'guest'], [c, 'host']] as const) must(await joinAs(u, g.id, slot));
     const stored = (await findGathering(g.id))!;
 
     const asA = await svc.viewOf(a, stored);
@@ -1221,7 +1230,7 @@ describe('화면 DTO (toView)', () => {
     expect(await conflictOf(free)).toBeNull();
     // 참고용이라 참여를 막지는 않는다
     expect((await svc.getGatheringView(student, g.id)) as unknown).toMatchObject({ ok: true, value: { viewer: { timetableConflict: '자료구조', canJoin: true } } });
-    expect(errCode(await svc.joinGathering(student, g.id, 'guest'))).toBe('OK');
+    expect(errCode(await joinAs(student, g.id, 'guest'))).toBe('OK');
   });
 
   // 시간표 겹침의 길이: 밥약은 60분, 미팅은 120분으로 본다 (계약 §3.4). 길이가 바뀌어도 통과하던 빈틈을 막는다.
@@ -1269,7 +1278,7 @@ describe('화면 DTO (toView)', () => {
     const host = await makeUser();
     const [a, b] = await Promise.all([makeUser(), makeUser()]);
     const g = await makeMeetup(host);
-    must(await svc.joinGathering(a, g.id, 'guest'));
+    must(await joinAs(a, g.id, 'guest'));
     await run('DELETE FROM users WHERE id = ?', [Number(a.id)]);
 
     const view = await svc.viewOf(b, (await findGathering(g.id))!);
@@ -1286,7 +1295,7 @@ describe('화면 DTO (toView)', () => {
     const users = new Map([[host.id, host], [u.id, u]]);
     const base = must(
       G.createGathering(
-        { id: 'x', kind: 'meetup', hostId: host.id, title: 't', body: '', place: 'p', meetAt: inHours(10), joinDeadline: inHours(5), joinPolicy: 'auto', slots: MEETUP_PRESETS['1:1'].slots },
+        { id: 'x', kind: 'meetup', hostId: host.id, hostGender: 'male', title: 't', body: '', place: 'p', meetAt: inHours(10), joinDeadline: inHours(5), joinPolicy: 'auto', slots: MEETUP_PRESETS['1:1'].slots },
         now,
       ),
     );
@@ -1418,9 +1427,13 @@ describe('모임 만들기 검증', () => {
     expect(g.title).toBe('앞뒤 공백');
     expect(g.joinPolicy).toBe('auto');
     expect(g.slots.map((s) => [s.key, s.label, s.capacity, s.memberIds])).toEqual([
-      ['host', '우리 쪽', 2, [host.id]],
-      ['guest', '상대 쪽', 2, []],
+      ['host', '남자', 2, [host.id]],
+      ['guest', '여자', 2, []],
     ]);
+    // 여학생이 만들면 아래(여자) 자리에 앉는다
+    const woman = { ...(await makeUser()), gender: 'female' as const };
+    const byWoman = await makeMeetup(woman);
+    expect(byWoman.slots.map((s) => s.memberIds)).toEqual([[], [woman.id]]);
     expect(await findGathering(g.id)).toEqual(g);
 
     const meal = await makeMeal(host, 4);
@@ -1476,7 +1489,7 @@ describe('모임 만들기 검증', () => {
     expect(await rejects(host, { slots: MEETUP_PRESETS['3:3'].slots })).toBe('OK');
     expect(await rejects(host, { joinPolicy: 'approval' })).toBe('INVALID');
     expect(await rejects(host, { hostSlotKey: 'nowhere' })).toBe('SLOT_NOT_FOUND');
-    expect(await rejects(host, { hostSlotKey: 'guest' })).toBe('OK');
+    expect(await rejects(host, { hostSlotKey: 'guest' })).toBe('FORBIDDEN'); // 남학생은 여자 자리에 앉을 수 없다
     expect(errCode(await svc.createGathering(host, mealBody(5)))).toBe('INVALID');
     expect(errCode(await svc.createGathering(host, mealBody(1)))).toBe('INVALID');
     expect(errCode(await svc.createGathering(host, mealBody(3, { joinPolicy: 'auto' })))).toBe('INVALID');
@@ -1485,7 +1498,9 @@ describe('모임 만들기 검증', () => {
     const sneaky = must(
       await svc.createGathering(host, meetupBody({ slots: [{ key: 'host', label: '<b>가짜</b>', capacity: 2 }, { key: 'guest', label: '아무거나', capacity: 2 }] })),
     );
-    expect(sneaky.slots.map((s) => s.label)).toEqual(['우리 쪽', '상대 쪽']);
+    expect(sneaky.slots.map((s) => s.label)).toEqual(['남자', '여자']);
+    // 성별 제한을 빼고 보내도 서버가 프리셋의 성별 자리로 다시 만든다
+    expect(sneaky.slots.map((s) => s.gender)).toEqual(['male', 'female']);
   });
 
   it('meta: 태그 개수·길이, 장소 종류, 메뉴, 같은 과 제외는 미팅에서만', async () => {

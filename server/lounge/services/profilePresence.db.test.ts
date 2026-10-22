@@ -155,6 +155,7 @@ describe('다른 사용자 카드 (GET /users/:id)', () => {
       college: 'IT공과대학',
       department: other.department, // 학교 계정에서 읽은 학과 — 상대에게 보인다
       admissionYear: 2024,
+      gender: null,
       avatar: 'cat-think',
       avatarColor: 'm2',
       temperature: 40,

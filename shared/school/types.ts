@@ -49,6 +49,8 @@ export type SchoolProfile = {
   department: string;
   /** 학번 앞자리로 추정한 입학년도. 모르면 null */
   admissionYear: number | null;
+  /** 포털 화면에 성별이 나와 있으면 그 값. 못 읽으면 null (그때는 내 정보에서 직접 고른다) */
+  gender?: 'male' | 'female' | null;
 };
 
 /** `POST /api/school/link` 본문 — creds 로 학교에 한 번 로그인해 보고, 성공하면 cipher 를 저장한다 */

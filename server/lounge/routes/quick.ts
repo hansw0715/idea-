@@ -6,7 +6,7 @@ import { BAND_KEYS } from '../../../shared/lounge/constants.js';
 import type { QuickPatchBody } from '../../../shared/lounge/view.js';
 import { createRateLimiter } from '../../rateLimit.js';
 import { handler, me, sendResult } from '../http.js';
-import { answerRoom, cancelQuickMatch, prepareQuickMatch, quickState, submitQuickMatch, voteBands } from '../services/quick.js';
+import { answerRoom, cancelQuickMatch, prepareQuickMatch, quickState, startQuickNow, submitQuickMatch, voteBands } from '../services/quick.js';
 
 /**
  * 밥약 빠른 매칭: GET/POST/PATCH/DELETE /meals/quick  →  항상 `{ state: QuickState }`
@@ -78,6 +78,14 @@ quickRouter.post(
       return;
     }
     sendResult(res, await submitQuickMatch(user, prepared.value), (state) => ({ state }));
+  }),
+);
+
+/** 3·4명을 찾다가 지금 모인 사람(2명 이상)으로 바로 시작 */
+quickRouter.post(
+  '/meals/quick/start',
+  handler(async (_req, res) => {
+    sendResult(res, await startQuickNow(me(res).id), (state) => ({ state }));
   }),
 );
 

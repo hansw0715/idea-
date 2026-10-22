@@ -537,3 +537,14 @@ describe('선형 스캐너는 예전 정규식과 같은 결과를 낸다 (무�
     expect(parseMine(`<tr class="no-data"><td colspan="8">없음</td></tr>`)).toEqual([]);
   });
 });
+
+describe('parseGender', () => {
+  it('"성별" 옆의 남/여를 읽고, 없으면 null', async () => {
+    const { parseGender } = await import('./parse.js');
+    expect(parseGender('<tr><th>성별</th><td>남</td></tr>')).toBe('male');
+    expect(parseGender('성별 : 여자')).toBe('female');
+    expect(parseGender('<span>성 별</span>&nbsp;<b>여성</b>')).toBe('female');
+    expect(parseGender('<div class="info">AI응용학과<br/>박민재</a>')).toBeNull();
+    expect(parseGender('성별 남녀공학')).toBeNull(); // "남녀" 처럼 이어진 글자는 성별 값이 아니다
+  });
+});

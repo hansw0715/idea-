@@ -175,7 +175,31 @@ export function truncate(s: string, max: number): string {
 
 // ── info.hansung.ac.kr ────────────────────────────────────────────
 
-export type ParsedProfile = { studentId: string; name: string; department: string };
+export type ParsedProfile = { studentId: string; name: string; department: string; gender?: 'male' | 'female' | null };
+
+/**
+ * 화면 어딘가에 "성별 … 남/여" 가 있으면 읽는다 (예: `<th>성별</th><td>남</td>`, `성별 : 여자`).
+ * 포털 첫 화면에는 보통 없다 — 없으면 null 이고, 사용자가 내 정보에서 직접 고른다.
+ * 긴(또는 깨진) 응답에서도 느려지지 않게: "성" 이 나오는 자리마다 바로 뒤 짧은 구간만 보고, 볼 범위와 횟수에 상한을 둔다.
+ */
+export function parseGender(html: string): 'male' | 'female' | null {
+  const LIMIT = 200_000;
+  const WINDOW = 120;
+  const body = html.length > LIMIT ? html.slice(0, LIMIT) : html;
+  let from = 0;
+  for (let tries = 0; tries < 200; tries++) {
+    const at = body.indexOf('성', from);
+    if (at < 0) return null;
+    from = at + 1;
+    const near = body
+      .slice(at, at + WINDOW)
+      .replace(/<[^<>]{0,60}>/g, ' ')
+      .replace(/&nbsp;/g, ' ');
+    const m = /^성\s*별\s*[:：]?\s*(남|여)(?:자|성)?(?![가-힣])/.exec(near);
+    if (m) return m[1] === '남' ? 'male' : 'female';
+  }
+  return null;
+}
 
 /**
  * 학교 응답에서 읽는 글의 길이 상한. 학교(또는 중간자)가 비정상적으로 큰 값을 주어도 처리 시간과 우리 응답·DB 가 커지지 않게 한다.
@@ -204,7 +228,8 @@ export function parseProfile(html: string): ParsedProfile | null {
   const name = truncate(cleanText(parts[parts.length - 1] ?? ''), PROFILE_FIELD_MAX);
   const department = parts.length > 1 ? truncate(cleanText(parts[parts.length - 2]), PROFILE_FIELD_MAX) : '';
   if (!name) return null;
-  return { studentId: id[1], name, department };
+  const gender = parseGender(html);
+  return { studentId: id[1], name, department, ...(gender ? { gender } : {}) };
 }
 
 /**

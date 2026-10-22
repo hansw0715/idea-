@@ -17,17 +17,22 @@ import {
   WARNINGS_TO_BAN,
 } from '../../shared/lounge/constants.js';
 import type { AvatarColor, AvatarKey } from '../../shared/lounge/constants.js';
-import type { Profile, PublicUser } from '../../shared/lounge/view.js';
+import type { Gender } from '../../shared/lounge/gathering.js';
+import type { Profile, PublicUser, QuickMember } from '../../shared/lounge/view.js';
 
 export type LoungeUser = {
   id: string;
-  /** 실명 — 라운지 화면으로 내려보내지 않는다 */
+  /** 실명 — 라운지 화면으로 내려보내지 않는다. 예외: 밥약 매칭에서 같은 무리·방 사람에게만 (toQuickMember) */
   name: string;
   nickname: string;
   college: string;
   department: string;
   /** 학교 계정에서 읽은 입학년도. 모르면 null */
   admissionYear: number | null;
+  /** 성별: 학교 계정 값이 있으면 그것, 없으면 내 정보에서 고른 값. 모르면 null */
+  gender: Gender | null;
+  /** 성별이 학교 계정에서 왔는가 (그러면 바꿀 수 없다) */
+  genderFromSchool: boolean;
   avatar: AvatarKey;
   avatarColor: AvatarColor;
   temperature: number;
@@ -45,6 +50,8 @@ interface UserRow {
   college: string | null;
   department: string | null;
   admission_year: number | null;
+  gender: string | null;
+  school_gender: string | null;
   avatar: string | null;
   avatar_color: string | null;
   temperature: number | null;
@@ -55,7 +62,9 @@ interface UserRow {
 }
 
 const COLUMNS =
-  'id, name, nickname, college, department, admission_year, avatar, avatar_color, temperature, warnings, banned, is_admin, profile_done';
+  'id, name, nickname, college, department, admission_year, gender, school_gender, avatar, avatar_color, temperature, warnings, banned, is_admin, profile_done';
+
+const isGender = (v: string | null): v is Gender => v === 'male' || v === 'female';
 
 const isAvatar = (v: string | null): v is AvatarKey => AVATARS.some((a) => a.key === v);
 const isColor = (v: string | null): v is AvatarColor => (AVATAR_COLORS as readonly string[]).includes(v ?? '');
@@ -68,6 +77,8 @@ function fromRow(row: UserRow): LoungeUser {
     college: row.college ?? '',
     department: row.department ?? '',
     admissionYear: row.admission_year ?? null,
+    gender: isGender(row.school_gender) ? row.school_gender : isGender(row.gender) ? row.gender : null,
+    genderFromSchool: isGender(row.school_gender),
     avatar: isAvatar(row.avatar) ? row.avatar : DEFAULT_AVATAR,
     avatarColor: isColor(row.avatar_color) ? row.avatar_color : 'm1',
     temperature: row.temperature ?? DEFAULT_TEMPERATURE,
@@ -105,10 +116,14 @@ export const toPublicUser = (u: LoungeUser): PublicUser => ({
   college: u.college,
   department: u.department,
   admissionYear: u.admissionYear,
+  gender: u.gender,
   avatar: u.avatar,
   avatarColor: u.avatarColor,
   temperature: u.temperature,
 });
+
+/** 밥약 매칭용: 공개 정보 + 실명. 밥약은 실제로 만날 사람끼리라 이름을 보여 준다 (매칭 상태 응답에서만 쓴다) */
+export const toQuickMember = (u: LoungeUser): QuickMember => ({ ...toPublicUser(u), name: u.name });
 
 /** 탈퇴했거나 없는 사용자 자리에 표시할 값 */
 export const unknownUser = (id: string): PublicUser => ({
@@ -117,6 +132,7 @@ export const unknownUser = (id: string): PublicUser => ({
   college: '',
   department: '',
   admissionYear: null,
+  gender: null,
   avatar: DEFAULT_AVATAR,
   avatarColor: 'm8',
   temperature: 0,
@@ -137,6 +153,7 @@ export const toProfile = (u: LoungeUser): Profile => ({
   warnings: u.warnings,
   banned: u.banned,
   banReason: banReason(u),
+  genderFromSchool: u.genderFromSchool,
 });
 
 // ───────────── 평판 갱신 (원자적 SQL — 읽고 쓰기 사이에 다른 요청이 끼어도 값이 어긋나지 않는다) ─────────────

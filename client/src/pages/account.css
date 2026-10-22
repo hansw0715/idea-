@@ -214,3 +214,10 @@
   font-size: inherit;
   font-weight: var(--fw-bold);
 }
+
+/* 라운지 프로필: 성별 (학교 계정에서 못 읽었을 때만 직접 고른다) */
+.lounge-acct-gender {
+  display: grid;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}

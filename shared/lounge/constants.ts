@@ -2,7 +2,7 @@
  * 라운지 상수·프리셋·표시용 순수 함수. 서버와 클라이언트가 같은 값을 쓴다.
  * (규칙을 두 군데에 적으면 반드시 어긋난다 — 한 곳에서만 정한다)
  */
-import type { ReviewMark, SlotSpec } from './gathering.js';
+import type { Gender, ReviewMark, SlotSpec } from './gathering.js';
 
 // ───────────── 프로필 ─────────────
 
@@ -87,12 +87,17 @@ export const MEETUP_GUEST_SLOT = 'guest';
 
 export type MeetupSize = '1:1' | '2:2' | '3:3' | '4:4';
 
+/** 미팅 자리: 위(host) = 남자, 아래(guest) = 여자. 주최자는 자기 성별 쪽에 앉는다 */
 const meetup = (n: number): { slots: SlotSpec[] } => ({
   slots: [
-    { key: MEETUP_HOST_SLOT, label: '우리 쪽', capacity: n },
-    { key: MEETUP_GUEST_SLOT, label: '상대 쪽', capacity: n },
+    { key: MEETUP_HOST_SLOT, label: '남자', capacity: n, gender: 'male' },
+    { key: MEETUP_GUEST_SLOT, label: '여자', capacity: n, gender: 'female' },
   ],
 });
+
+/** 성별 표시 글자 */
+export const GENDER_LABEL: Record<Gender, string> = { male: '남', female: '여' };
+export const GENDERS: readonly Gender[] = ['male', 'female'];
 
 export const MEETUP_PRESETS: Record<MeetupSize, { slots: SlotSpec[] }> = {
   '1:1': meetup(1),

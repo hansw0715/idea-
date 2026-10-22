@@ -209,6 +209,7 @@ describe('GET /api/lounge/me · 다른 사용자 카드', () => {
       college: '',
       department: '융합행정학부',
       admissionYear: 2023,
+      gender: null,
       avatar: 'turtle-smile',
       avatarColor: 'm1',
       temperature: 36.5,

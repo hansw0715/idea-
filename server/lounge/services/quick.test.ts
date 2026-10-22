@@ -194,7 +194,7 @@ describe('조건 일치', () => {
     expect(await roomRows(date)).toHaveLength(1);
   });
 
-  it('응답에 실명·이메일·내부 태그가 없고, 남의 대기표 내용도 없다', async () => {
+  it('응답에 이메일·내부 태그가 없고, 실명은 같은 방 사람 것만 보이며, 남의 대기표 내용도 없다', async () => {
     const [a, b, c] = await makeUsers(3);
     const date = dateAfter(2);
     must(await quick.requestQuickMatch(a, input(date, { bands: ['b11'], tags: ['같은 과만'] })));
@@ -210,11 +210,15 @@ describe('조건 일치', () => {
     must(await quick.requestQuickMatch(c, input(date, { bands: ['b19'] }))); // b 와 짝이 된다
     const stateA = await stateOf(a);
     const text = JSON.stringify([stateA, await stateOf(b), await stateOf(c)]);
-    for (const secret of ['실명', '@hansung.ac.kr', 'dept:', 'password']) expect(text).not.toContain(secret);
+    for (const secret of ['@hansung.ac.kr', 'dept:', 'password']) expect(text).not.toContain(secret);
+    // 밥약은 만날 사람끼리라 실명을 보여 주지만, 방에 없는 사람(a)의 실명은 어디에도 없다
+    expect(text).not.toContain(a.name);
+    expect(JSON.stringify(stateA)).not.toContain('"name"');
     expect(stateA.request?.tags).toEqual(['같은 과만']); // 내가 고른 태그는 보이되 내부 태그는 없다
     expect(stateA.request?.id).toBe(aTicketId);
     expect(stateA.room).toBeNull();
     expect((await stateOf(b)).members.map((m) => m.nickname).sort()).toEqual([b.nickname, c.nickname].sort());
+    expect((await stateOf(b)).members.map((m) => m.name).sort()).toEqual([b.name, c.name].sort());
   });
 
   it('조건이 하나라도 다르면 안 맞는다 (날짜·장소·인원·시간)', async () => {

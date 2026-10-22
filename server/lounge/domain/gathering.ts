@@ -13,6 +13,7 @@
 import { fail, ok } from '../../../shared/lounge/types.js';
 import type { ISODateTime, Result, UserId } from '../../../shared/lounge/types.js';
 import type {
+  Gender,
   Applicant,
   CreateGatheringBody,
   Gathering,
@@ -26,10 +27,18 @@ import { joinBlockReason } from './reputation.js';
 export type { GatheringStatusView };
 
 /** 모임 규칙이 보는 최소 사용자. 학과 비교·차단은 사람 사이의 관계라 서비스가 한다. */
-export type GatherUser = { id: UserId; banned: boolean; warnings: number };
+export type GatherUser = { id: UserId; banned: boolean; warnings: number; gender?: Gender | null };
+
+/** 성별이 정해진 자리(미팅의 남자 쪽/여자 쪽)에 이 사람이 앉을 수 있는가 */
+export function genderSeatError(slot: { gender?: Gender; label: string }, user: { gender?: Gender | null }): string | null {
+  if (!slot.gender) return null;
+  if (!user.gender) return '성별을 먼저 정해 주세요. 내 정보에서 고를 수 있어요.';
+  if (user.gender !== slot.gender) return `${slot.label} 자리에는 ${slot.gender === 'male' ? '남학생' : '여학생'}만 앉을 수 있어요.`;
+  return null;
+}
 
 /** 만들기 입력 = API 본문 + 서버가 채우는 id · 주최자 */
-export type CreateGatheringInput = CreateGatheringBody & { id: string; hostId: string };
+export type CreateGatheringInput = CreateGatheringBody & { id: string; hostId: string; hostGender?: Gender | null };
 
 // ---------- 조회 헬퍼 ----------
 
@@ -75,10 +84,15 @@ export function createGathering(input: CreateGatheringInput, now: ISODateTime): 
     return fail('INVALID', '신청 마감은 만나는 시각보다 앞이어야 합니다.');
   if (input.meetAt <= now) return fail('INVALID', '이미 지난 시각입니다.');
 
-  const hostSlotKey = input.hostSlotKey ?? input.slots[0].key;
-  if (!input.slots.some((s) => s.key === hostSlotKey)) {
+  // 성별 자리가 있는 모임(미팅)은 주최자가 자기 성별 쪽에 앉는다
+  const ownSide = input.hostGender ? input.slots.find((s) => s.gender === input.hostGender) : undefined;
+  const hostSlotKey = input.hostSlotKey ?? ownSide?.key ?? input.slots[0].key;
+  const hostSlot = input.slots.find((s) => s.key === hostSlotKey);
+  if (!hostSlot) {
     return fail('SLOT_NOT_FOUND', '주최자가 앉을 자리가 없습니다.');
   }
+  const hostGenderError = genderSeatError(hostSlot, { gender: input.hostGender });
+  if (hostGenderError) return fail('FORBIDDEN', hostGenderError);
 
   // 주최자는 만들자마자 자기 자리에 앉는다. 2:2 미팅이면 우리 팀 한 자리가 이미 찬 상태.
   const slots: Slot[] = input.slots.map((s) => ({
@@ -86,6 +100,7 @@ export function createGathering(input: CreateGatheringInput, now: ISODateTime): 
     label: s.label,
     capacity: s.capacity,
     memberIds: s.key === hostSlotKey ? [input.hostId] : [],
+    ...(s.gender ? { gender: s.gender } : {}),
   }));
 
   return ok({
@@ -140,6 +155,8 @@ export function join(g: Gathering, user: GatherUser, slotKey: string, now: ISODa
   const slot = g.slots.find((s) => s.key === slotKey);
   if (!slot) return fail('SLOT_NOT_FOUND');
   if (seatsLeft(slot) <= 0) return fail('SLOT_FULL');
+  const genderError = genderSeatError(slot, user);
+  if (genderError) return fail('FORBIDDEN', genderError);
 
   return ok(withSlots(g, seat(g.slots, slotKey, user.id)));
 }
@@ -159,7 +176,10 @@ export function apply(
   }
   const eligible = checkEligibility(g, user, now);
   if (!eligible.ok) return eligible;
-  if (!g.slots.some((s) => s.key === slotKey)) return fail('SLOT_NOT_FOUND');
+  const target = g.slots.find((s) => s.key === slotKey);
+  if (!target) return fail('SLOT_NOT_FOUND');
+  const genderError = genderSeatError(target, user);
+  if (genderError) return fail('FORBIDDEN', genderError);
 
   const applicant: Applicant = { userId: user.id, slotKey, message: message.trim(), appliedAt: now };
   return ok({ ...g, applicants: [...g.applicants, applicant] });

@@ -11,6 +11,7 @@ export const SCHOOL_MIGRATIONS = `
   ALTER TABLE users ADD COLUMN IF NOT EXISTS school_hint TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS school_linked_at TIMESTAMPTZ;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS school_department TEXT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS school_gender TEXT;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS school_admission_year INTEGER;
   -- 연동한(학교 로그인으로 확인된) 학번의 HMAC. school_hint(끝 3자리)는 화면 표시용일 뿐이라 같은 끝자리의 다른 학번이
   -- 통과해 버리므로, 학교와 상호작용하기 전에 "이 사용자의 학번이 맞는가"는 이 값으로만 판단한다. 학번 원문은 저장하지 않는다.

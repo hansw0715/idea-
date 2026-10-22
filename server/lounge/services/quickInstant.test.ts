@@ -328,6 +328,43 @@ describe('인원을 고른 즉시 매칭', () => {
     expect(done.room?.status).toBe('confirmed');
   });
 
+  it('밥약 매칭에서는 모인 사람과 방 멤버의 실명이 보인다', async () => {
+    const [a, b] = [await makeUser(), await makeUser()];
+    must(await goSize(a, BASE, 3));
+    const sb = must(await goSize(b, north(100), 3));
+    expect(sb.forming.map((u) => u.name)).toEqual([a.name, b.name]);
+    const room = must(await quick.startQuickNow(b.id));
+    expect(room.members.map((u) => u.name).sort()).toEqual([a.name, b.name].sort());
+  });
+
+  it('3명을 찾다가 한 명 이상 모이면 지금 인원으로 바로 시작하고, 둘 다 수락하면 2명 밥약이 된다', async () => {
+    const [a, b, c] = [await makeUser(), await makeUser(), await makeUser()];
+    must(await goSize(a, BASE, 3));
+    // 혼자일 때는 바로 시작할 수 없다
+    const alone = await quick.startQuickNow(a.id);
+    expect(alone.ok).toBe(false);
+
+    must(await goSize(b, north(100), 3));
+    const started = must(await quick.startQuickNow(a.id));
+    expect(started.room?.memberIds.sort()).toEqual([a.id, b.id].sort());
+    expect(started.room?.size).toBe(2);
+    expect(started.room?.status).toBe('pending');
+
+    // 이미 방이 생긴 뒤에 온 3명 희망자는 그 방에 끼지 않는다
+    const sc = must(await goSize(c, north(50), 3));
+    expect(sc.room).toBeNull();
+    expect(sc.forming.map((u) => u.id)).toEqual([c.id]);
+
+    must(await quick.answerRoom(a.id, started.room!.id, 'accepted'));
+    const done = must(await quick.answerRoom(b.id, started.room!.id, 'accepted'));
+    expect(done.gatheringId).not.toBeNull();
+  });
+
+  it('찾는 중이 아니면 바로 시작할 수 없다', async () => {
+    const a = await makeUser();
+    expect((await quick.startQuickNow(a.id)).ok).toBe(false);
+  });
+
   it('모이던 중 한 명이 그만두면 남은 사람의 무리에서 빠진다', async () => {
     const [a, b] = [await makeUser(), await makeUser()];
     must(await goSize(a, BASE, 3));
