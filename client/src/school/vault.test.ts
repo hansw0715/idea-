@@ -113,7 +113,7 @@ describe('금고: 봉인과 해제', () => {
 
   it('한글·특수문자·공백이 든 비밀번호도 그대로 돌아온다', async () => {
     const { vault } = setup();
-    const creds = { studentId: '2019000123', password: ' 한글 비밀번호!@#"\\\n😀 ' };
+    const creds = { studentId: '2019000123', password: ' 한글 비밀번호!@#"\\\n😀 ' }; // taste-skill-ignore: 이모지 입력 테스트
     expect(await vault.open(1, USER, await vault.seal(1, USER, creds))).toEqual(creds);
   });
 

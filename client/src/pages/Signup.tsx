@@ -306,7 +306,6 @@ export default function Signup() {
         {/* 왼쪽(넓은 화면): 단계 제목과 진행 — 스크롤해도 따라온다 */}
         <div className="signup-side">
         <div className="page-head">
-          <p className="eyebrow">상상Book-E · 시작하기</p>
           <h1 className="page-title" id="signup-title" tabIndex={-1}>
             {STEPS[currentIndex - 1]}
           </h1>

@@ -191,9 +191,7 @@ export default function Meetings() {
       <AppHeader />
       <main id="main" className="app-main meetings-page">
         <div className="page-head">
-          <p className="eyebrow">함께 맞추는 일정</p>
           <h1 className="page-title">우리의 회의</h1>
-          <p className="page-lead">회의를 만들어 코드를 공유하거나, 받은 코드로 참가해 보세요.</p>
         </div>
 
         <div className="meet-actions">

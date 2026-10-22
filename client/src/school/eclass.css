@@ -33,10 +33,10 @@
 .school-eclass__tally {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
-  gap: 1px;
+  gap: var(--sp-3);
   margin: 0;
-  background: var(--c-divider);
-  border: 1px solid var(--c-divider);
+  background: transparent;
+  border: 0;
   border-radius: var(--r);
   overflow: hidden;
   font-size: var(--fs-xs);
@@ -50,13 +50,12 @@
   padding: var(--sp-3) var(--sp-4);
   background: var(--c-bg);
   border: 0;
-  border-bottom: 3px solid transparent;
   min-height: var(--touch);
   color: var(--c-text-sub);
   font: inherit;
   cursor: pointer;
 }
-.school-eclass__tally > button[aria-pressed='true'] { background: var(--c-action-bg); border-bottom-color: var(--c-action); color: var(--c-action-text); }
+.school-eclass__tally > button[aria-pressed='true'] { background: var(--c-action-bg-strong); color: var(--c-action-text); font-weight: var(--fw-bold); }
 .school-eclass__tally > button:focus-visible { outline: 2px solid var(--c-action); outline-offset: -3px; }
 .school-eclass__tally b {
   font-size: var(--fs-h2);

@@ -115,7 +115,7 @@
 
 /* Match the fifth member's lane texture without introducing decorative numbers. */
 .member-swatch--patterned {
-  background-image: repeating-linear-gradient(0deg, transparent 0 3px, var(--c-bg) 3px 4px) !important;
+  background-image: repeating-linear-gradient(0deg, transparent 0 3px, var(--c-bg) 3px 4px) !important; /* taste-skill-ignore: 빈 시간 무늬 */
 }
 
 .mtg-grid {
@@ -462,7 +462,7 @@
 .meeting-detail-page .mtg-code__value { color: var(--c-action-text); }
 .meeting-detail-page .mtg-code__value { font-size: var(--fs-display); font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
 .meeting-detail-page .mtg-code__row .btn { background: var(--c-bg); color: var(--c-text); }
-.meeting-detail-page .mtg-res { padding: var(--sp-5); margin-bottom: var(--sp-3); background: var(--c-bg); border: 0; border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
+.meeting-detail-page .mtg-res { padding: var(--sp-5); margin-bottom: var(--sp-3); background: var(--c-bg); border: 0; border-radius: var(--r-lg); }
 .meeting-detail-page .mtg-res__title { overflow-wrap: anywhere; }
 .meeting-detail-page .mtg-res-list { padding: 0; }
 :root[data-contrast='high'] .meeting-detail-page .mtg-res { outline: 2px solid var(--c-border); }

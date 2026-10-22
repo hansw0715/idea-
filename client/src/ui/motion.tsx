@@ -19,12 +19,12 @@ export const pageVariants: Variants = {
 /** 목록 부모: 자식이 40ms 간격으로 차례로 등장 (최대 지연은 자식 쪽에서 제한) */
 export const listVariants: Variants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.04, delayChildren: 0.04 } },
+  show: {},
 };
 
 export const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.36, ease: EASE_OUT } },
+  hidden: { opacity: 1 },
+  show: { opacity: 1 },
 };
 
 /**

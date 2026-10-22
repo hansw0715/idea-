@@ -90,9 +90,9 @@ export default function Login() {
           <p className="auth-hero__sub">한성 캠퍼스의 시간표 · 회의실 · 사람을 한곳에서.</p>
           {/* 넓은 화면에서만 보이는 기능 목차 — 왼쪽 판의 빈 자리를 인쇄물 목차처럼 채운다 */}
           <ol className="auth-index" aria-label="상상Book-E로 할 수 있는 일">
-            <li><span className="mono">01</span>시간표를 모아 빈 시간 찾기</li>
-            <li><span className="mono">02</span>회의실 예약과 팀 회의</li>
-            <li><span className="mono">03</span>라운지에서 밥약 · 미팅</li>
+            <li>시간표를 모아 빈 시간 찾기</li>
+            <li>회의실 예약과 팀 회의</li>
+            <li>라운지에서 밥약 · 미팅</li>
           </ol>
         </Reveal>
 

@@ -1,12 +1,13 @@
 /* ───────────────────────────────────────────────────────────────
-   상상Book-E 디자인 토큰 — 3차 리디자인 "Hansung Blue"
+   상상Book-E 디자인 토큰 — 4차 "Tonal Hansung" (taste-skill · editorial-greeting, seed 1965601332)
 
-   방향 (UI_REDESIGN.md 참고) — 사용자 피드백: 둥글둥글·AI 티 지양, 흰 바탕 + 한성 블루, 서체 하나
-     · 바탕     : 순백. 면 구분은 그림자 대신 1px 헤어라인과 아주 옅은 쿨 그레이 면
-     · 행동색   : 한성 블루(딥 로열 블루) 한 가지. 버튼·활성 표시·링크 모두 같은 파랑
-     · 서체     : Pretendard 하나. 숫자·시간·코드는 같은 서체의 tabular-nums 로만 정렬한다
-     · 형태     : 3px 컨트롤 / 4px 카드 / 6px 시트. 알약·둥근 칩은 쓰지 않는다 (원형은 아바타·점만)
-     · 모션     : 짧고 감속하는 ease-out. 스프링은 motion 라이브러리에서만
+   방향 — 사용자 피드백 + taste-skill 앱 화면 규칙:
+     · 바탕     : 순백 페이지. 면 구분은 선이 아니라 한 단계 옅은 블루그레이 면(--c-panel)
+     · 선       : 얇은 테두리·구분선·띠를 쓰지 않는다. 시간표 격자만 아주 옅은 선을 남긴다
+     · 행동색   : 한성 블루 한 가지. 화면당 주 버튼 하나 + 데이터(내 수업·다음 예약)에만
+     · 서체     : Pretendard 하나. 숫자는 같은 서체의 tabular-nums
+     · 형태     : 4px 컨트롤 / 6px 카드 / 8px 시트 (각진 쪽 한 가지로 통일)
+     · 모션     : 피드백만(누름·열림·탭 이동). 등장 연출은 하지 않는다
 
    변수 이름은 1차 구조를 그대로 둔다(--primary-* 는 이제 한성 블루 단계). 페이지 css 가 이름만 보고 따라오게.
 
@@ -61,9 +62,9 @@
 
   /* ── 시스템 컬러 ──────────────────────────────────────── */
   --danger-5: #fdeeec;
-  --danger-50: #d1301b;
-  --danger-60: #ad2513;
-  --danger-70: #831c0f;
+  --danger-50: #c4242a; /* 녹슨 주황 기운 없는 빨강 (흰 바탕 5.6:1) */
+  --danger-60: #a81e23;
+  --danger-70: #831c1e;
 
   --warning-5: #fdf4dc;
   --warning-30: #f2b632;
@@ -88,18 +89,22 @@
 
   /* ── 의미 토큰 (컴포넌트는 이것만 쓴다) ────────────────── */
   --c-canvas: var(--gray-0); /* 앱 바탕: 순백 */
-  --c-bg: var(--gray-0); /* 카드·시트·입력 면 */
-  --c-bg-outer: var(--gray-5); /* 프레임 바깥(데스크톱) 배경 */
-  --c-surface: var(--gray-5); /* 흰 면 위의 옅은 칸 */
+  --c-bg: var(--gray-0); /* 시트·다이얼로그 면 */
+  --c-bg-outer: #eef2f7; /* 데스크톱 L자 프레임(레일) 바탕 — 한성 블루 쪽으로 한 단계 */
+  --c-panel: #f2f5f9; /* 흰 페이지 위의 패널 — 선 대신 이 한 단계로 나눈다 */
+  --c-panel-strong: #e6ebf2; /* 패널 위 누름·선택·입력 칸 */
+  --c-surface: var(--c-panel);
   --c-text: var(--gray-90);
   --c-text-sub: var(--gray-60);
   --c-text-muted: var(--gray-50);
   --c-placeholder: var(--gray-50);
   --c-border-strong: var(--gray-50);
-  --c-border: var(--gray-30);
-  --c-border-soft: var(--gray-20);
-  --c-divider: var(--gray-10);
-  --c-line: var(--gray-20); /* 카드·섹션 헤어라인 */
+  /* 테두리 토큰은 비워 둔다: 얇은 선으로 감싸는 대신 면으로 구분한다 (선명한 화면 모드에서만 다시 켠다) */
+  --c-border: transparent;
+  --c-border-soft: transparent;
+  --c-divider: transparent; /* 구분선도 쓰지 않는다: 간격과 면으로 나눈다 */
+  --c-grid-line: #e7ebf1; /* 시간표 격자 전용의 아주 옅은 선 (달력은 예외로 허용) */
+  --c-line: transparent;
 
   --c-action: var(--primary-50); /* 기본 버튼 면 = 한성 블루 (흰 글자 7.2:1) */
   --c-action-hover: var(--primary-60);
@@ -136,16 +141,16 @@
   --m-7: #0f7470;
   --m-8: #4f5968;
 
-  /* ── 라운드 — 각진 쪽으로. --r-pill 도 이제 4px 사각형, 진짜 원은 --r-round ── */
+  /* ── 라운드 — 타이트 한 가지(4·6·8). 알약은 쓰지 않는다, 진짜 원은 --r-round ── */
   --r-xs: 2px;
-  --r: 3px; /* 버튼·입력·배지 */
-  --r-lg: 4px; /* 카드 */
-  --r-xl: 6px; /* 시트·다이얼로그 */
+  --r: 4px; /* 버튼·입력·배지 */
+  --r-lg: 6px; /* 패널·카드 */
+  --r-xl: 8px; /* 시트·다이얼로그 */
   --r-pill: 4px;
   --r-round: 50%;
 
-  /* ── 타이포 — 제목은 단단하게, 본문은 넉넉하게 ─────────── */
-  --fs-display: 3.4rem;
+  /* ── 타이포 — 앱 화면: 제목 26px 이하, 숫자는 48px 미만 ─────────── */
+  --fs-display: 2.6rem;
   --fs-h1: 2.6rem;
   --fs-h2: 2.2rem;
   --fs-h3: 1.9rem;
@@ -189,7 +194,7 @@
   /* ── 레이아웃 ─────────────────────────────────────────── */
   --frame-max: 520px; /* 모바일 컬럼 폭. 1024px 이상에서는 base.css 가 레일 + 넓은 판으로 바꾼다 */
   --sheet-max: 520px; /* 시트·토스트·전체 화면 안내는 넓은 화면에서도 이 폭 */
-  --content-max: 76rem; /* 데스크톱 본문 읽기 폭 */
+  --content-max: 112rem; /* 데스크톱 본문 폭: 12열(77px) + 거터 16px ≈ 1100px + 좌우 여백 */
   --rail-w: 23rem; /* 데스크톱 왼쪽 탭 레일 폭 */
   --header-h: 5.6rem;
   --tabbar-h: 6.4rem; /* 하단 탭바 본체 높이 */
@@ -206,12 +211,12 @@
   --t-collapse: 0.32s var(--ease-out);
   --t-sheet: 0.38s cubic-bezier(0.32, 0.72, 0, 1);
 
-  /* ── 깊이: 그림자는 거의 쓰지 않는다. 카드 = 1px 헤어라인 ─────────── */
-  --shadow-hair: 0 0 0 1px var(--gray-20);
-  --shadow-card: 0 0 0 1px var(--gray-20);
-  --shadow-raised: 0 0 0 1px var(--gray-20), 0 8px 24px -12px rgba(12, 36, 92, 0.18);
+  /* ── 깊이: 쉬고 있는 면에는 선도 그림자도 없다. 진짜 떠 있는 것(메뉴·시트·토스트)만 그림자 ── */
+  --shadow-hair: none;
+  --shadow-card: none;
+  --shadow-raised: 0 8px 24px -12px rgba(12, 36, 92, 0.22);
   --shadow-drop: var(--shadow-raised);
-  --shadow-modal: 0 0 0 1px var(--gray-20), 0 24px 64px -20px rgba(12, 36, 92, 0.35);
+  --shadow-modal: 0 24px 64px -20px rgba(12, 36, 92, 0.4);
 
   /* ── 포커스: 면색 2px 간격 + 진한 블루 3px (흰 배경 11:1) ─ */
   --focus-ring: 0 0 0 2px var(--c-bg), 0 0 0 5px var(--primary-70);

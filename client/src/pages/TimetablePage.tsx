@@ -309,9 +309,7 @@ export default function TimetablePage() {
       <main id="main" className="app-main tt-page">
         <div className="page-head tt-page__head">
           <div className="grow">
-              <p className="eyebrow">한 주의 리듬</p>
             <h1 className="page-title">내 시간표</h1>
-            <p className="page-lead">시간표를 확인하고 일정을 추가합니다.</p>
           </div>
         </div>
 
@@ -418,7 +416,6 @@ export default function TimetablePage() {
           )}
           </div>
           <aside className="tt-agenda" aria-labelledby="tt-agenda-title" aria-busy={!fresh || undefined}>
-            <p className="eyebrow">WEEKLY AGENDA</p>
             <h2 className="section__title" id="tt-agenda-title">이번 주 일정</h2>
             <p className="tt-agenda__intro">{loadError ? '일정을 불러오지 못했습니다.' : fresh ? gridEntries.length + '개의 수업·예약' : '일정을 불러오는 중입니다.'}</p>
             {fresh && gridEntries.length > 0 && (
@@ -426,9 +423,11 @@ export default function TimetablePage() {
                 {[...gridEntries].sort((a, b) => a.day - b.day || a.startMin - b.startMin).map((entry) => (
                   <StaggerItem key={entry.kind + '-' + entry.id}>
                     <button type="button" className="tt-agenda__entry" onClick={() => openInfo(entry)}>
-                      <span className="tt-agenda__day">{DAY_NAMES[entry.day]}요일 <span className="tt-agenda__kind">{entry.kind === 'reservation' ? '예약' : '수업·일정'}</span></span>
+                      <span className="tt-agenda__day tabular">
+                        {DAY_NAMES[entry.day]} {fmtMin(entry.startMin)}–{fmtMin(entry.endMin)}
+                        {entry.kind === 'reservation' && <span className="tt-agenda__kind">예약</span>}
+                      </span>
                       <span className="tt-agenda__title">{entry.title}</span>
-                      <span className="tt-agenda__time mono">{fmtMin(entry.startMin)} – {fmtMin(entry.endMin)}</span>
                       {entry.place && <span className="tt-agenda__place">{entry.place}</span>}
                     </button>
                   </StaggerItem>

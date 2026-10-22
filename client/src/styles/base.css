@@ -177,13 +177,10 @@ hr {
   flex-direction: column;
 }
 
-/* 넓은 화면의 모바일 컬럼: 옅은 회색 바깥 + 좌우 헤어라인 (그림자·패턴 없음) */
+/* 넓은 화면의 모바일 컬럼: 옅은 블루그레이 바깥 위의 흰 컬럼 (선·그림자 없음) */
 @media (min-width: 561px) {
   body {
     background: var(--c-bg-outer);
-  }
-  .app-frame {
-    box-shadow: 1px 0 0 var(--c-line), -1px 0 0 var(--c-line);
   }
 }
 
@@ -215,9 +212,7 @@ hr {
   gap: var(--sp-3);
   min-height: calc(var(--header-h) + var(--safe-top));
   padding: var(--safe-top) var(--sp-4) 0 var(--gutter);
-  background: color-mix(in srgb, var(--c-canvas) 86%, transparent);
-  -webkit-backdrop-filter: saturate(1.4) blur(14px);
-  backdrop-filter: saturate(1.4) blur(14px);
+  background: var(--c-bg);
   box-shadow: 0 1px 0 0 transparent;
   transition: box-shadow var(--t-base);
 }
@@ -233,8 +228,9 @@ hr {
   }
 }
 
+/* 스크롤되면 본문 위에 뜬 것이므로 선 대신 아주 옅은 그림자 */
 .app-header.is-scrolled {
-  box-shadow: 0 1px 0 0 var(--c-divider);
+  box-shadow: 0 8px 16px -16px rgba(12, 36, 92, 0.45);
 }
 
 @supports not (backdrop-filter: blur(1px)) {
@@ -312,7 +308,7 @@ hr {
   background: transparent;
 }
 
-/* ── 하단 탭바: 화면 바닥에 붙은 흰 막대 + 위쪽 헤어라인. 활성 칸은 위쪽 파란 선이 미끄러져 온다 ── */
+/* ── 하단 탭바: 화면 바닥의 패널색 막대(선 없음). 활성 칸은 흰 칸이 가로로만 미끄러져 온다 ── */
 .tabbar {
   /* 가운데 정렬은 transform 대신 margin 으로 — motion 이 transform 을 쓰기 때문 */
   position: fixed;
@@ -325,8 +321,7 @@ hr {
   margin-inline: auto;
   container: tabbar / inline-size;
   padding: 0 var(--sp-2) var(--safe-bottom);
-  background: var(--c-bg);
-  box-shadow: 0 -1px 0 var(--c-line);
+  background: var(--c-panel);
 }
 
 .tabbar__list {
@@ -386,16 +381,18 @@ hr {
 }
 
 /*
- * 활성 표시: 모바일은 탭바 위 가장자리를 가로로만 달리는 3px 파란 선.
+ * 활성 표시: 모바일은 패널색 탭바 안의 흰 칸. 가로(x)·폭만 움직이고 높이는 CSS 가 고정한다.
  * 위치·폭은 Shell.tsx 가 목록 안 offset 으로 계산해 transform 으로 준다(스크롤과 무관).
  */
 .tabbar__pill {
   position: absolute;
-  top: 0;
+  top: 0.6rem;
+  bottom: 0.6rem;
   left: 0;
   z-index: 0;
   pointer-events: none;
-  background: var(--c-accent);
+  border-radius: var(--r);
+  background: var(--c-bg);
 }
 
 .tabbar__item:focus-visible {
@@ -464,17 +461,22 @@ hr {
  * 모바일 컬럼을 늘리기만 하면 한 줄이 지나치게 길어지므로 본문은 --content-max 로 묶는다.
  */
 @media (min-width: 1024px) {
+  /* L자 프레임: 레일은 옅은 블루그레이 바탕에 그대로 놓이고, 본문은 오른쪽·아래 8px 띄운 흰 판(선·그림자 없음) */
   .app-frame.has-tabbar {
     --bottom-offset: var(--safe-bottom);
-    max-width: 136rem;
+    max-width: none;
     display: grid;
     grid-template-columns: var(--rail-w) minmax(0, 1fr);
     align-items: start;
+    background: transparent;
   }
   .app-frame.has-tabbar > .app-page {
     grid-column: 2;
     grid-row: 1;
-    min-height: 100dvh;
+    min-height: calc(100dvh - 1.6rem);
+    margin: 0.8rem 0.8rem 0.8rem 0;
+    border-radius: var(--r-xl);
+    background: var(--c-canvas);
   }
   .app-frame.has-tabbar .app-main {
     width: 100%;
@@ -484,6 +486,7 @@ hr {
   }
   .app-frame.has-tabbar .app-header {
     padding-inline: max(var(--gutter), calc((100% - var(--content-max)) / 2 + var(--gutter)));
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
   }
   /* 로고는 레일이 맡는다 */
   .app-frame.has-tabbar .app-header__brand {
@@ -507,7 +510,8 @@ hr {
     flex-direction: column;
     gap: var(--sp-8);
     padding: var(--sp-6) var(--sp-4);
-    box-shadow: 1px 0 0 var(--c-line);
+    background: transparent;
+    box-shadow: none;
     overflow-y: auto;
   }
   .tabbar__brand {
@@ -543,10 +547,12 @@ hr {
     padding: var(--sp-3) var(--sp-5);
     font-size: var(--fs-md);
   }
-  /* 레일의 활성 칸: 옆 띠 없이 옅은 블루 면만 (세로로만 이동) */
+  /* 레일의 활성 칸: 옆 띠 없이 흰 칸만 (세로로만 이동). 높이는 Shell.tsx 가 준다 */
   .tabbar__pill {
+    top: 0;
+    bottom: auto;
     border-radius: var(--r);
-    background: var(--c-action-bg);
+    background: var(--c-bg);
   }
 }
 

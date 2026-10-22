@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState
 import type { ReactNode, RefObject } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { Icon, SPRING, pageVariants } from '../ui';
+import { Icon } from '../ui';
 import type { IconName } from '../ui';
 import { useDisplay } from '../ui/Display';
 import { LOUNGE_ENABLED } from '../features';
@@ -151,10 +151,7 @@ export function TabBar() {
     <motion.nav
       className="tabbar"
       aria-label="주요 메뉴"
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 24 }}
-      transition={SPRING}
+      initial={false}
     >
       {/* 데스크톱 레일 머리의 로고타입 (모바일에서는 CSS로 숨김) */}
       <Link to="/" className="tabbar__brand" aria-label="상상Book-E 홈">
@@ -168,8 +165,8 @@ export function TabBar() {
             aria-hidden="true"
             className="tabbar__pill"
             initial={false}
-            // 하단 탭바는 가로(x)만, 레일은 세로(y)만 움직인다
-            animate={rail ? { x: 0, y: mark.pos, height: mark.size, width: '100%' } : { x: mark.pos, y: 0, width: mark.size, height: 3 }}
+            // 하단 탭바는 가로(x)·폭만, 레일은 세로(y)·높이만 움직인다. 나머지 축은 CSS 가 고정한다
+            animate={rail ? { x: 0, y: mark.pos, height: mark.size, width: '100%' } : { x: mark.pos, y: 0, width: mark.size }}
             transition={markTransition}
           />
         )}
@@ -190,9 +187,9 @@ export function TabBar() {
 function PageTransition({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   return (
-    <motion.div key={pathname} className="app-page" variants={pageVariants} initial="initial" animate="enter">
+    <div key={pathname} className="app-page">
       {children}
-    </motion.div>
+    </div>
   );
 }
 

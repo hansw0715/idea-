@@ -95,20 +95,20 @@
 }
 
 .tt-page .tt-page__head { padding-top: var(--sp-5); margin-bottom: var(--sp-7); }
-.tt-page .eyebrow { margin-bottom: var(--sp-3); }
-.tt-page .tabs { padding: var(--sp-1); border: 0; border-radius: var(--r-lg); background: var(--c-divider); }
+.tt-page .tabs { padding: var(--sp-1); border: 0; border-radius: var(--r-lg); background: var(--c-panel-strong); }
 .tt-page .tabs__tab { height: auto; padding: var(--sp-3); border: 0; border-radius: var(--r); white-space: normal; }
-.tt-page .tabs__tab[aria-selected='true'] { background: var(--c-bg); box-shadow: var(--shadow-card); color: var(--c-text); }
+.tt-page .tabs__tab[aria-selected='true'] { background: var(--c-bg); color: var(--c-text); }
 .tt-page .tt-page__panel { padding-top: var(--sp-5); }
 
 .tt-page { container-type: inline-size; }
 .tt-workspace { display: grid; gap: var(--sp-7); align-items: start; }
 .tt-workspace__calendar { min-width: 0; }
-.tt-agenda { min-width: 0; padding: var(--sp-6); border-radius: var(--r-lg); background: var(--c-bg); box-shadow: var(--shadow-card); }
+.tt-agenda { min-width: 0; padding: var(--sp-6); border-radius: var(--r-lg); background: var(--c-panel); }
 .tt-agenda__intro { margin: var(--sp-2) 0 var(--sp-5); color: var(--c-text-sub); font-size: var(--fs-sm); }
 .tt-agenda__list { list-style: none; margin: 0 0 var(--sp-5); padding: 0; }
-.tt-agenda__entry { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); width: 100%; min-width: 0; padding: var(--sp-4) var(--sp-2); border: 0; border-top: 1px solid var(--c-divider); background: transparent; color: var(--c-text); text-align: start; border-radius: var(--r); cursor: pointer; transition: background-color var(--t-base); }
-.tt-agenda__entry:hover { background: var(--c-surface); }
+.tt-agenda__entry { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-2); width: 100%; min-width: 0; padding: var(--sp-4); border: 0; background: transparent; color: var(--c-text); text-align: start; border-radius: var(--r); cursor: pointer; transition: background-color var(--t-base); }
+.tt-agenda__entry:hover { background: var(--c-panel-strong); }
+.tt-agenda__list { display: grid; gap: var(--sp-1); }
 .tt-agenda__day { display: flex; flex-wrap: wrap; gap: var(--sp-3); font-size: var(--fs-sm); color: var(--c-text-sub); }
 .tt-agenda__kind { color: var(--c-action-text); }
 .tt-agenda__title { font-size: var(--fs-md); font-weight: var(--fw-bold); overflow-wrap: anywhere; }

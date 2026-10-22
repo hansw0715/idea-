@@ -148,9 +148,9 @@ export default function App() {
           <ConfirmProvider>
             <AuthContext.Provider value={{ user, setUser }}>
               <SessionWatcher onExpired={() => setUser(null)} />
+              <BrowserRouter>
               <MaybeLounge>
               <SchoolProvider>
-              <BrowserRouter>
                 <Routes>
                   <Route path="/login" element={<Public><Login /></Public>} />
                   <Route path="/signup" element={<Public><Signup /></Public>} />
@@ -169,9 +169,9 @@ export default function App() {
                   )}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-              </BrowserRouter>
               </SchoolProvider>
               </MaybeLounge>
+              </BrowserRouter>
             </AuthContext.Provider>
           </ConfirmProvider>
         </ToastProvider>

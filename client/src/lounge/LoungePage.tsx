@@ -34,7 +34,6 @@ export default function LoungePage() {
       <AppHeader />
       <main id="main" className="app-main lounge-page">
         <div className="page-head">
-          <p className="eyebrow">수업과 수업 사이</p>
           <h1 className="page-title">라운지</h1>
           <p className="page-lead">같이 밥 먹을 사람, 같이 만날 사람을 찾아요.</p>
         </div>

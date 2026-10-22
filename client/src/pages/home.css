@@ -1,307 +1,382 @@
-/* 홈(대시보드) 전용 스타일 — 접두사 home- */
+/* ───────────────────────────────────────────────────────────────
+   홈 — taste-skill "editorial greeting" (seed 1965601332)
+   · 제목(h1)은 사람 이름 + 오늘 가장 먼저 챙길 사실 한 줄, 그 아래 회색 한 줄(날짜·개수)
+   · 패널은 흰 페이지 위 한 단계 옅은 면. 선·띠·그림자 없음, 숫자는 보통 굵기의 tabular
+   · 휴대폰: 중요한 순서대로 한 열 (미수강 강의 → 오늘 수업 → 다음 예약 → 회의 → 라운지)
+   · 넓은 화면: 12열 격자에서 7 + 5 두 열. 각 열은 따로 쌓아 카드 사이가 벌어지지 않게 한다
+     (본문 1120px - 좌우 여백 = 약 1072px → 7열 621 + 거터 16 + 5열 435)
+   ─────────────────────────────────────────────────────────────── */
 
-/* 목록 카드: 행이 카드 가장자리까지 닿아 눌렀을 때 면이 끝까지 보이게 한다. */
-.card.home-card--rows {
-  padding: 0;
+.home-page {
+  container: home / inline-size;
 }
 
-.home-ul > li {
-  border-bottom: 1px solid var(--c-divider);
+/* ── 제목 줄 ── */
+.home-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-5) var(--sp-7);
+  padding: var(--sp-3) 0 var(--sp-8);
 }
 
-.home-ul > li:last-child {
-  border-bottom: 0;
+.home-head__text {
+  flex: 1 1 28rem;
+  min-width: 0;
 }
 
-.home-ul .list__item {
-  padding: var(--sp-4) var(--sp-5);
-  gap: var(--sp-3);
-  border-bottom: 0;
-}
-
-@media (hover: hover) {
-  .home-ul .list__item--link:hover {
-    background: var(--c-surface);
-  }
-}
-
-.home-badge {
-  flex: 0 1 auto;
-  max-width: 100%;
-  height: auto;
-  white-space: normal;
+.home-head__title {
+  margin: 0;
+  font-size: var(--fs-display);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  letter-spacing: -0.02em;
   overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 
-.home-more {
-  margin-top: var(--sp-3);
+.home-head__sub {
+  margin: var(--sp-3) 0 0;
   font-size: var(--fs-sm);
   color: var(--c-text-sub);
 }
 
-.home-empty-actions {
+.home-head__actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: var(--sp-3);
 }
 
-.home-empty-actions .btn {
+/* ── 격자: 휴대폰에서는 두 열 묶음을 풀고(display: contents) 중요한 순서대로 세운다 ── */
+.home-grid {
+  display: grid;
+  gap: var(--sp-5);
+  align-content: start;
+}
+
+.home-col {
+  display: contents;
+}
+
+.home-col > * {
+  min-width: 0;
+}
+
+.home-panel--eclass { order: 1; }
+.home-panel--today { order: 2; }
+.home-panel--res { order: 3; }
+.home-panel--meet { order: 4; }
+.home-panel--lounge { order: 5; }
+
+/* ── 패널: 흰 페이지 위 한 단계 옅은 면 ── */
+.home-panel {
+  padding: var(--sp-6) var(--sp-7) var(--sp-7);
+  border-radius: var(--r-lg);
+  background: var(--c-panel);
+}
+
+.home-panel__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.home-panel__title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+
+.home-panel__count {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.home-panel__link {
+  margin-left: auto;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-action-text);
+  text-decoration: none;
+}
+
+.home-panel__empty {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* 목록 아래의 "더 보기 / 모두 보기" — 밑줄 없는 블루 글자 */
+.home-panel__more {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  margin-top: var(--sp-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--c-action-text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* ── 행: 패널 안에서는 선 대신 간격으로 나눈다. 누르면 한 단계 진한 면 ── */
+.home-rows {
+  display: grid;
+  gap: var(--sp-2);
+  margin: 0 calc(var(--sp-4) * -1);
+  padding: 0;
+  list-style: none;
+}
+
+.home-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-height: var(--touch);
+  padding: var(--sp-4);
+  border-radius: var(--r);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--t-quick);
+}
+
+.home-row:active {
+  background: var(--c-panel-strong);
+}
+
+@media (hover: hover) {
+  .home-row:hover {
+    background: var(--c-panel-strong);
+  }
+  .home-row:hover .home-row__chev {
+    color: var(--c-text);
+  }
+}
+
+.home-row__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+  overflow-wrap: anywhere;
+}
+
+.home-row__main {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  line-height: 1.35;
+}
+
+.home-row__sub {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.home-row__chev {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  color: var(--gray-40);
+  transition: color var(--t-quick);
+}
+
+/* ── 오늘 수업: 이 앱에만 있는 칸. 시간 열 + 과목. 다음 수업의 시각만 한성 블루 ── */
+.home-day {
+  display: grid;
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-day__row {
+  display: grid;
+  grid-template-columns: 5.6rem minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: baseline;
+}
+
+.home-day__time {
+  display: grid;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  line-height: 1.35;
+}
+
+.home-day__end {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+  color: var(--c-text-sub);
+}
+
+.home-day__body {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.home-day__title {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  line-height: 1.35;
+}
+
+.home-day__place {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.home-day__row.is-next .home-day__time {
+  color: var(--c-action-text);
+  font-weight: var(--fw-bold);
+}
+
+.home-day__row.is-done {
+  color: var(--c-text-muted);
+}
+.home-day__row.is-done .home-day__title {
+  font-weight: var(--fw-medium);
+}
+
+/* ── 다음 예약: 날짜와 시각을 한 줄에. 첫 건의 시각만 크게(보통 굵기) ── */
+.home-res__when {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--sp-4);
+}
+
+.home-res__date {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+.home-res__time {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-regular);
+  line-height: 1.3;
+}
+
+.home-row:not(.home-row--next) .home-res__time {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+}
+
+.home-res__badge {
+  justify-self: start;
+  margin-top: var(--sp-2);
+  height: auto;
+  white-space: normal;
+}
+
+/* ── 미수강 강의 (EclassHome 이 자기 제목·카드를 그린다): 패널 안에서는 면을 한 겹만 ── */
+.home-panel--eclass > .section {
+  margin: 0;
+}
+.home-panel--eclass .section__head {
+  margin-bottom: var(--sp-4);
+}
+.home-panel--eclass .section__title {
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.home-panel--eclass .card {
+  padding: 0;
+  background: transparent;
+}
+.home-panel--eclass .school-eclass-empty {
+  display: grid;
+  gap: var(--sp-4);
+  justify-items: start;
+}
+.home-panel--eclass .school-eclass-empty p {
+  margin: 0;
+}
+
+/* ── 라운지 약속 (MyLoungeSection 의 home-sum__* 마크업) ── */
+.home-panel--lounge .home-sum__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.home-panel--lounge .home-sum__title {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.home-panel--lounge .home-sum__link {
+  margin-left: auto;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-action-text);
+  text-decoration: none;
+}
+.home-sum__empty,
+.home-sum__more {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.home-sum__more {
   margin-top: var(--sp-3);
 }
-
-/* 시간표 미리보기: 격자가 자기 테두리를 가지므로 바깥 카드는 두지 않는다. */
-/* "이번 주로"는 이동 바 밖에 둔다. 나타나도 ‹ › 버튼 위치가 움직이지 않아 연달아 누르기 편하다. */
-.home-tt .home-today {
-  display: flex;
-  justify-content: center;
-  margin: calc(var(--sp-3) * -1) 0 var(--sp-2);
+.home-sum__error {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
 }
-
-.home-tt .home-grid-alert {
-  margin-bottom: var(--sp-3);
+.home-sum__error p {
+  margin: 0;
 }
-
-/* 구역 제목 오른쪽 링크: 글자가 거터 끝에 맞도록 버튼 안쪽 여백만큼 당긴다. */
-.home-page .section__head > .btn--text {
-  margin-right: calc(var(--sp-3) * -1);
+.home-panel--lounge .home-ul .list__item {
+  padding-block: var(--sp-4);
 }
-
-/* ───────────────────────────────────────────────────────────────
-   내 라운지 약속 구역 (접두사 lounge-home-) — C4
-   목록 틀(home-card--rows · home-ul)은 위 홈 공통 규칙을 그대로 쓴다.
-   ─────────────────────────────────────────────────────────────── */
-
-/* 미팅/밥약을 알려 주는 종류 아이콘 (글자 배지가 따로 있어 장식) */
 .lounge-home-kind {
   flex: none;
   width: 2.4rem;
   height: 2.4rem;
   color: var(--c-text-sub);
 }
-
-/* 종류 · 내 역할 · 상태 · 수업 겹침 배지: 좁으면 줄바꿈 */
 .lounge-home-badges {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-2);
   margin-top: var(--sp-3);
 }
-
-/* 수업 이름이 길면 배지 한 줄로는 화면 폭을 넘는다(글자 150%에서 가로 넘침) — 이 구역의 배지만 줄바꿈을 허용 */
 .lounge-home-badges .badge {
-  max-width: 100%;
   height: auto;
-  min-height: 2.4rem;
-  padding-top: var(--sp-1);
-  padding-bottom: var(--sp-1);
   white-space: normal;
-  line-height: 1.3;
 }
 
-/* ── 내 일정 상자: 다가오는 예약 · 내 회의 · 내 라운지 약속을 한 카드 안에 묶음으로 ───────── */
-.home-sum__group + .home-sum__group {
-  border-top: 0;
-}
-.home-sum__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  padding: var(--sp-4) var(--sp-5) var(--sp-2);
-}
-.home-sum__title {
-  margin: 0;
-  font-size: var(--fs-md);
-  font-weight: var(--fw-bold);
-}
-.home-sum__link {
-  font-size: var(--fs-sm);
-  color: var(--c-action-text);
-  text-decoration: none;
-}
-.home-sum__link:hover {
-  text-decoration: underline;
-}
-.home-sum__empty {
-  margin: 0;
-  padding: var(--sp-2) var(--sp-5) var(--sp-5);
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-}
-.home-sum__empty a {
-  color: var(--c-action-text);
-}
-.home-sum__more {
-  margin: 0;
-  padding: var(--sp-1) var(--sp-5) var(--sp-4);
-  font-size: var(--fs-xs);
-  color: var(--c-text-sub);
-}
-.home-sum__error {
-  display: grid;
-  gap: var(--sp-3);
-  justify-items: start;
-  padding: var(--sp-2) var(--sp-5) var(--sp-5);
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-}
-.home-sum__error p {
-  margin: 0;
-}
-/* 묶음 안의 행은 머리글 아래에서 카드 가장자리까지 닿는다 */
-.home-sum .home-ul > li:first-child .list__item {
-  padding-top: var(--sp-3);
-}
-
-/* 홈 머리: 날짜 제목과 바로가기 두 개를 한 줄에. 세로 공간을 최소로 쓴다. */
-.home-hero {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3) var(--sp-4);
-  padding: var(--sp-3) 0 var(--sp-5);
-}
-.home-hero__title {
-  margin: 0;
-  font-size: var(--fs-h2);
-  font-weight: var(--fw-bold);
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  color: var(--c-text);
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-}
-.home-hero__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-}
-.home-hero__actions > a {
-  min-height: 4rem;
-}
-.home-section-title {
-  margin: 0 0 var(--sp-3);
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-bold);
-  letter-spacing: -0.025em;
-}
-.home-sum__head {
-  flex-wrap: wrap;
-  align-items: baseline;
-}
-.home-sum__link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 4.4rem;
-}
-.home-sum .list__body {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-@media (max-width: 360px) {
-  .home-ul .list__item {
-    flex-wrap: wrap;
-  }
-  .home-ul .list__body {
-    flex-basis: 100%;
-  }
-}
-
-/* Each appointment has a surface; the next reservation carries the visual weight. */
-.home-sum { display: grid; gap: var(--sp-4); }
-.home-sum__group { min-width: 0; background: var(--c-bg); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
-.home-sum__head { padding: var(--sp-5) var(--sp-6) var(--sp-2); }
-.home-page .home-section-title { font-size: var(--fs-sm); color: var(--c-text-sub); margin-bottom: var(--sp-4); }
-.home-sum .home-reservations > li:first-child .list__item { padding: var(--sp-6); }
-.home-reservation--next { position: relative; background: var(--c-action-bg); }
-/* 옆 띠 대신 면 색과 큰 시각만으로 강조한다 */
-.home-reservation__time { margin-bottom: var(--sp-2); font-size: var(--fs-md); font-weight: var(--fw-bold); letter-spacing: 0; font-variant-numeric: tabular-nums; }
-.home-reservation--next .home-reservation__time { font-size: var(--fs-h2); line-height: 1.4; overflow-wrap: anywhere; }
-.home-next-label { display: block; margin-bottom: var(--sp-4); color: var(--c-text-sub); }
-.home-reservation--next .list__item { flex-wrap: wrap; }
-.home-reservation--next .list__body { flex-basis: 100%; }
-.home-reservation--next .list__chev { margin-left: auto; }
-.home-ul .list__item { border-radius: var(--r); }
-.home-ul .list__item--link::before { inset: 0; }
-.home-page { padding-inline: min(var(--gutter), 5vw); }
-:root[data-contrast='high'] .home-sum__group { outline: 2px solid var(--c-border); }
-
-/* 본문에 두 카드를 놓을 공간이 있을 때만 작업대와 보조 칼럼으로 나눈다. */
-.home-page { container: home / inline-size; }
-/* 좁은 화면: DOM 순서(예약 → 미수강 강의 → 회의 → 라운지) 그대로 한 열 */
-.home-workspace { align-items: start; }
-.home-workspace > *, .home-lounge { min-width: 0; }
-.home-area--eclass > .section { margin-block: 0; }
-.home-area--eclass .section__head { margin-bottom: var(--sp-2); }
-.home-area--eclass .section__title { font-size: var(--fs-md); }
-.home-area--eclass .school-eclass-empty { display: grid; justify-items: start; gap: var(--sp-3); }
-.home-area--eclass .school-eclass-empty p { margin: 0; overflow-wrap: anywhere; }
-.home-area--eclass .school-eclass-empty .btn { white-space: normal; }
-.home-sum__head { padding-block: var(--sp-4) var(--sp-1); }
-.home-workspace .list__main, .home-workspace .list__sub { overflow-wrap: anywhere; }
-.home-reservation__time > span { display: inline-block; white-space: nowrap; }
-.home-page .code-chip { letter-spacing: 0.04em; }
-
-.home-disclosure > summary {
-  min-height: var(--touch);
-  padding: var(--sp-4);
-  cursor: pointer;
-  font-weight: var(--fw-bold);
-  overflow-wrap: anywhere;
-}
-.home-disclosure > summary span { color: var(--c-text-sub); font-weight: var(--fw-regular); margin-left: var(--sp-2); }
-.home-disclosure > summary:focus-visible { outline: 2px solid var(--c-action); outline-offset: 2px; }
-.home-sum .home-reservations > li:first-child .list__item { padding: var(--sp-4); }
-.home-next-label { margin-bottom: var(--sp-2); }
-.home-reservation--next .list__item { flex-wrap: nowrap; }
-.home-reservation--next .list__body { flex-basis: auto; flex-grow: 1; }
-.home-reservation--next .home-reservation__time { font-size: var(--fs-lg); }
-.home-sum__head { padding-inline: var(--sp-4); }
-.home-area--eclass .school-eclass { gap: var(--sp-3); padding: var(--sp-4); }
-.home-area--eclass .school-eclass__textbtn { min-height: var(--touch); }
-
-/* Independent columns avoid empty grid rows when lecture content grows. */
-.home-agenda { display: grid; gap: var(--sp-4); min-width: 0; align-content: start; }
-.home-area--res, .home-disclosure {
-  border: 1px solid var(--c-border); box-shadow: none; border-radius: var(--r-lg);
-}
-.home-disclosure > summary {
-  display: flex; align-items: center; gap: var(--sp-2);
-  padding: var(--sp-4); list-style: none;
-}
-.home-disclosure > summary::-webkit-details-marker { display: none; }
-.home-disclosure > summary::after {
-  content: '+'; margin-left: auto; color: var(--c-text-sub); font-size: var(--fs-lg);
-}
-.home-disclosure[open] > summary::after { content: '\2212'; }
-.home-area--meet .home-sum__head { justify-content: flex-end; padding-top: 0; }
-.home-area--meet .home-sum__title {
-  position: absolute; width: 1px; height: 1px; padding: 0;
-  overflow: hidden; clip-path: inset(50%);
-}
+/* ── 넓은 화면: 12열 중 7 + 5 ── */
 @container home (min-width: 64rem) {
-  .home-workspace {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--sp-6);
+  .home-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1.6rem;
+    align-items: start;
   }
-  .home-agenda { gap: var(--sp-6); }
-  .home-hero { padding-block: var(--sp-4) var(--sp-6); }
-  .home-area--eclass .section__head { min-height: 4.4rem; margin-bottom: var(--sp-3); }
-  .home-area--eclass .school-eclass { padding: var(--sp-5); }
-  .home-sum__head { padding: var(--sp-5) var(--sp-5) var(--sp-2); }
-  .home-sum .home-reservations > li:first-child .list__item { padding: var(--sp-5); }
-  .home-reservation--next .home-reservation__time { font-size: 2.8rem; }
-  .home-disclosure > summary { padding: var(--sp-5); }
+  .home-col--main {
+    grid-column: 1 / span 7;
+  }
+  .home-col--side {
+    grid-column: 8 / span 5;
+  }
+  .home-col {
+    display: grid;
+    gap: 1.6rem;
+    align-content: start;
+  }
 }
 
-@container home (min-width: 64rem) {
-  .home-area--eclass { border: 1px solid var(--c-border); border-radius: var(--r-lg); }
-  .home-area--eclass .section__head { padding: var(--sp-5) var(--sp-5) var(--sp-2); min-height: 0; margin: 0; }
-  .home-area--eclass .card { border: 0; box-shadow: none; }
-  .home-reservation--next .list__item { flex-wrap: wrap; }
-  .home-reservation--next .list__body { flex-basis: 100%; }
-  .home-reservation--next .home-reservation__time { font-size: var(--fs-h2); }
+/* 선명한 화면 모드: 면 차이가 약하므로 패널에 테두리를 다시 그린다 */
+:root[data-contrast='high'] .home-panel {
+  background: var(--gray-0);
+  box-shadow: inset 0 0 0 2px var(--gray-100);
 }
-/* Selection uses a surface and weight, without another decorative blue strip. */
-.home-area--eclass .school-eclass__tally > button[aria-pressed='true'] { border-bottom-color: transparent; font-weight: var(--fw-bold); }

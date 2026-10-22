@@ -54,10 +54,9 @@
 }
 
 .meetings-page .page-head { padding-top: var(--sp-5); }
-.meetings-page .eyebrow { margin-bottom: var(--sp-3); }
-.meetings-page .meet-actions { padding: var(--sp-6) 0 var(--sp-7); border-bottom: 1px solid var(--c-divider); }
+.meetings-page .meet-actions { padding: var(--sp-6) 0 var(--sp-4); }
 .meetings-page .meet-ul { display: grid; gap: var(--sp-4); }
-.meetings-page .meet-ul > li { border: 0; background: var(--c-bg); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
+.meetings-page .meet-ul > li { border: 0; background: var(--c-panel); border-radius: var(--r-lg); }
 .meetings-page .meet-ul .list__item { min-height: 10rem; padding: var(--sp-6); border-radius: var(--r-lg); flex-wrap: wrap; gap: var(--sp-4); }
 .meetings-page .meet-ul .list__body { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
 .meetings-page .meet-ul .list__main { font-size: var(--fs-lg); letter-spacing: -0.03em; }
@@ -65,7 +64,7 @@
 
 /* 카드 최소 폭을 가용 폭으로 제한해 확대 시 한 열로 자연스럽게 돌아온다. */
 .meetings-page { container: meetings / inline-size; }
-.meetings-page .meet-ul { grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr)); align-items: stretch; }
+.meetings-page .meet-ul { grid-template-columns: repeat(auto-fill, minmax(min(100%, 32rem), 1fr)); align-items: stretch; }
 .meetings-page .meet-ul > li { min-width: 0; }
 .meetings-page .meet-ul .list__item { height: 100%; align-content: start; }
 .meetings-page .meet-ul .list__item::before { inset: 0; border-radius: inherit; }
