@@ -1,5 +1,5 @@
 /* 홈(대시보드) 전용 스타일 — 접두사 home-
-   배치: 학교 이름 → 옆으로 넘기는 요약 카드 → 바로가기 아이콘 줄 → 배너 → e-class → 게시판형 목록
+   배치: 학교 이름 → 옆으로 넘기는 요약 카드 → 바로가기 아이콘 줄 → 배너 → e-class → 내 일정 표
    색·버튼은 공통 토큰을 그대로 쓰고, 홈의 카드만 둥글기를 크게(--home-r) 준다. */
 
 .home-page {
@@ -218,7 +218,7 @@
   }
 }
 
-/* e-class 구역: 아래 게시판형 묶음과 같은 제목 크기·둥근 상자 */
+/* e-class 구역: 아래 표와 같은 제목 크기·둥근 상자 */
 .home-page .section {
   margin-top: var(--sp-9);
 }
@@ -230,11 +230,8 @@
   border-radius: var(--home-r);
 }
 
-/* ── 게시판형 목록: 굵은 제목 + 더 보기, 아래 둥근 상자 ─────────── */
-.home-board {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-9);
+/* ── 내 일정 표: 굵은 제목 + 더 보기, 아래 둥근 상자 안에 한 줄씩 ─────────── */
+.home-table {
   margin-top: var(--sp-9);
 }
 .home-sum__head {
@@ -266,38 +263,36 @@
 .home-sum__link:hover {
   color: var(--c-action-text);
 }
-.home-board__card {
-  overflow: hidden;
+
+/* 줄 사이 구분선 없이 위아래 여백만으로 나눈다 */
+.home-table__box {
+  margin: 0;
+  padding: var(--sp-4) 0;
+  list-style: none;
   border: 1px solid var(--c-border-soft);
   border-radius: var(--home-r);
   background: var(--c-bg);
+  overflow: hidden;
 }
 
-.home-ul > li + li {
-  border-top: 1px solid var(--c-divider);
-}
-
-/* 한 줄: 굵은 이름 · 흐린 설명 · 오른쪽 표시 */
-.home-row {
+/* 한 줄: 굵은 이름 · 흐린 미리보기 · 오른쪽 동그라미 개수 */
+.home-table__row {
   display: flex;
   align-items: center;
-  gap: var(--sp-5);
-  min-height: 5.6rem;
-  padding: var(--sp-4) var(--sp-6);
+  gap: var(--sp-6);
+  min-height: 5.2rem;
+  padding: var(--sp-3) var(--sp-7);
   color: var(--c-text);
   text-decoration: none;
 }
-.home-row__main {
-  flex: 0 1 auto;
-  min-width: 0;
-  font-size: var(--fs-md);
+.home-table__label {
+  flex: none;
+  font-size: var(--fs-lg);
   font-weight: var(--fw-bold);
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.home-row__sub {
-  flex: 1 1 0;
+.home-table__preview {
+  flex: 1;
   min-width: 0;
   font-size: var(--fs-md);
   color: var(--c-text-sub);
@@ -305,95 +300,24 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.home-row__chev {
+.home-table__count {
+  display: grid;
+  place-items: center;
   flex: none;
-  width: 1.8rem;
-  height: 1.8rem;
-  color: var(--c-text-muted);
+  min-width: 2.2rem;
+  height: 2.2rem;
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--c-action);
+  color: var(--c-on-action);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  line-height: 1;
 }
 @media (hover: hover) {
-  .home-row:hover,
-  .home-board__card .list__item--link:hover {
+  .home-table__row:hover {
     background: var(--c-surface);
   }
-}
-
-/* 라운지 약속 행(list__item)도 같은 상자 안 여백에 맞춘다 */
-.home-board__card .list__item {
-  padding: var(--sp-4) var(--sp-6);
-  gap: var(--sp-3);
-  border-bottom: 0;
-}
-
-/* 상태 배지는 길면 줄여서 끝을 … 로 — 행 높이는 그대로 */
-.home-badge {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 45%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  display: inline-block;
-  line-height: 2.4rem;
-}
-
-.home-sum__empty {
-  margin: 0;
-  padding: var(--sp-6);
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-}
-.home-sum__empty a {
-  color: var(--c-action-text);
-}
-.home-sum__more {
-  margin: 0;
-  padding: var(--sp-3) var(--sp-6) var(--sp-5);
-  font-size: var(--fs-xs);
-  color: var(--c-text-sub);
-  border-top: 1px solid var(--c-divider);
-}
-.home-sum__error {
-  display: grid;
-  gap: var(--sp-3);
-  justify-items: start;
-  padding: var(--sp-6);
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-}
-.home-sum__error p {
-  margin: 0;
-}
-
-/* ───────────────────────────────────────────────────────────────
-   내 라운지 약속 구역 (접두사 lounge-home-) — C4
-   ─────────────────────────────────────────────────────────────── */
-
-/* 미팅/밥약을 알려 주는 종류 아이콘 (글자 배지가 따로 있어 장식) */
-.lounge-home-kind {
-  flex: none;
-  width: 2.4rem;
-  height: 2.4rem;
-  color: var(--c-text-sub);
-}
-
-/* 종류 · 내 역할 · 상태 · 수업 겹침 배지: 좁으면 줄바꿈 */
-.lounge-home-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  margin-top: var(--sp-3);
-}
-
-/* 수업 이름이 길면 배지 한 줄로는 화면 폭을 넘는다(글자 150%에서 가로 넘침) — 이 구역의 배지만 줄바꿈을 허용 */
-.lounge-home-badges .badge {
-  max-width: 100%;
-  height: auto;
-  min-height: 2.4rem;
-  padding-top: var(--sp-1);
-  padding-bottom: var(--sp-1);
-  white-space: normal;
-  line-height: 1.3;
 }
 
 /* 넓은 화면: 요약 카드를 넘기지 않고 나란히 */
