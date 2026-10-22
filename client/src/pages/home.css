@@ -9,21 +9,14 @@
 /* ── 학교 이름 + 오늘 날짜 ───────────────────────────────────── */
 .home-hero {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-4);
+  justify-content: center;
   padding: var(--sp-2) 0 var(--sp-6);
-}
-.home-hero__title {
-  margin: 0;
-  font-size: var(--fs-display);
-  font-weight: var(--fw-bold);
-  line-height: 1.2;
 }
 .home-hero__date {
   margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
   white-space: nowrap;
 }
 

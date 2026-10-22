@@ -66,8 +66,9 @@ export default function Dashboard() {
       <AppHeader />
       <main id="main" className="app-main home-page">
         {/* 학교 이름 + 오늘 날짜 */}
+        {/* 화면 제목은 화면 읽기용으로만 두고(라우트 이동 때 포커스가 h1 로 간다), 오늘 날짜를 가운데에 크게 */}
         <header className="home-hero">
-          <h1 className="home-hero__title">한성대</h1>
+          <h1 className="sr-only">홈</h1>
           <p className="home-hero__date">{TODAY_LABEL()}</p>
         </header>
 

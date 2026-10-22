@@ -173,7 +173,7 @@
 
   /* ── 레이아웃 ─────────────────────────────────────────── */
   --frame-max: 480px; /* 모바일 프레임 폭. 이보다 넓은 화면에서도 가운데 정렬 */
-  --header-h: 5.6rem; /* KRDS GNB 56px */
+  --header-h: 6.4rem; /* 상단 헤더 — 로고·프로필을 키워 56px → 64px */
   --tabbar-h: 5.6rem;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
