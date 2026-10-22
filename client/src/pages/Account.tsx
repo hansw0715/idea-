@@ -8,6 +8,7 @@ import { LOUNGE_ENABLED } from '../features';
 import LoungeProfileCard from '../lounge/account/LoungeProfileCard';
 import LoungeAccountRows from '../lounge/account/LoungeAccountRows';
 import SchoolLinkCard from '../school/SchoolLinkCard';
+import { useSchool } from '../school/SchoolContext';
 import {
   Alert,
   Badge,
@@ -32,6 +33,26 @@ const PHRASE_FIELD = 'withdraw-phrase';
 /** 내 정보: 가입 정보 · 글자·화면 설정 · 로그아웃 · 회원 탈퇴 */
 export default function Account() {
   const { user, setUser } = useAuth();
+  const school = useSchool();
+  // 학번 전체는 이 기기에 암호화해 둔 학교 계정 정보를 기기 안에서만 잠깐 풀어 보여 준다 (서버에는 학번 원문이 없다).
+  // 풀 수 없는 기기(다른 기기에서 연동 등)에서는 가린 학번(hint)만 보인다.
+  const [studentId, setStudentId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!school.linked || !school.canUse) {
+      setStudentId(null);
+      return;
+    }
+    let cancelled = false;
+    school
+      .withCredentials(async (c) => c.studentId)
+      .then((id) => !cancelled && setStudentId(id))
+      .catch(() => !cancelled && setStudentId(null));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [school.linked, school.canUse]);
+  const studentIdText = studentId ?? school.hint;
   const navigate = useNavigate();
   const confirm = useConfirm();
   const toast = useToast();
@@ -141,6 +162,12 @@ export default function Account() {
                 <dt className="account-info__key">이름</dt>
                 <dd className="account-info__val account-info__val--name">{user?.name}</dd>
               </div>
+              {studentIdText && (
+                <div className="account-info__row">
+                  <dt className="account-info__key">학번</dt>
+                  <dd className="account-info__val tabular">{studentIdText}</dd>
+                </div>
+              )}
               <div className="account-info__row">
                 <dt className="account-info__key">아이디</dt>
                 <dd className="account-info__val">{user?.username}</dd>

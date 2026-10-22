@@ -629,3 +629,10 @@
 .lounge-gath-safety__lead {
   margin: var(--sp-2) 0 var(--sp-5);
 }
+
+/* 성별을 안 골라 미팅 자리에 앉을 수 없을 때의 안내 */
+.lounge-gath-slot__note {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}

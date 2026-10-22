@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { REVIEW_LABEL, admissionLabel, formatMeetAt, timeLeft } from '../../../../shared/lounge';
 import type {
   GatheringAction,
@@ -753,16 +753,27 @@ function SlotBox({
   onSit: (slot: SlotView) => void;
   onPerson: (id: string) => void;
 }) {
-  const canJoin = g.viewer.canJoin;
+  const myGender = useLounge().profile?.gender ?? null;
+  // 성별 자리(미팅: 위 남자 / 아래 여자)는 내 성별 쪽에만 앉기 버튼을 둔다. 서버도 같은 규칙으로 한 번 더 막는다
+  const genderOk = !slot.gender || slot.gender === myGender;
+  const canJoin = g.viewer.canJoin && genderOk;
+  // 성별을 아직 안 골라서 앉을 수 없는 경우에만 안내한다 (빈 자리가 있을 때)
+  const genderNote =
+    slot.gender && g.viewer.canJoin && slot.seatsLeft > 0 && !myGender ? '내 정보에서 성별을 고르면 앉을 수 있어요.' : null;
   return (
-    <div className={`lounge-gath-slot${selected ? ' is-selected' : ''}`}>
+    <div className={`lounge-gath-slot${selected && genderOk ? ' is-selected' : ''}`}>
       <div className="lounge-gath-slot__head">
         <h4 className="lounge-gath-slot__label">{slot.label}</h4>
         <span className="lounge-gath-slot__count tabular">
           {slot.members.length}/{slot.capacity}
         </span>
-        {selected && <Badge tone="primary">선택한 자리</Badge>}
+        {selected && genderOk && <Badge tone="primary">선택한 자리</Badge>}
       </div>
+      {genderNote && (
+        <p className="lounge-gath-slot__note">
+          {genderNote} <Link to="/account">내 정보로 가기</Link>
+        </p>
+      )}
       <ul className="lounge-gath-seats" aria-label={`${slot.label} 자리`}>
         {slot.members.map((m) => {
           const isHost = m.id === g.host.id;

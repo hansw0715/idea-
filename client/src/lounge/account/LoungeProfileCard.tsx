@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BAN_NOTICE_GENERIC, GENDER_LABEL } from '../../../../shared/lounge';
 import type { Gender } from '../../../../shared/lounge';
 import { Alert, Button, EmptyState, LoadingBlock, Segmented, useToast } from '../../ui';
+import { useAuth } from '../../auth';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
 import Avatar, { TemperatureBadge } from '../parts/Avatar';
@@ -14,6 +15,7 @@ import { factLine } from '../parts/fact';
  */
 export default function LoungeProfileCard() {
   const { profile, needsProfile, loading, error, refresh, openProfileSheet, setProfile } = useLounge();
+  const { user } = useAuth();
   const [retrying, setRetrying] = useState(false);
   const [savingGender, setSavingGender] = useState(false);
   const [genderError, setGenderError] = useState<string | null>(null);
@@ -55,7 +57,8 @@ export default function LoungeProfileCard() {
         <div className="lounge-acct-who">
           <Avatar user={profile} size="lg" />
           <div className="lounge-acct-who__text">
-            <p className="lounge-acct-nick">{profile.nickname}</p>
+            {/* 내 정보에서는 실명을 보여 준다. 다른 사람에게는 가린 이름(닉네임)으로 보인다 */}
+            <p className="lounge-acct-nick">{user?.name || profile.nickname}</p>
             {/* 학과·학번과 매너온도를 같은 줄에, 같은 크기로 */}
             <p className="lounge-acct-sub lounge-acct-line">
               <span>{factLine(profile)}</span>
@@ -92,7 +95,9 @@ export default function LoungeProfileCard() {
           )}
         </div>
 
-        <p className="lounge-acct-help">이름·학과·학번은 학교 계정에서 가져와요.</p>
+        <p className="lounge-acct-help">
+          이름·학과·학번은 학교 계정에서 가져와요. 라운지에서 다른 사람에게는 이름이 {profile.nickname}(으)로 보여요.
+        </p>
         <Button variant="secondary" size="sm" onClick={openProfileSheet}>
           프로필 이미지 바꾸기
         </Button>
