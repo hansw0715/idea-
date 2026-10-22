@@ -23,7 +23,6 @@ import {
   useToast,
 } from '../ui';
 import { reservationStatus } from '../reservationStatus';
-import { Reveal, StaggerList, StaggerItem } from '../ui/motion';
 import {
   addDaysStr,
   fmtDate,
@@ -80,7 +79,6 @@ export default function MeetingDetail() {
   const [detail, setDetail] = useState<MeetingDetailData | null>(null);
   const [memberEntries, setMemberEntries] = useState<MemberTimetableEntry[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [showAllReservations, setShowAllReservations] = useState(false);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [reservationsFailed, setReservationsFailed] = useState(false);
   const [timetableFailed, setTimetableFailed] = useState(false);
@@ -484,11 +482,7 @@ export default function MeetingDetail() {
   return (
     <>
       <AppHeader title={detail.name} backTo="/meetings" />
-      <main id="main" className="app-main meeting-detail-page">
-        <header className="page-head meeting-detail-head">
-          <h1 className="page-title">{detail.name}</h1>
-          <p className="page-lead">팀원 {detail.members.length}명</p>
-        </header>
+      <main id="main" className="app-main">
         {syncFailed && (
           <section className="section">
             <Alert
@@ -505,9 +499,188 @@ export default function MeetingDetail() {
           </section>
         )}
 
-        <div className="mtg-workspace">
+        {/* ① 회의 코드 */}
+        <section className="section" aria-labelledby="mtg-code-title">
+          <div className="card mtg-code">
+            <h2 className="mtg-code__label" id="mtg-code-title">
+              회의 코드
+            </h2>
+            <div className="mtg-code__row">
+              {copyState === 'failed' ? (
+                <input
+                  ref={codeInputRef}
+                  className="input mtg-code__input code-chip"
+                  readOnly
+                  value={detail.code}
+                  aria-label="회의 코드 (길게 눌러 복사할 수 있습니다)"
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+              ) : (
+                <p className="mtg-code__value code-chip">
+                  <span aria-hidden="true">{detail.code}</span>
+                  <span className="sr-only">{detail.code.split('').join(' ')}</span>
+                </p>
+              )}
+              <Button variant="secondary" onClick={copyCode}>
+                <Icon name={copyState === 'copied' ? 'check' : 'copy'} className="btn__icon" />
+                {copyState === 'copied' ? '복사됨' : '코드 복사하기'}
+              </Button>
+            </div>
+            {copyState === 'failed' && (
+              <p className="field__help" role="status">
+                자동으로 복사하지 못했습니다. 위 코드를 길게 눌러 복사해 주세요.
+              </p>
+            )}
+            <p className="text-sub text-sm">
+              회의 코드를 팀원에게 공유하면 함께 시간을 맞출 수 있습니다.
+            </p>
+          </div>
+        </section>
+
+        {/* ② 회의 예약하기 (이 화면의 유일한 Primary) */}
+        <section className="section" aria-label="회의 예약">
+          <Button
+            variant="primary"
+            size="lg"
+            block
+            onClick={openBooking}
+            aria-disabled={noParticipants || undefined}
+            aria-describedby="mtg-book-help"
+          >
+            회의 예약하기
+          </Button>
+          <p className="text-sub text-sm mtg-book-help" id="mtg-book-help">
+            {noParticipants
+              ? '참여할 팀원을 한 명 이상 선택하면 예약할 수 있습니다.'
+              : `참여 ${activeIds.length}명이 모두 비는 시간을 찾고, 날짜와 시설을 고른 뒤 학교에 바로 신청합니다.`}
+          </p>
+
+          {!school.loading && (!school.linked || !school.canUse) && (
+            <div className="mtg-result">
+              <Alert
+                tone="info"
+                title={school.linked ? '이 기기에서는 학교 계정을 다시 연동해야 해요.' : '학교 계정을 연동해야 시설을 예약할 수 있어요.'}
+                actions={
+                  <Button variant="secondary" size="sm" onClick={() => setLinkOpen(true)}>
+                    {school.linked ? '다시 연동하기' : '학교 계정 연동하기'}
+                  </Button>
+                }
+              >
+                시설 예약은 학교에 바로 신청하는 방식으로만 할 수 있어요.
+              </Alert>
+            </div>
+          )}
+        </section>
+
+        {/* ③ 팀원 */}
+        <section className="section" aria-labelledby="mtg-members-title">
+          <div className="section__head">
+            <h2 className="section__title" id="mtg-members-title">
+              팀원 {detail.members.length}명
+            </h2>
+            <p className="text-sub text-sm" aria-live="polite" aria-atomic="true">
+              회의에 참여할 사람 {activeIds.length}명
+            </p>
+          </div>
+          <p className="section__sub mtg-members__sub">
+            이름을 눌러 이번 회의에서 빼거나 다시 넣을 수 있습니다. 빠진 사람의 수업은 시간 계산에
+            반영되지 않습니다.
+          </p>
+          <div className="tag-group" role="group" aria-label="회의에 참여할 팀원">
+            {detail.members.map((m, i) => {
+              const on = activeIds.includes(m.id);
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={`tag mtg-chip${on ? '' : ' is-off'}`}
+                  aria-pressed={on}
+                  onClick={() => toggleParticipant(m.id)}
+                >
+                  {on && <Icon name="check" className="tag__check" />}
+                  <span
+                    className="tag__dot"
+                    style={{ background: on ? colorOf(i) : 'var(--gray-30)' }}
+                    aria-hidden="true"
+                  />
+                  <span>{m.name}</span>
+                  {m.isOwner ? <Badge tone="gray">방장</Badge> : null}
+                  {!on && <span className="mtg-chip__off">제외됨</span>}
+                </button>
+              );
+            })}
+          </div>
+          {noParticipants && (
+            <p className="field__error mtg-members__warn" role="status">
+              <Icon name="alert" />
+              <span>참여할 사람이 없으면 시간을 계산할 수 없습니다. 이름을 눌러 다시 넣어 주세요.</span>
+            </p>
+          )}
+        </section>
+
+        {/* ④ 팀원 시간표 */}
+        <section className="section" aria-labelledby="mtg-tt-title">
+          <div className="section__head">
+            <h2 className="section__title" id="mtg-tt-title">
+              팀원 시간표
+            </h2>
+          </div>
+          <div className="mtg-weeknav">
+            <WeekNav
+              label={fmtWeekLabel(weekStart)}
+              sub={`${fmtDayHeader(weekStart)} ~ ${fmtDayHeader(addDaysStr(weekStart, 4))}`}
+              onPrev={week.prevWeek}
+              onNext={week.nextWeek}
+              onToday={isCurrentWeek(weekStart) ? undefined : week.goToday}
+            />
+          </div>
+          {memberEntries.length === 0 ? (
+            <div className="card card--flat">
+              <EmptyState
+                icon="calendar"
+                title="아직 등록된 시간표가 없습니다."
+                description="각자 시간표를 등록하면 여기에 겹쳐 보입니다."
+                action={
+                  <Link to="/timetable" className={btnClass({ variant: 'secondary' })}>
+                    내 시간표 등록하기
+                  </Link>
+                }
+              />
+            </div>
+          ) : (
+            <div className="stack">
+              <ul className="mtg-legend" aria-label="팀원별 색 안내">
+                {detail.members.map((m, i) => (
+                  <li key={m.id} className="mtg-legend__item">
+                    <span
+                      className="mtg-legend__dot"
+                      style={{ background: colorOf(i) }}
+                      aria-hidden="true"
+                    />
+                    {m.name}
+                    {!activeIds.includes(m.id) && <span className="text-muted"> (제외됨)</span>}
+                  </li>
+                ))}
+                <li className="mtg-legend__item">
+                  <span className="tt-swatch tt-swatch--res" aria-hidden="true" />
+                  회의 예약 (팀원 전체 표시)
+                </li>
+              </ul>
+              <div className="mtg-grid">
+                <TimetableGrid
+                  entries={gridEntries}
+                  laneCount={detail.members.length}
+                  compact
+                  weekStart={weekStart}
+                  slide={week.slide}
+                />
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* ⑤ 예약 현황 */}
-        <section className="section mtg-workspace-reservations" aria-labelledby="mtg-res-title">
+        <section className="section" aria-labelledby="mtg-res-title">
           <div className="section__head">
             <h2 className="section__title" id="mtg-res-title" tabIndex={-1} ref={resHeadingRef}>
               예약 현황
@@ -565,12 +738,12 @@ export default function MeetingDetail() {
               />
             </div>
           ) : (
-            <StaggerList className="mtg-res-list">
-              {(showAllReservations ? reservations : reservations.slice(0, 1)).map((r) => {
+            <ul className="card card--list mtg-res-list">
+              {reservations.map((r) => {
                 const status = reservationStatus(r);
                 const confirmed = r.schoolStatus === 'confirmed';
                 return (
-                  <StaggerItem key={r.id} className="mtg-res">
+                  <li key={r.id} className="mtg-res">
                     <div className="mtg-res__head">
                       <p className="mtg-res__title">
                         {r.facilityName} · {r.building}
@@ -623,15 +796,10 @@ export default function MeetingDetail() {
                         예약 취소하기
                       </Button>
                     </div>
-                  </StaggerItem>
+                  </li>
                 );
               })}
-            </StaggerList>
-          )}
-          {reservations.length > 1 && (
-            <Button variant="text" block aria-expanded={showAllReservations} onClick={() => setShowAllReservations(v => !v)}>
-              {showAllReservations ? '예약 접기' : `예약 ${reservations.length - 1}건 더 보기`}
-            </Button>
+            </ul>
           )}
 
           {/* 연동하지 않았거나 이 기기에서 쓸 수 없으면, 학교 사이트로 가는 기존 안내는 그대로 두고 연동을 권하는 한 줄만 붙인다 */}
@@ -644,189 +812,6 @@ export default function MeetingDetail() {
                 {school.linked ? '내 정보에서 다시 연동하기' : '내 정보에서 연동하기'}
               </Link>
             </p>
-          )}
-        </section>
-
-
-          <Reveal className="mtg-workspace-overview">
-        {/* ① 회의 코드 */}
-        <section className="section" aria-labelledby="mtg-code-title">
-          <div className="card mtg-code">
-            <h2 className="mtg-code__label" id="mtg-code-title">
-              회의 코드
-            </h2>
-            <div className="mtg-code__row">
-              {copyState === 'failed' ? (
-                <input
-                  ref={codeInputRef}
-                  className="input mtg-code__input code-chip"
-                  readOnly
-                  value={detail.code}
-                  aria-label="회의 코드 (길게 눌러 복사할 수 있습니다)"
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-              ) : (
-                <p className="mtg-code__value code-chip">
-                  <span aria-hidden="true">{detail.code}</span>
-                  <span className="sr-only">{detail.code.split('').join(' ')}</span>
-                </p>
-              )}
-              <Button variant="secondary" onClick={copyCode}>
-                <Icon name={copyState === 'copied' ? 'check' : 'copy'} className="btn__icon" />
-                {copyState === 'copied' ? '복사됨' : '코드 복사하기'}
-              </Button>
-            </div>
-            {copyState === 'failed' && (
-              <p className="field__help" role="status">
-                자동으로 복사하지 못했습니다. 위 코드를 길게 눌러 복사해 주세요.
-              </p>
-            )}
-            <p className="text-sub text-sm">
-              팀원 초대용 코드
-            </p>
-          </div>
-        </section>
-
-        {/* ② 회의 예약하기 (이 화면의 유일한 Primary) */}
-        <section className="section" aria-label="회의 예약">
-          <Button
-            variant="primary"
-            size="lg"
-            block
-            onClick={openBooking}
-            aria-disabled={noParticipants || undefined}
-            aria-describedby="mtg-book-help"
-          >
-            회의 예약하기
-          </Button>
-          <p className="text-sub text-sm mtg-book-help" id="mtg-book-help">
-            {noParticipants
-              ? '참여할 팀원을 한 명 이상 선택하면 예약할 수 있습니다.'
-              : `${activeIds.length}명의 빈 시간으로 예약`}
-          </p>
-
-          {!school.loading && (!school.linked || !school.canUse) && (
-            <div className="mtg-result">
-              <Alert
-                tone="info"
-                title={school.linked ? '이 기기에서는 학교 계정을 다시 연동해야 해요.' : '학교 계정을 연동해야 시설을 예약할 수 있어요.'}
-                actions={
-                  <Button variant="secondary" size="sm" onClick={() => setLinkOpen(true)}>
-                    {school.linked ? '다시 연동하기' : '학교 계정 연동하기'}
-                  </Button>
-                }
-              >
-                시설 예약은 학교에 바로 신청하는 방식으로만 할 수 있어요.
-              </Alert>
-            </div>
-          )}
-        </section>
-
-        {/* ③ 팀원 */}
-        <section className="section" aria-labelledby="mtg-members-title">
-          <div className="section__head">
-            <h2 className="section__title" id="mtg-members-title">
-              팀원 {detail.members.length}명
-            </h2>
-            <p className="text-sub text-sm" aria-live="polite" aria-atomic="true">
-              회의에 참여할 사람 {activeIds.length}명
-            </p>
-          </div>
-          <p className="section__sub mtg-members__sub">
-            선택한 팀원의 시간표로 빈 시간을 찾습니다.
-          </p>
-          <div className="tag-group" role="group" aria-label="회의에 참여할 팀원">
-            {detail.members.map((m, i) => {
-              const on = activeIds.includes(m.id);
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  className={`tag mtg-chip${on ? '' : ' is-off'}`}
-                  aria-pressed={on}
-                  onClick={() => toggleParticipant(m.id)}
-                >
-                  <Icon name="check" className="tag__check" />
-                  <span
-                    className={`tag__dot${i % MEMBER_COLORS.length === 4 ? ' member-swatch--patterned' : ''}`}
-                    style={{ background: on ? colorOf(i) : 'var(--gray-30)' }}
-                    aria-hidden="true"
-                  />
-                  <span className="mtg-chip__name">{m.name}</span>
-                  {m.isOwner ? <Badge tone="gray">방장</Badge> : null}
-                  <span className="sr-only" aria-hidden={on}>제외됨</span>
-                </button>
-              );
-            })}
-          </div>
-          {noParticipants && (
-            <p className="field__error mtg-members__warn" role="status">
-              <Icon name="alert" />
-              <span>참여할 사람이 없으면 시간을 계산할 수 없습니다. 이름을 눌러 다시 넣어 주세요.</span>
-            </p>
-          )}
-        </section>
-
-          </Reveal>
-        </div>
-        {/* ④ 팀원 시간표 */}
-        <section className="section mtg-workspace-timetable" aria-labelledby="mtg-tt-title">
-          <div className="section__head">
-            <h2 className="section__title" id="mtg-tt-title">
-              팀원 시간표
-            </h2>
-          </div>
-          <div className="mtg-weeknav">
-            <WeekNav
-              label={fmtWeekLabel(weekStart)}
-              sub={`${fmtDayHeader(weekStart)} ~ ${fmtDayHeader(addDaysStr(weekStart, 4))}`}
-              onPrev={week.prevWeek}
-              onNext={week.nextWeek}
-              onToday={isCurrentWeek(weekStart) ? undefined : week.goToday}
-            />
-          </div>
-          {memberEntries.length === 0 ? (
-            <div className="card card--flat">
-              <EmptyState
-                icon="calendar"
-                title="아직 등록된 시간표가 없습니다."
-                description="각자 시간표를 등록하면 여기에 겹쳐 보입니다."
-                action={
-                  <Link to="/timetable" className={btnClass({ variant: 'secondary' })}>
-                    내 시간표 등록하기
-                  </Link>
-                }
-              />
-            </div>
-          ) : (
-            <div className="stack">
-              <ul className="mtg-legend" aria-label="팀원별 색과 무늬 안내">
-                {detail.members.map((m, i) => (
-                  <li key={m.id} className="mtg-legend__item">
-                    <span
-                      className={`mtg-legend__dot${i % MEMBER_COLORS.length === 4 ? ' member-swatch--patterned' : ''}`}
-                      style={{ background: colorOf(i) }}
-                      aria-hidden="true"
-                    />
-                    {m.name}
-                    {!activeIds.includes(m.id) && <span className="text-muted"> (제외됨)</span>}
-                  </li>
-                ))}
-                <li className="mtg-legend__item">
-                  <span className="tt-swatch tt-swatch--res" aria-hidden="true" />
-                  회의 예약 (팀원 전체 표시)
-                </li>
-              </ul>
-              <div className="mtg-grid">
-                <TimetableGrid
-                  entries={gridEntries}
-                  laneCount={detail.members.length}
-                  compact
-                  weekStart={weekStart}
-                  slide={week.slide}
-                />
-              </div>
-            </div>
           )}
         </section>
 

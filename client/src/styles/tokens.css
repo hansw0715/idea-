@@ -1,18 +1,16 @@
 /* ───────────────────────────────────────────────────────────────
-   상상Book-E 디자인 토큰 — 4차 "Tonal Hansung" (taste-skill · editorial-greeting, seed 1965601332)
+   상상Book-E 디자인 토큰 — KRDS(대한민국 정부 디자인 시스템) 기준
+   원본: DESIGN.md (프로젝트 루트)
 
-   방향 — 사용자 피드백 + taste-skill 앱 화면 규칙:
-     · 바탕     : 순백 페이지. 면 구분은 선이 아니라 한 단계 옅은 블루그레이 면(--c-panel)
-     · 선       : 얇은 테두리·구분선·띠를 쓰지 않는다. 시간표 격자만 아주 옅은 선을 남긴다
-     · 행동색   : 한성 블루 한 가지. 화면당 주 버튼 하나 + 데이터(내 수업·다음 예약)에만
-     · 서체     : Pretendard 하나. 숫자는 같은 서체의 tabular-nums
-     · 형태     : 4px 컨트롤 / 6px 카드 / 8px 시트 (각진 쪽 한 가지로 통일)
-     · 모션     : 피드백만(누름·열림·탭 이동). 등장 연출은 하지 않는다
-
-   변수 이름은 1차 구조를 그대로 둔다(--primary-* 는 이제 한성 블루 단계). 페이지 css 가 이름만 보고 따라오게.
+   DESIGN.md "Explicit user selections"는 KRDS 관찰값보다 우선한다.
+     · Primary 색   #6366f1  → --primary-50
+     · 라운드       4px      → --r (버튼·입력·카드·배지·시트). 원형/pill 만 1000px
+     · 입력 스타일  underline → .input / .select 는 밑줄형
+     · 내비 스타일  solid     → 상단 헤더·하단 탭바는 불투명 면(blur·반투명 금지)
+     · 레이아웃 밀도 compact  → 여백은 KRDS 표준보다 한 단계 촘촘하게
 
    단위: html 글자 크기를 62.5%(=10px) 에 사용자 확대 배율(--zoom)을 곱해 두었으므로
-   1rem = 10px × zoom. 모든 크기는 rem 으로 쓴다. (px 는 1px 보더·그림자·라운드에만)
+   1rem = 10px × zoom. 모든 크기는 rem 으로 쓴다. (px 는 1px 보더·그림자에만)
    ─────────────────────────────────────────────────────────────── */
 
 :root {
@@ -20,103 +18,93 @@
   --zoom: 1;
 
   --font:
-    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
-    'Noto Sans KR', 'Malgun Gothic', sans-serif;
-  /* 서체는 하나. 예전 고정폭 자리도 같은 서체를 쓰고 숫자 폭만 맞춘다 */
-  --font-mono: var(--font);
+    'Pretendard GOV Variable', 'Pretendard GOV', 'Pretendard Variable', Pretendard, -apple-system,
+    BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 
-  /* ── Gray — 푸른 기가 아주 살짝 도는 쿨 뉴트럴 (흰 배경 대비: 50단계 4.9:1, 60단계 6.9:1) ── */
+  /* ── Gray ─────────────────────────────────────────────── */
   --gray-0: #ffffff;
-  --gray-5: #f5f7fa;
-  --gray-10: #e8ecf1;
-  --gray-20: #d3d9e1;
-  --gray-30: #b4bdc9;
-  --gray-40: #8b95a3;
-  --gray-50: #687384;
-  --gray-60: #4f5968;
-  --gray-70: #3b4350;
-  --gray-80: #272e39;
-  --gray-90: #141a23;
-  --gray-95: #0b0f15;
+  --gray-5: #f4f5f6;
+  --gray-10: #e6e8ea;
+  --gray-20: #cdd1d5;
+  --gray-30: #b1b8be;
+  --gray-40: #8a949e;
+  --gray-50: #6d7882;
+  --gray-60: #58616a;
+  --gray-70: #464c53;
+  --gray-80: #33363d;
+  --gray-90: #1e2124;
+  --gray-95: #131416;
   --gray-100: #000000;
 
-  /* ── Primary — 한성 블루. 50단계가 버튼 면(흰 글자 7.2:1)이자 링크 글자 ── */
-  --primary-5: #f0f4fc;
-  --primary-10: #dfe8f9;
-  --primary-20: #bccff2;
-  --primary-30: #8eaee7;
-  --primary-40: #5683d6;
-  --primary-50: #1f4fbf;
-  --primary-60: #173f9e;
-  --primary-70: #11317d;
-  --primary-80: #0c245c;
-  --primary-90: #08193f;
-  --primary-95: #040d22;
+  /* ── Primary — 사용자 지정 #6366f1 이 50단계 ───────────── */
+  --primary-5: #eef2ff;
+  --primary-10: #e0e7ff;
+  --primary-20: #c7d2fe;
+  --primary-30: #a5b4fc;
+  --primary-40: #818cf8;
+  --primary-50: #6366f1;
+  --primary-60: #4f46e5; /* 밝은 면 위 텍스트·pressed (흰 배경 대비 6.3:1) */
+  --primary-70: #4338ca;
+  --primary-80: #3730a3;
+  --primary-90: #312e81;
+  --primary-95: #1e1b4b;
 
-  /* ── Secondary (남색 — 진한 면 보조) ─────────────── */
-  --secondary-5: #eef1f7;
-  --secondary-50: #2c3e66;
-  --secondary-60: #1f2e4f;
-  --secondary-70: #15213a;
-  --secondary-80: #0d1628;
+  /* ── Secondary (Navy) ─────────────────────────────────── */
+  --secondary-5: #eef2f7;
+  --secondary-50: #346fb2;
+  --secondary-60: #1c589c;
+  --secondary-70: #063a74;
+  --secondary-80: #052b57;
 
   /* ── 시스템 컬러 ──────────────────────────────────────── */
-  --danger-5: #fdeeec;
-  --danger-50: #c4242a; /* 녹슨 주황 기운 없는 빨강 (흰 바탕 5.6:1) */
-  --danger-60: #a81e23;
-  --danger-70: #831c1e;
+  --danger-5: #fdefec;
+  --danger-50: #de3412;
+  --danger-60: #bd2c0f;
+  --danger-70: #8a240f;
 
-  --warning-5: #fdf4dc;
-  --warning-30: #f2b632;
-  --warning-50: #8f6000; /* 텍스트용 */
-  --warning-60: #7a5200;
-  --warning-70: #5a3c00;
+  --warning-5: #fff3db;
+  --warning-30: #ffb114;
+  --warning-50: #9e6a00; /* 텍스트용 */
+  --warning-60: #8a5c00;
+  --warning-70: #614100;
 
-  --success-5: #e7f4ec;
-  --success-50: #1f7a45;
-  --success-60: #186638;
-  --success-70: #12502c;
+  --success-5: #eaf6ec;
+  --success-50: #228738;
+  --success-60: #267337;
+  --success-70: #285d33;
 
-  --info-5: #ecf2fb;
-  --info-50: #2361b0;
-  --info-60: #1b5196;
-  --info-70: #143f76;
+  --info-5: #e7f4fe;
+  --info-50: #0b78cb;
+  --info-60: #096ab3;
+  --info-70: #085691;
 
-  --point-5: #fbecef;
-  --point-50: #c4304f;
-  --point-60: #a2263f;
-  --point-70: #7a1c30;
+  --point-5: #fbeff0;
+  --point-50: #d63d4a;
+  --point-60: #ab2b36;
+  --point-70: #7a1f26;
 
   /* ── 의미 토큰 (컴포넌트는 이것만 쓴다) ────────────────── */
-  --c-canvas: var(--gray-0); /* 앱 바탕: 순백 */
-  --c-bg: var(--gray-0); /* 시트·다이얼로그 면 */
-  --c-bg-outer: #eef2f7; /* 데스크톱 L자 프레임(레일) 바탕 — 한성 블루 쪽으로 한 단계 */
-  --c-panel: #f2f5f9; /* 흰 페이지 위의 패널 — 선 대신 이 한 단계로 나눈다 */
-  --c-panel-strong: #e6ebf2; /* 패널 위 누름·선택·입력 칸 */
-  --c-surface: var(--c-panel);
+  --c-bg: var(--gray-0);
+  --c-bg-outer: var(--gray-5); /* 프레임 바깥(데스크톱) 배경 */
+  --c-surface: var(--gray-5);
   --c-text: var(--gray-90);
-  --c-text-sub: var(--gray-60);
-  --c-text-muted: var(--gray-50);
+  --c-text-sub: var(--gray-70);
+  --c-text-muted: var(--gray-50); /* 흰 배경 위 캡션 전용 (회색 면 위에서는 text-sub) */
   --c-placeholder: var(--gray-50);
-  --c-border-strong: var(--gray-50);
-  /* 테두리 토큰은 비워 둔다: 얇은 선으로 감싸는 대신 면으로 구분한다 (선명한 화면 모드에서만 다시 켠다) */
-  --c-border: transparent;
-  --c-border-soft: transparent;
-  --c-divider: transparent; /* 구분선도 쓰지 않는다: 간격과 면으로 나눈다 */
-  --c-grid-line: #e7ebf1; /* 시간표 격자 전용의 아주 옅은 선 (달력은 예외로 허용) */
-  --c-line: transparent;
+  --c-border-strong: var(--gray-60);
+  --c-border: var(--gray-30);
+  --c-border-soft: var(--gray-20);
+  --c-divider: var(--gray-10);
 
-  --c-action: var(--primary-50); /* 기본 버튼 면 = 한성 블루 (흰 글자 7.2:1) */
+  --c-action: var(--primary-50); /* 버튼 배경·보더·활성 표시·포커스 */
   --c-action-hover: var(--primary-60);
   --c-action-pressed: var(--primary-70);
-  --c-action-text: var(--primary-50); /* 링크·활성 탭 글자 (흰 배경 7.2:1) */
+  --c-action-text: var(--primary-60); /* 링크·활성 탭 글자 */
   --c-action-bg: var(--primary-5);
   --c-action-bg-strong: var(--primary-10);
   --c-on-action: var(--gray-0);
-  --c-accent: var(--primary-50); /* 표시용 막대·밑줄 */
-  --c-ink: var(--primary-80); /* 진한 강조 면(초대 코드·밥약 패널) — 흰 글자 14:1 */
 
-  --c-disabled-bg: var(--gray-10);
+  --c-disabled-bg: var(--gray-20);
   --c-disabled-text: var(--gray-50);
 
   --c-danger: var(--danger-50);
@@ -132,44 +120,36 @@
   --c-select-error: var(--point-60);
 
   /* 시간표에서 사람/영역을 구분하는 범주 색 (색만으로 의미를 전달하지 않도록 항상 이름과 함께 쓴다) */
-  --m-1: #5c5000;
-  --m-2: #1f7a45;
-  --m-3: #b05a0a;
-  --m-4: #c4304f;
-  --m-5: #8a5a2b; /* 갈색 — 수업 블록·버튼의 한성 블루와 겹치지 않게 (흰 바탕 5.6:1) */
-  --m-6: #7d3fa0;
-  --m-7: #0f7470;
-  --m-8: #4f5968;
+  --m-1: #052b57; /* secondary-80: 인디고(행위색)와 겹치지 않게 */
+  --m-2: #228738;
+  --m-3: #c2650a;
+  --m-4: #d63d4a;
+  --m-5: #0b78cb;
+  --m-6: #a23bbd;
+  --m-7: #0e8a8a;
+  --m-8: #58616a;
 
-  /* ── 라운드 — 타이트 한 가지(4·6·8). 알약은 쓰지 않는다, 진짜 원은 --r-round ── */
+  /* ── 라운드 (사용자 지정 4px) ──────────────────────────── */
   --r-xs: 2px;
-  --r: 4px; /* 버튼·입력·배지 */
-  --r-lg: 6px; /* 패널·카드 */
-  --r-xl: 8px; /* 시트·다이얼로그 */
-  --r-pill: 4px;
-  --r-round: 50%;
+  --r: 4px;
+  --r-pill: 1000px; /* 원형 컨트롤·필터 칩·토글 */
 
-  /* ── 타이포 — 앱 화면: 제목 26px 이하, 숫자는 48px 미만 ─────────── */
-  --fs-display: 2.6rem;
-  --fs-h1: 2.6rem;
-  --fs-h2: 2.2rem;
-  --fs-h3: 1.9rem;
-  --fs-h4: 1.7rem;
-  --fs-h5: 1.5rem;
-  --fs-lg: 1.8rem;
-  --fs-md: 1.6rem;
-  --fs-sm: 1.45rem;
-  --fs-xs: 1.25rem;
+  /* ── 타이포 ───────────────────────────────────────────── */
+  --fs-display: 2.8rem; /* Heading xlarge (mobile) */
+  --fs-h1: 2.4rem; /* Heading large (mobile) — 화면 제목 */
+  --fs-h2: 2.2rem; /* Heading medium */
+  --fs-h3: 1.9rem; /* Heading small — 섹션 제목 */
+  --fs-h4: 1.7rem; /* Heading xsmall */
+  --fs-h5: 1.5rem; /* Heading xxsmall */
+  --fs-lg: 1.9rem; /* Body large */
+  --fs-md: 1.7rem; /* Body medium — 본문 기본 */
+  --fs-sm: 1.5rem; /* Body small — 캡션·보조 */
+  --fs-xs: 1.3rem; /* Body xsmall — 메타·탭 라벨 */
   --fw-regular: 400;
-  --fw-medium: 500;
-  --fw-bold: 650;
-  --fw-heavy: 750;
-  --lh: 1.55;
-  --lh-tight: 1.25;
-  --tracking-tight: -0.02em;
-  --tracking-label: 0.02em; /* 소제목(eyebrow) */
+  --fw-bold: 700;
+  --lh: 1.5;
 
-  /* ── 간격 ─────────────────────────────────────────────── */
+  /* ── 간격 (compact: gutter 16, 카드 패딩 16, 섹션 간격 24) ─ */
   --sp-1: 0.2rem;
   --sp-2: 0.4rem;
   --sp-3: 0.8rem;
@@ -180,54 +160,42 @@
   --sp-8: 2.4rem;
   --sp-9: 3.2rem;
   --sp-10: 4rem;
-  --gutter: 2rem;
-  --section-gap: 3.2rem;
+  --gutter: 1.6rem;
+  --section-gap: 2.4rem;
 
-  /* ── 컨트롤 높이 ──────────────────────────────────────── */
+  /* ── 컨트롤 높이 (KRDS 5단계) ─────────────────────────── */
   --h-xs: 3.2rem;
   --h-sm: 4rem;
   --h-md: 4.8rem;
   --h-lg: 5.6rem;
   --h-xl: 6.4rem;
-  --touch: 4.4rem;
+  --touch: 4.4rem; /* 터치 대상 최소 */
 
   /* ── 레이아웃 ─────────────────────────────────────────── */
-  --frame-max: 520px; /* 모바일 컬럼 폭. 1024px 이상에서는 base.css 가 레일 + 넓은 판으로 바꾼다 */
-  --sheet-max: 520px; /* 시트·토스트·전체 화면 안내는 넓은 화면에서도 이 폭 */
-  --content-max: 112rem; /* 데스크톱 본문 폭: 12열(77px) + 거터 16px ≈ 1100px + 좌우 여백 */
-  --rail-w: 23rem; /* 데스크톱 왼쪽 탭 레일 폭 */
-  --header-h: 5.6rem;
-  --tabbar-h: 6.4rem; /* 하단 탭바 본체 높이 */
-  --tabbar-gap: 0rem; /* 탭바는 화면 바닥에 붙는다 */
+  --frame-max: 480px; /* 모바일 프레임 폭. 이보다 넓은 화면에서도 가운데 정렬 */
+  --header-h: 5.6rem; /* KRDS GNB 56px */
+  --tabbar-h: 5.6rem;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  /* ── 모션 ─────────────────────────────────────────────── */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --t-quick: 0.14s var(--ease-out);
-  --t-base: 0.22s var(--ease-out);
-  --t-fade: 0.2s linear;
-  --t-collapse: 0.32s var(--ease-out);
-  --t-sheet: 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+  /* ── 모션: KRDS 400ms, 스프링·바운스 금지 ──────────────── */
+  --t-base: 0.4s ease-in-out;
+  --t-fade: 0.4s linear;
+  --t-collapse: 0.4s ease;
 
-  /* ── 깊이: 쉬고 있는 면에는 선도 그림자도 없다. 진짜 떠 있는 것(메뉴·시트·토스트)만 그림자 ── */
-  --shadow-hair: none;
-  --shadow-card: none;
-  --shadow-raised: 0 8px 24px -12px rgba(12, 36, 92, 0.22);
-  --shadow-drop: var(--shadow-raised);
-  --shadow-modal: 0 24px 64px -20px rgba(12, 36, 92, 0.4);
+  /* ── 깊이: 보더가 기본, 그림자는 드롭/모달/토스트에만 ──── */
+  --shadow-drop: 0 0.2rem 0 0 rgba(0, 0, 0, 0.04), 0 0.4rem 0.8rem 0 rgba(0, 0, 0, 0.12);
+  --shadow-modal: 0 0.2rem 0 0 rgba(0, 0, 0, 0.06), 0 0.8rem 2.4rem 0 rgba(0, 0, 0, 0.2);
 
-  /* ── 포커스: 면색 2px 간격 + 진한 블루 3px (흰 배경 11:1) ─ */
-  --focus-ring: 0 0 0 2px var(--c-bg), 0 0 0 5px var(--primary-70);
+  /* ── 포커스: 흰 간격 2px + 정부 인디고 3px (모든 인터랙티브 요소) ─ */
+  --focus-ring: 0 0 0 2px var(--gray-0), 0 0 0 5px var(--primary-50);
 
-  --backdrop: rgba(8, 18, 40, 0.5);
+  --backdrop: rgba(0, 0, 0, 0.5);
 }
 
 /* ── 선명한 화면 모드 (High-contrast) ──────────────────────
-   같은 컴포넌트가 의미 토큰만 바꿔 끼운다. 옅은 면·그림자를 걷어 내고 흑백 + 진한 블루로. */
+   같은 컴포넌트가 의미 토큰만 바꿔 끼운다. */
 :root[data-contrast='high'] {
-  --c-canvas: var(--gray-0);
   --c-text: var(--gray-100);
   --c-text-sub: var(--gray-100);
   --c-text-muted: var(--gray-80);
@@ -236,16 +204,13 @@
   --c-border: var(--gray-90);
   --c-border-soft: var(--gray-70);
   --c-divider: var(--gray-60);
-  --c-line: var(--gray-100);
 
   --c-action: var(--primary-70);
   --c-action-hover: var(--primary-80);
   --c-action-pressed: var(--primary-90);
-  --c-action-text: var(--primary-70);
+  --c-action-text: var(--primary-80);
   --c-action-bg: var(--gray-0);
   --c-action-bg-strong: var(--primary-10);
-  --c-accent: var(--primary-70);
-  --c-ink: var(--gray-100);
 
   --c-disabled-bg: var(--gray-20);
   --c-disabled-text: var(--gray-70);
@@ -258,20 +223,16 @@
   --c-surface: var(--gray-0);
   --c-bg-outer: var(--gray-0);
 
-  --shadow-hair: 0 0 0 2px var(--gray-100);
-  --shadow-card: 0 0 0 2px var(--gray-100);
-  --shadow-raised: 0 0 0 2px var(--gray-100);
-
   --focus-ring: 0 0 0 2px var(--gray-0), 0 0 0 6px var(--gray-100);
 }
 
+/* OS 가 "대비 높이기"를 요청했고 사용자가 직접 고르지 않았다면 선명한 화면으로 시작 (DisplaySettings 가 data 속성을 설정) */
+
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --t-quick: 0s;
     --t-base: 0s;
     --t-fade: 0s;
     --t-collapse: 0s;
-    --t-sheet: 0s;
   }
   *,
   *::before,

@@ -6,7 +6,7 @@ import { useAuth } from '../auth';
 import type { User } from '../types';
 import { AppHeader } from '../shell/Shell';
 import { cacheKey, startKeyDerivation } from '../school/loginKey';
-import { Alert, Button, PasswordField, Reveal, TextField, btnClass } from '../ui';
+import { Alert, Button, PasswordField, TextField, btnClass } from '../ui';
 import './auth.css';
 
 const ID_FIELD = 'login-id';
@@ -76,28 +76,18 @@ export default function Login() {
   return (
     <>
       <AppHeader bare />
-      <main id="main" className="app-main auth-main auth-split">
-        <Reveal className="auth-hero">
-          <img className="auth-hero__mark" src="/brand/mark.png" alt="" width="56" height="56" />
-          <p className="auth-hero__brand">
-            상상Book<i>-</i>E
-          </p>
-          <p className="auth-hero__slogan">
-            예약도, 팀도,
-            <br />
-            상상처럼<i>.</i>
-          </p>
-          <p className="auth-hero__sub">한성 캠퍼스의 시간표 · 회의실 · 사람을 한곳에서.</p>
-          {/* 넓은 화면에서만 보이는 기능 목차 — 왼쪽 판의 빈 자리를 인쇄물 목차처럼 채운다 */}
-          <ol className="auth-index" aria-label="상상Book-E로 할 수 있는 일">
-            <li>시간표를 모아 빈 시간 찾기</li>
-            <li>회의실 예약과 팀 회의</li>
-            <li>라운지에서 밥약 · 미팅</li>
-          </ol>
-        </Reveal>
+      <main id="main" className="app-main auth-main">
+        <div className="auth-hero">
+          <img
+            className="auth-logo"
+            src="/brand/logo.png"
+            alt="상상Book-E · 예약도, 팀도, 상상처럼!"
+            width="720"
+            height="559"
+          />
+        </div>
 
-        <div className="auth-split__form">
-        <Reveal delay={0.08} className="auth-card" role="region" aria-labelledby="login-title">
+        <section className="auth-card" aria-labelledby="login-title">
           <h1 className="auth-card__title" id="login-title">
             로그인
           </h1>
@@ -151,14 +141,13 @@ export default function Login() {
               {pending ? pendingLabel : '로그인'}
             </Button>
           </form>
-        </Reveal>
+        </section>
 
         <div className="auth-foot">
           <span>아직 계정이 없나요?</span>
           <Link to="/signup" className={btnClass({ variant: 'text' })}>
             회원가입
           </Link>
-        </div>
         </div>
       </main>
     </>

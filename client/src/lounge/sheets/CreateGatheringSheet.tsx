@@ -475,7 +475,7 @@ function CreateForm({
                     aria-pressed={on}
                     onClick={() => setTags(on ? tags.filter((x) => x !== t) : [...tags, t])}
                   >
-                    <Icon name="check" className="tag__check" />
+                    {on && <Icon name="check" className="tag__check" />}
                     {t}
                   </button>
                 );

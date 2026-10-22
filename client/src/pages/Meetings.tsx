@@ -7,7 +7,6 @@ import { useAuth } from '../auth';
 import { Alert, Button, EmptyState, Icon, LoadingBlock, Sheet, TextField, useToast } from '../ui';
 import type { Meeting } from '../types';
 import './meetings.css';
-import { StaggerList, StaggerItem } from '../ui/motion';
 
 type SheetKind = 'create' | 'join';
 
@@ -189,9 +188,10 @@ export default function Meetings() {
   return (
     <>
       <AppHeader />
-      <main id="main" className="app-main meetings-page">
+      <main id="main" className="app-main">
         <div className="page-head">
-          <h1 className="page-title">우리의 회의</h1>
+          <h1 className="page-title">회의</h1>
+          <p className="page-lead">회의를 만들어 코드를 공유하거나, 받은 코드로 참가해 보세요.</p>
         </div>
 
         <div className="meet-actions">
@@ -241,10 +241,10 @@ export default function Meetings() {
               />
             </div>
           ) : (
-            <div className="meet-card--rows">
-              <StaggerList className="list meet-ul">
+            <div className="card meet-card--rows">
+              <ul className="list meet-ul">
                 {meetings.map((m) => (
-                  <StaggerItem key={m.id}>
+                  <li key={m.id}>
                     <Link to={`/meetings/${m.id}`} className="list__item list__item--link">
                       <div className="list__body">
                         <div className="list__main">{m.name}</div>
@@ -258,9 +258,9 @@ export default function Meetings() {
                       </span>
                       <Icon name="chevron-right" className="list__chev" />
                     </Link>
-                  </StaggerItem>
+                  </li>
                 ))}
-              </StaggerList>
+              </ul>
             </div>
           )}
         </section>

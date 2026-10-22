@@ -29,38 +29,17 @@
   justify-content: space-between;
   gap: var(--sp-1) var(--sp-4);
 }
-/* 카드 맨 위 숫자 두 칸: 라벨은 작게, 숫자는 크게. 좁거나 글자가 커지면 줄바꿈 */
 .school-eclass__tally {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
-  gap: var(--sp-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
   margin: 0;
-  background: transparent;
-  border: 0;
-  border-radius: var(--r);
-  overflow: hidden;
   font-size: var(--fs-xs);
   color: var(--c-text-sub);
 }
-.school-eclass__tally > button {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-2);
-  padding: var(--sp-3) var(--sp-4);
-  background: var(--c-bg);
-  border: 0;
-  min-height: var(--touch);
-  color: var(--c-text-sub);
-  font: inherit;
-  cursor: pointer;
-}
-.school-eclass__tally > button[aria-pressed='true'] { background: var(--c-action-bg-strong); color: var(--c-action-text); font-weight: var(--fw-bold); }
-.school-eclass__tally > button:focus-visible { outline: 2px solid var(--c-action); outline-offset: -3px; }
 .school-eclass__tally b {
-  font-size: var(--fs-h2);
-  font-weight: var(--fw-bold);
-  line-height: 1.1;
+  margin-left: 0.15rem;
+  font-size: var(--fs-sm);
   color: var(--c-text);
 }
 .school-eclass__groups {

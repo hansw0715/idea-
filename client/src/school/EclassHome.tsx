@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth';
 import type { EclassItem, EclassSnapshot } from '../../../shared/school/eclass';
-import { Alert, Badge, Button, Icon, LoadingBlock, btnClass } from '../ui';
+import { Alert, Badge, Button, Icon, LoadingBlock, Segmented, btnClass } from '../ui';
 import { schoolApi } from './api';
 import { isCredentialFailure, needsRelink, schoolErrorMessage } from './errors';
 import {
@@ -28,8 +28,7 @@ import { useSchool } from './SchoolContext';
 import './eclass.css';
 
 type KindFilter = 'lecture' | 'assignment';
-/** 처음에는 마감 순 한 건, 더 보기로 세 건씩 늘린다. */
-const PAGE = 1;
+const PAGE = 5;
 
 /** 강좌 이름 정리: [분반] 표기와 NEW 표시를 떼어 낸다 */
 function courseLabel(name: string): string {
@@ -154,7 +153,7 @@ export default function EclassHome() {
   const head = (
     <div className="section__head">
       <h2 className="section__title" id="eclass-title">
-        미수강 강의
+        미수강 강의 알림
       </h2>
     </div>
   );
@@ -165,7 +164,8 @@ export default function EclassHome() {
       <section className="section" aria-labelledby="eclass-title">
         {head}
         <div className="card school-eclass-empty">
-          <p className="text-sub text-sm">학교 계정을 연동하면 남은 강의·과제가 보여요.</p>
+          <p className="bold">남은 강의와 과제를 홈에서 확인해요</p>
+          <p className="text-sub text-sm">학교 계정을 연동하면 미수강 강의와 미제출 과제, 마감까지 남은 시간을 볼 수 있어요.</p>
           <Link to="/account" className={btnClass({ variant: 'secondary' })}>
             학교 계정 연동하기
           </Link>
@@ -178,7 +178,8 @@ export default function EclassHome() {
       <section className="section" aria-labelledby="eclass-title">
         {head}
         <div className="card school-eclass-empty">
-          <p className="text-sub text-sm">이 기기에서는 다시 로그인해야 보여요.</p>
+          <p className="bold">이 기기에서는 e-class를 확인할 수 없어요</p>
+          <p className="text-sub text-sm">로그아웃한 뒤 다시 로그인하면 이 기기에서도 확인할 수 있어요.</p>
         </div>
       </section>
     );
@@ -224,19 +225,6 @@ export default function EclassHome() {
         </div>
       ) : (
         <div className="card school-eclass">
-          {/* 핵심 숫자 두 개를 카드 맨 위에: 이것만 봐도 오늘 할 일을 안다 */}
-          <div className="school-eclass__tally" role="group" aria-label="강의·과제 선택">
-            {(['lecture', 'assignment'] as const).map(value => (
-              <button key={value} type="button" aria-pressed={kind === value} onClick={() => {
-                setKind(value);
-                setShowDone(false);
-                setLimit(PAGE);
-              }}>
-                {value === 'lecture' ? '미수강 강의' : '미제출 과제'}
-                <b className="tabular">{value === 'lecture' ? counts?.pendingLectures ?? 0 : counts?.pendingAssignments ?? 0}</b>
-              </button>
-            ))}
-          </div>
           {counts && counts.unknownCompletion > 0 && (
             <p className="text-sub text-sm">완료 여부를 확인하지 못한 {counts.unknownCompletion}개는 위 숫자에 넣지 않았어요.</p>
           )}
@@ -250,6 +238,46 @@ export default function EclassHome() {
               </ul>
             </Alert>
           )}
+
+          <div className="school-eclass__filters">
+            {/* 항목 종류 줄 오른쪽 끝에 이번주 완료 보기(글자 버튼), 강의/과제 버튼 아래에 미수강·미제출 개수 */}
+            <Segmented<KindFilter>
+              label="항목 종류"
+              labelAction={
+                <button
+                  type="button"
+                  className="school-eclass__textbtn"
+                  aria-pressed={showDone}
+                  onClick={() => {
+                    setShowDone((v) => !v);
+                    setLimit(PAGE);
+                  }}
+                >
+                  {showDone && <Icon name="check" className="btn__icon" />}
+                  이번주 완료 {kind === 'lecture' ? '강의' : '과제'} 보기
+                </button>
+              }
+              value={kind}
+              onChange={(v) => {
+                setKind(v);
+                setLimit(PAGE);
+              }}
+              options={[
+                { value: 'lecture', label: '강의' },
+                { value: 'assignment', label: '과제' },
+              ]}
+            />
+            <div className="school-eclass__toggle">
+              <p className="school-eclass__tally" aria-label="확인된 강의와 과제 요약">
+                <span>
+                  미수강 강의 <b className="tabular">{counts?.pendingLectures ?? 0}</b>
+                </span>
+                <span>
+                  미제출 과제 <b className="tabular">{counts?.pendingAssignments ?? 0}</b>
+                </span>
+              </p>
+            </div>
+          </div>
 
           {visible.length === 0 ? (
             // "챙길 …가 없어요" 문구는 두지 않는다(비어 있으면 아무것도 그리지 않는다)
@@ -286,19 +314,12 @@ export default function EclassHome() {
           )}
 
           {visible.length > limit && (
-            <Button variant="secondary" block onClick={() => setLimit((n) => n + 3)}>
-              더 보기 ({Math.min(limit, visible.length)}/{visible.length})
+            <Button variant="secondary" block onClick={() => setLimit((n) => n + PAGE)}>
+              {PAGE}개 더 보기 ({Math.min(limit, visible.length)}/{visible.length})
             </Button>
           )}
 
           <div className="school-eclass__foot">
-            <button type="button" className="school-eclass__textbtn" aria-pressed={showDone} onClick={() => {
-              setShowDone(v => !v);
-              setLimit(PAGE);
-            }}>
-              {showDone ? '미완료 보기' : '이번 주 완료 보기'}
-              <span className="sr-only"> {kind === 'lecture' ? '강의' : '과제'}</span>
-            </button>
             <span className="school-eclass__stamp">
               {stale ? '최근 정보가 아닐 수 있어요. ' : ''}
               마지막 확인 {syncedAt === null ? '-' : formatDue(snapshot.syncedAt)}

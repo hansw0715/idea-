@@ -524,7 +524,7 @@ export default function BookingFlow({
                               aria-label={`${dayText(s.day)} ${fmtRange(s.start, s.end)}, ${fmtDuration(s.end - s.start)}`}
                               onClick={() => pickSlot(s)}
                             >
-                              <Icon name="check" className="tag__check" />
+                              {chosen && <Icon name="check" className="tag__check" />}
                               <span className="tabular">{fmtRange(s.start, s.end)}</span>
                               <span className="text-sm">({fmtDuration(s.end - s.start)})</span>
                             </button>
@@ -654,7 +654,7 @@ export default function BookingFlow({
                         setSelectedDate(d);
                       }}
                     >
-                      <Icon name="check" className="tag__check" />
+                      {chosen && <Icon name="check" className="tag__check" />}
                       {fmtDate(d)}
                       {d === todayStr() && <span className="text-sm">오늘</span>}
                     </button>

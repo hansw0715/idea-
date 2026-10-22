@@ -11,7 +11,6 @@ import TableSheet from './sheets/TableSheet';
 import { isEnded } from './world/tables';
 import { useGatherings } from './world/useGatherings';
 import './hub.css';
-import { StaggerList, StaggerItem, Reveal } from '../ui/motion';
 
 /**
  * 라운지 첫 화면 (/lounge): 큰 버튼 두 개 — 위는 밥약(가까운 학우와 바로 연결), 아래는 미팅(자리에 앉아 참여).
@@ -32,7 +31,7 @@ export default function LoungePage() {
   return (
     <>
       <AppHeader />
-      <main id="main" className="app-main lounge-page">
+      <main id="main" className="app-main">
         <div className="page-head">
           <h1 className="page-title">라운지</h1>
           <p className="page-lead">같이 밥 먹을 사람, 같이 만날 사람을 찾아요.</p>
@@ -95,7 +94,7 @@ function LoungeHome({ profile }: { profile: Profile }) {
         </Alert>
       )}
 
-      <Reveal className="lounge-hub">
+      <div className="lounge-hub">
         <button type="button" className="lounge-hub-btn lounge-hub-btn--meal" disabled={banned} onClick={() => setQuickOpen(true)}>
           <Icon name="utensils" className="lounge-hub-btn__icon" />
           <span>
@@ -119,7 +118,7 @@ function LoungeHome({ profile }: { profile: Profile }) {
             <Icon name="chevron-right" />
           </span>
         </Link>
-      </Reveal>
+      </div>
 
       {mine.length > 0 && (
         <section className="section lounge-hub-mine" aria-labelledby="lounge-mine-title">
@@ -128,13 +127,13 @@ function LoungeHome({ profile }: { profile: Profile }) {
               내 약속
             </h2>
           </div>
-          <StaggerList className="card card--list">
+          <ul className="card card--list">
             {mine.map((g) => (
-              <StaggerItem key={g.id}>
+              <li key={g.id}>
                 <GatheringListItem gathering={g} onOpen={openTable} />
-              </StaggerItem>
+              </li>
             ))}
-          </StaggerList>
+          </ul>
         </section>
       )}
 

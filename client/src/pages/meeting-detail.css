@@ -62,25 +62,11 @@
 
 .mtg-chip {
   min-height: var(--touch);
-  max-width: 100%;
-  flex-wrap: wrap;
 }
 
-.mtg-chip__name { min-width: 0; overflow-wrap: anywhere; }
-
-/* Reserve selection affordances so toggling cannot move neighbouring chips. */
-.mtg-chip,
-.mtg-chip[aria-pressed='true'],
-.mtg-slot,
-.mtg-slot[aria-pressed='true'],
-.mtg-date,
-.mtg-date[aria-pressed='true'] {
-  font-weight: var(--fw-medium);
-}
-.mtg-chip[aria-pressed='false'] .tag__check,
-.mtg-slot[aria-pressed='false'] .tag__check,
-.mtg-date[aria-pressed='false'] .tag__check {
-  visibility: hidden;
+.mtg-chip__off {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
 }
 
 .mtg-members__warn {
@@ -110,12 +96,7 @@
   flex: none;
   width: 1.2rem;
   height: 1.2rem;
-  border-radius: var(--r-xs);
-}
-
-/* Match the fifth member's lane texture without introducing decorative numbers. */
-.member-swatch--patterned {
-  background-image: repeating-linear-gradient(0deg, transparent 0 3px, var(--c-bg) 3px 4px) !important; /* taste-skill-ignore: 빈 시간 무늬 */
+  border-radius: 50%;
 }
 
 .mtg-grid {
@@ -452,37 +433,4 @@
   margin-top: var(--sp-1);
   font-size: var(--fs-sm);
   color: var(--c-text-sub);
-}
-
-.meeting-detail-head { padding-top: var(--sp-5); }
-.meeting-detail-head .eyebrow { margin-bottom: var(--sp-3); }
-.meeting-detail-head .page-title { overflow-wrap: anywhere; }
-.meeting-detail-page .mtg-code { position: relative; padding: var(--sp-6); background: var(--c-action-bg); color: var(--c-text); border-radius: var(--r-lg); }
-.meeting-detail-page .mtg-code__label,
-.meeting-detail-page .mtg-code__value { color: var(--c-action-text); }
-.meeting-detail-page .mtg-code__value { font-size: var(--fs-display); font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
-.meeting-detail-page .mtg-code__row .btn { background: var(--c-bg); color: var(--c-text); }
-.meeting-detail-page .mtg-res { padding: var(--sp-5); margin-bottom: var(--sp-3); background: var(--c-bg); border: 0; border-radius: var(--r-lg); }
-.meeting-detail-page .mtg-res__title { overflow-wrap: anywhere; }
-.meeting-detail-page .mtg-res-list { padding: 0; }
-:root[data-contrast='high'] .meeting-detail-page .mtg-res { outline: 2px solid var(--c-border); }
-
-/* Let the available reading width decide when the workspace splits. */
-.meeting-detail-page { container-type: inline-size; }
-.mtg-workspace { display: grid; gap: var(--sp-7); margin-bottom: var(--sp-8); }
-.mtg-workspace > *, .mtg-workspace-overview { min-width: 0; }
-.mtg-workspace-overview > .section:last-child { margin-bottom: 0; }
-.mtg-workspace-reservations { padding: var(--sp-6); background: var(--c-surface); border-radius: var(--r-lg); }
-.meeting-detail-page .mtg-code .text-sub,
-.meeting-detail-page .mtg-code .field__help { color: inherit; }
-.meeting-detail-page .mtg-code__value { max-width: 100%; overflow-wrap: anywhere; }
-.mtg-workspace-timetable { padding-top: var(--sp-7); border-top: 1px solid var(--c-divider); }
-.meeting-detail-page .mtg-danger .btn { width: auto; }
-@container (min-width: 64rem) {
-  .mtg-workspace { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: start; gap: var(--sp-8); }
-  .mtg-workspace { grid-template-areas: 'overview reservations'; }
-  .mtg-workspace-overview { grid-area: overview; }
-  .mtg-workspace-reservations { grid-area: reservations; }
-  .mtg-workspace-reservations { margin: 0; }
-  .mtg-workspace-timetable > .section__head { margin-bottom: var(--sp-6); }
 }
