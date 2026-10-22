@@ -36,6 +36,7 @@ export default function HomeNotices() {
     <>
       <NoticeTable
         id="home-notice-school"
+        panel
         title="학교 공지"
         section={data?.school ?? null}
         loading={!data && !failed}
@@ -83,7 +84,7 @@ export default function HomeNotices() {
 
 interface NoticeTableProps {
   id: string;
-  /** 옅은 회색 면 상자로 (학과 공지) */
+  /** 옅은 회색 면 상자로 (학교·학과 공지) */
   panel?: boolean;
   title: string;
   section: NoticeSection | null;
