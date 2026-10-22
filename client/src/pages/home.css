@@ -145,8 +145,9 @@
   font-size: var(--fs-h2);
 }
 .home-page .section .card {
-  border-color: var(--c-border-soft);
+  border-color: transparent;
   border-radius: var(--home-r);
+  background: var(--c-panel);
 }
 
 /* ── 내 일정 표: 굵은 제목 + 더 보기, 아래 둥근 상자 안에 한 줄씩 ─────────── */
@@ -188,10 +189,21 @@
   margin: 0;
   padding: var(--sp-4) 0;
   list-style: none;
-  border: 1px solid var(--c-border-soft);
+  border: 0;
   border-radius: var(--home-r);
-  background: var(--c-bg);
+  background: var(--c-panel);
   overflow: hidden;
+}
+
+/* 상자 안 빈 상태·안내 문장 */
+.home-sum__empty {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-7);
+  font-size: var(--fs-md);
+  color: var(--c-text-sub);
+}
+.home-sum__empty a {
+  color: var(--c-action-text);
 }
 
 /* 한 줄: 굵은 이름 · 흐린 미리보기 · 오른쪽 동그라미 개수 */
@@ -252,7 +264,7 @@
   margin-top: var(--sp-2);
   padding: var(--sp-3) var(--sp-7);
   border: 0;
-  border-top: 1px solid var(--c-divider);
+  border-top: 1px solid var(--c-panel-strong);
   background: none;
   font: inherit;
   font-size: var(--fs-sm);
@@ -266,11 +278,11 @@
 }
 
 @media (hover: hover) {
+  .home-table__row:hover {
+    background: var(--c-panel-strong);
+  }
   .home-table__toggle:hover {
     color: var(--c-action-text);
-  }
-  .home-table__row:hover {
-    background: var(--c-surface);
   }
 }
 

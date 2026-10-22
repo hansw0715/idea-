@@ -87,6 +87,10 @@
   --c-bg: var(--gray-0);
   --c-bg-outer: var(--gray-5); /* 프레임 바깥(데스크톱) 배경 */
   --c-surface: var(--gray-5);
+  /* 흰 페이지 위의 옅은 회색 면 — 선 대신 이 면으로 구역을 나눈다 (홈 공지·일정 상자, 시간표 주 이동·탭) */
+  --c-panel: #f2f4f8;
+  --c-panel-strong: #e6e9f0;
+  --r-panel: 1.2rem;
   --c-text: var(--gray-90);
   --c-text-sub: var(--gray-70);
   --c-text-muted: var(--gray-50); /* 흰 배경 위 캡션 전용 (회색 면 위에서는 text-sub) */
@@ -221,6 +225,8 @@
   --c-warning: var(--warning-70);
   --c-info: var(--info-70);
   --c-surface: var(--gray-0);
+  --c-panel: var(--gray-0);
+  --c-panel-strong: var(--gray-10);
   --c-bg-outer: var(--gray-0);
 
   --focus-ring: 0 0 0 2px var(--gray-0), 0 0 0 6px var(--gray-100);

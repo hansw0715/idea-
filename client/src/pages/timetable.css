@@ -93,3 +93,32 @@
   background: var(--c-bg);
   border-color: var(--c-border);
 }
+
+/* ── 옅은 회색 면: 주 이동 버튼·탭만 (격자는 그대로) ─────────────── */
+.tt-page .tt-weeknav__btn {
+  border: 0;
+  border-radius: var(--r-panel);
+  background: var(--c-panel);
+}
+@media (hover: hover) {
+  .tt-page .tt-weeknav__btn:not(:disabled):hover {
+    background: var(--c-panel-strong);
+  }
+}
+.tt-page .tabs {
+  gap: var(--sp-1);
+  padding: var(--sp-1);
+  border: 0;
+  border-radius: var(--r-panel);
+  background: var(--c-panel);
+}
+.tt-page .tabs__tab {
+  border: 0;
+  margin: 0;
+  border-radius: calc(var(--r-panel) - var(--sp-1));
+}
+.tt-page .tabs__tab[aria-selected='true'] {
+  background: var(--c-bg);
+  color: var(--c-action-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
