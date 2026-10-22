@@ -40,14 +40,42 @@
   margin-bottom: var(--sp-6);
 }
 
-/* 코드 입력: 큰 글자 · 넓은 자간 · 가운데 정렬 */
+/* 코드는 본문과 같은 서체로, 읽는 데 필요한 간격만 둔다. */
 .input.meet-code {
-  font-size: var(--fs-display);
-  letter-spacing: 0.4em;
-  text-indent: 0.4em; /* 끝의 자간만큼 밀려 보이는 것을 보정 */
+  font-size: var(--fs-h2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  text-indent: 0.06em;
   text-align: center;
 }
 
 .input.meet-code::placeholder {
   font-weight: var(--fw-regular);
+}
+
+.meetings-page .page-head { padding-top: var(--sp-5); }
+.meetings-page .eyebrow { margin-bottom: var(--sp-3); }
+.meetings-page .meet-actions { padding: var(--sp-6) 0 var(--sp-7); border-bottom: 1px solid var(--c-divider); }
+.meetings-page .meet-ul { display: grid; gap: var(--sp-4); }
+.meetings-page .meet-ul > li { border: 0; background: var(--c-bg); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
+.meetings-page .meet-ul .list__item { min-height: 10rem; padding: var(--sp-6); border-radius: var(--r-lg); flex-wrap: wrap; gap: var(--sp-4); }
+.meetings-page .meet-ul .list__body { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
+.meetings-page .meet-ul .list__main { font-size: var(--fs-lg); letter-spacing: -0.03em; }
+:root[data-contrast='high'] .meetings-page .meet-ul > li { outline: 2px solid var(--c-border); }
+
+/* 카드 최소 폭을 가용 폭으로 제한해 확대 시 한 열로 자연스럽게 돌아온다. */
+.meetings-page { container: meetings / inline-size; }
+.meetings-page .meet-ul { grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr)); align-items: stretch; }
+.meetings-page .meet-ul > li { min-width: 0; }
+.meetings-page .meet-ul .list__item { height: 100%; align-content: start; }
+.meetings-page .meet-ul .list__item::before { inset: 0; border-radius: inherit; }
+.meetings-page .meet-ul .code-chip { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+.meetings-page .code-chip { letter-spacing: 0.04em; }
+
+@container meetings (min-width: 64rem) {
+  .meetings-page .page-head { padding-top: var(--sp-7); }
+  .meetings-page .meet-actions { justify-content: flex-start; gap: var(--sp-4); }
+  .meetings-page .meet-actions > .btn { flex: 0 1 auto; min-width: 16rem; }
+  .meetings-page .meet-ul { gap: var(--sp-6); }
+  .meetings-page .meet-ul .list__item { min-height: 12rem; }
 }

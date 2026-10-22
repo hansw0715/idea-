@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Icon } from '../ui';
+import { AnimatePresence, motion } from 'motion/react';
+import { Icon, SPRING, pageVariants } from '../ui';
 import type { IconName } from '../ui';
 import { useDisplay } from '../ui/Display';
 import { LOUNGE_ENABLED } from '../features';
@@ -46,27 +47,35 @@ function ScrollToTop() {
   useEffect(() => {
     window.scrollTo(0, 0);
     const fixed = routeTitle(pathname);
+    let pendingFocus = !first.current;
+    first.current = false;
     const apply = () => {
-      const h1 = document.querySelector('h1');
+      const main = document.getElementById('main');
+      const h1 = main?.querySelector<HTMLElement>('h1');
       const name = fixed ?? h1?.textContent?.trim();
       document.title = name ? `${name} - ${SERVICE}` : SERVICE;
+      // Suspense and API loading can each finish after the route effect.
+      // Wait for the actual content, rather than focusing the header or spinner.
+      if (!pendingFocus || !main || main.querySelector('[aria-busy="true"]')) return;
+      const target = h1 ?? main;
+      pendingFocus = false;
+      target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
     };
+    // Once someone starts interacting, late content must not steal focus.
+    const cancelFocus = () => { pendingFocus = false; };
+    document.addEventListener('pointerdown', cancelFocus, true);
+    document.addEventListener('keydown', cancelFocus, true);
     apply();
     // 상세 화면처럼 제목이 데이터를 받은 뒤 정해지면 h1 변화를 따라간다.
     const observer = new MutationObserver(apply);
     const root = document.getElementById('root');
-    if (fixed === null && root) observer.observe(root, { childList: true, subtree: true, characterData: true });
-
-    if (first.current) {
-      first.current = false;
-    } else {
-      const target = document.querySelector<HTMLElement>('h1') ?? document.getElementById('main');
-      if (target) {
-        target.setAttribute('tabindex', '-1');
-        target.focus({ preventScroll: true });
-      }
-    }
-    return () => observer.disconnect();
+    if (root) observer.observe(root, { childList: true, subtree: true, characterData: true });
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('pointerdown', cancelFocus, true);
+      document.removeEventListener('keydown', cancelFocus, true);
+    };
   }, [pathname]);
   return null;
 }
@@ -81,18 +90,47 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
 
 export function TabBar() {
   return (
-    <nav className="tabbar" aria-label="주요 메뉴">
+    <motion.nav
+      className="tabbar"
+      aria-label="주요 메뉴"
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 24 }}
+      transition={SPRING}
+    >
+      {/* 데스크톱 레일 머리의 로고타입 (모바일에서는 CSS로 숨김) */}
+      <Link to="/" className="tabbar__brand" aria-label="상상Book-E 홈">
+        <span>
+          상상Book<i>-</i>E
+        </span>
+      </Link>
       <ul className="tabbar__list">
         {TABS.map((t) => (
-          <li key={t.to} style={{ display: 'contents' }}>
+          <li key={t.to}>
             <NavLink to={t.to} end={t.end} className="tabbar__item">
-              <Icon name={t.icon} className="tabbar__icon" />
-              <span>{t.label}</span>
+              {({ isActive }) => (
+                <>
+                  {/* 활성 칸 배경 알약: 탭을 옮기면 이전 칸에서 미끄러져 온다 */}
+                  {isActive && <motion.span layoutId="tabbar-pill" className="tabbar__pill" transition={SPRING} />}
+                  <Icon name={t.icon} className="tabbar__icon" />
+                  <span className="tabbar__label">{t.label}</span>
+                </>
+              )}
             </NavLink>
           </li>
         ))}
       </ul>
-    </nav>
+    </motion.nav>
+  );
+}
+
+/** 화면이 바뀔 때마다 새 화면을 살짝 띄워 올린다 (경로가 키라서 같은 화면 안의 상태 변화에는 반응하지 않는다) */
+function PageTransition({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return (
+    <motion.div key={pathname} className="app-page" variants={pageVariants} initial="initial" animate="enter">
+      {children}
+    </motion.div>
   );
 }
 
@@ -107,11 +145,23 @@ export function AppFrame({ children, tabs = true }: { children: ReactNode; tabs?
       </a>
       <ScrollToTop />
       <div className={`app-frame${showTabs ? ' has-tabbar' : ''}`}>
-        {children}
-        {showTabs && <TabBar />}
+        <PageTransition>{children}</PageTransition>
+        <AnimatePresence>{showTabs && <TabBar key="tabbar" />}</AnimatePresence>
       </div>
     </ShellContext.Provider>
   );
+}
+
+/** 페이지가 조금이라도 스크롤되면 true — 헤더 아래 구분선을 그때만 보인다 */
+function useScrolled(): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  return scrolled;
 }
 
 /* ── 상단 헤더 ─────────────────────────────────────────────── */
@@ -130,9 +180,12 @@ interface AppHeaderProps {
 export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppHeaderProps) {
   const { openSettings } = useDisplay();
   const hasBack = title !== undefined;
+  const scrolled = useScrolled();
 
   return (
-    <header className={`app-header${hasBack ? ' app-header--back' : ''}${bare ? ' app-header--bare' : ''}`}>
+    <header
+      className={`app-header${hasBack ? ' app-header--back' : ''}${bare ? ' app-header--bare' : ''}${scrolled ? ' is-scrolled' : ''}`}
+    >
       {hasBack ? (
         <>
           {backTo ? (
@@ -157,7 +210,9 @@ export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppH
         <>
           <Link to="/" className="app-header__brand" aria-label="상상Book-E 홈">
             <img className="app-header__mark" src="/brand/mark.png" alt="" width="32" height="32" />
-            <span>상상Book-E</span>
+            <span>
+              상상Book<i>-</i>E
+            </span>
           </Link>
           <span className="app-header__spacer" />
         </>

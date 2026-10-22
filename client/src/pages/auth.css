@@ -3,68 +3,112 @@
    색·간격·글자 크기는 styles/tokens.css 의 변수만 쓴다.
    ─────────────────────────────────────────────────────────────── */
 
-/* 로그인: 로고(위) → 입력 카드(화면 가운데) → 가입 링크(아래). 입력 카드가 화면 세로 가운데쯤에 놓인다. */
+/* 로그인: 큰 활자 히어로(위) → 흰 입력 카드 → 가입 링크(아래).
+   로고 이미지 대신 활자로 브랜드를 말한다 — 종이 위 잉크 인쇄물 같은 첫인상 */
 .auth-main {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   min-height: calc(100dvh - var(--header-h) - var(--safe-top));
-  padding-top: var(--sp-3);
+  padding-top: var(--sp-4);
   padding-bottom: var(--sp-8);
-  row-gap: var(--sp-6);
+  gap: var(--sp-8);
 }
 
 .auth-hero {
-  align-self: end;
-  display: flex;
-  justify-content: center;
+  position: relative;
+  padding-top: var(--sp-6);
 }
 
-.auth-logo {
-  display: block;
-  width: min(100%, 28rem);
-  height: auto;
-  /* 로고 이미지의 흰 배경이 페이지 흰색과 섞여 사각 테두리가 보이지 않게 한다 */
+.auth-hero__mark {
+  width: 5.6rem;
+  height: 5.6rem;
+  margin-bottom: var(--sp-7);
+  border-radius: var(--r-lg);
+  background: var(--c-bg);
+  box-shadow: var(--shadow-card);
   mix-blend-mode: multiply;
 }
 
+.auth-hero__brand {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.02em;
+  color: var(--c-text-sub);
+}
+
+.auth-hero__brand i,
+.auth-hero__slogan i {
+  font-style: normal;
+  color: var(--c-accent);
+}
+
+.auth-hero__slogan {
+  margin-top: var(--sp-3);
+  font-size: calc(var(--fs-display) * 1.35);
+  font-weight: var(--fw-heavy);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+  color: var(--c-text);
+  overflow-wrap: anywhere;
+}
+
+.auth-hero__sub {
+  margin-top: var(--sp-5);
+  max-width: 26em;
+  font-size: var(--fs-md);
+  color: var(--c-text-sub);
+}
+
 /* 회원가입 상단의 작은 로고 */
+.auth-logo {
+  display: block;
+  height: auto;
+  mix-blend-mode: multiply;
+}
 .auth-logo--sm {
   width: min(60%, 16rem);
   margin: 0 auto var(--sp-6);
 }
 
 .auth-card {
-  padding: var(--sp-8) var(--sp-6) var(--sp-6);
+  padding: var(--sp-8) var(--sp-7) var(--sp-7);
   background: var(--c-bg);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.auth-card .field:last-of-type {
+  margin-bottom: var(--sp-8);
 }
 
 .auth-card__title {
-  margin-bottom: var(--sp-6);
-  font-size: var(--fs-h3);
-  font-weight: var(--fw-bold);
-  text-align: center;
+  margin-bottom: var(--sp-7);
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-heavy);
+  letter-spacing: var(--tracking-tight);
 }
 
-.auth-main .auth-foot {
-  align-self: start;
-  margin-top: 0;
+.auth-main .auth-split__form .auth-foot {
+  margin-top: var(--sp-4);
 }
 
-/* 키보드가 올라오거나 화면이 낮으면 가운데 정렬 대신 위에서부터 쌓는다 */
-@media (max-height: 640px) {
+/* 기능 목차: 좁은 화면에서는 입력 카드를 먼저 보이도록 숨긴다 */
+.auth-index {
+  display: none;
+}
+
+/* 키보드가 올라오거나 화면이 낮으면 아래 정렬 대신 위에서부터 쌓는다 */
+@media (max-height: 680px) {
   .auth-main {
-    display: block;
+    justify-content: flex-start;
     min-height: 0;
   }
-  .auth-logo {
-    width: min(70%, 20rem);
-    margin: 0 auto var(--sp-6);
+  .auth-hero__mark {
+    display: none;
   }
-  .auth-main .auth-foot {
-    margin-top: var(--sp-6);
+  .auth-hero__slogan {
+    font-size: var(--fs-display);
   }
 }
 
@@ -135,4 +179,141 @@
   flex-direction: column;
   gap: var(--sp-4);
   margin-top: var(--sp-8);
+}
+
+/*
+ * ── 넓은 화면: 좌(활자·목차) / 우(입력) 두 판 ──
+ * 미디어 쿼리의 em 은 앱 글자 확대(--zoom → html font-size)를 따라가지 않는다.
+ * 그래서 프레임만 화면 폭으로 넓히고, 두 판 전환은 실제 페이지 폭을 rem 으로 재는 컨테이너 쿼리가 맡는다.
+ * (컨테이너 쿼리의 rem 은 실제 html 글자 크기 기준 → 글자 200% 면 96rem = 1920px 이 되어 한 열로 돌아온다)
+ */
+@media (min-width: 1024px) {
+  body:has(.auth-split) .app-frame {
+    max-width: 128rem;
+  }
+  .app-page:has(> .auth-split) {
+    container: authpage / inline-size;
+  }
+  /* 넓어진 프레임에서 한 열일 때는 읽기 폭으로 묶는다 */
+  .auth-split {
+    width: 100%;
+    max-width: 56rem;
+    margin-inline: auto;
+  }
+}
+
+@container authpage (min-width: 96rem) {
+  .auth-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 44rem);
+    column-gap: clamp(4.8rem, 7vw, 11.2rem);
+    width: 100%;
+    max-width: 120rem;
+    margin-inline: auto;
+    padding-inline: var(--sp-9);
+  }
+
+  /* 로그인: 두 판을 화면 세로 가운데에 */
+  .auth-main.auth-split {
+    align-items: center;
+    align-content: center;
+  }
+  .auth-main.auth-split .auth-hero {
+    padding-top: 0;
+  }
+  .auth-main.auth-split .auth-hero__slogan {
+    font-size: clamp(calc(var(--fs-display) * 1.6), 6vw, calc(var(--fs-display) * 2.3));
+    line-height: 1.02;
+  }
+  .auth-main.auth-split .auth-hero__sub {
+    font-size: var(--fs-lg);
+  }
+
+  .auth-index {
+    display: block;
+    max-width: 36rem;
+    margin-top: var(--sp-9);
+  }
+  .auth-index li {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-5);
+    padding-block: var(--sp-4);
+    border-top: 1px solid color-mix(in srgb, var(--c-text) 14%, transparent);
+    font-size: var(--fs-md);
+    font-weight: var(--fw-bold);
+    color: var(--c-text);
+  }
+  .auth-index li:last-child {
+    border-bottom: 1px solid color-mix(in srgb, var(--c-text) 14%, transparent);
+  }
+  .auth-index .mono {
+    flex: none;
+    font-size: var(--fs-sm);
+    color: var(--c-action-text); /* 한성 블루 — 흰 배경 7.2:1 */
+  }
+
+  .auth-main.auth-split .auth-card {
+    padding: var(--sp-9) var(--sp-8) var(--sp-8);
+  }
+
+  /* 회원가입: 왼쪽 제목·진행은 스크롤을 따라오고, 오른쪽에 단계 본문 */
+  .signup-page.auth-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 52rem);
+    align-items: start;
+    padding-top: var(--sp-9);
+  }
+  .signup-side {
+    position: sticky;
+    top: calc(var(--header-h) + var(--safe-top) + var(--sp-6));
+  }
+  .signup-page .signup-side .page-title {
+    font-size: clamp(3.4rem, 4.2vw, 5.2rem);
+  }
+  .signup-page .signup-side .page-lead {
+    max-width: 28em;
+  }
+  .signup-page .signup-side .auth-steps {
+    margin-bottom: 0;
+    max-width: 40rem;
+  }
+}
+
+/* 낮은 화면에서는 왼쪽 판이 따라오지 않고, 로그인도 위에서부터 쌓는다 (세로 가운데면 위가 잘린다) */
+@media (max-height: 600px) {
+  .signup-side {
+    position: static !important;
+  }
+  .auth-main.auth-split {
+    align-content: start !important;
+  }
+}
+
+/*
+ * 한 열(좁은 화면·글자 확대): 진행 표시는 현재 단계 중심 — 큰 "01 / 04" 와 제목만 보이고
+ * 네 단계 점 목록은 화면에서만 숨긴다 (화면 읽기 프로그램에는 단계 정보로 남긴다)
+ */
+@container authpage (max-width: 95.99rem) {
+  .signup-page .auth-steps .stepper {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 1023px) {
+  .signup-page .auth-steps .stepper {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+:root[data-contrast='high'] .auth-index li {
+  border-color: var(--c-border);
 }

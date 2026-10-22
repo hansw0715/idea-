@@ -258,7 +258,7 @@ export function GridLegend({ items = ['class', 'reservation'] }: { items?: Legen
                   : item === 'pending'
                     ? ' tt-swatch--pending'
                     : ''
-            }`}
+              }`}
             aria-hidden="true"
           />
           <span>{LEGEND_TEXT[item]}</span>
@@ -911,8 +911,8 @@ export default function TimetableGrid({
                           key={`${isReservation ? 'r' : 'c'}-${e.memberIndex ?? 0}-${e.id}`}
                           type="button"
                           className={`tt-entry${isReservation ? ' tt-entry--res' : ''}${
-                            lane ? ' tt-entry--lane' : ''
-                          }`}
+                              lane ? ' tt-entry--lane' : ''
+                            }${lane && (e.memberIndex ?? 0) % MEMBER_COLORS.length === 4 ? ' tt-entry--patterned' : ''}`}
                           style={
                             {
                               top: top(startMin),

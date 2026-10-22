@@ -26,7 +26,11 @@
 }
 
 .home-badge {
-  flex: none;
+  flex: 0 1 auto;
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .home-more {
@@ -97,7 +101,7 @@
 
 /* ── 내 일정 상자: 다가오는 예약 · 내 회의 · 내 라운지 약속을 한 카드 안에 묶음으로 ───────── */
 .home-sum__group + .home-sum__group {
-  border-top: 1px solid var(--c-border);
+  border-top: 0;
 }
 .home-sum__head {
   display: flex;
@@ -152,9 +156,8 @@
 
 /* 홈: 날짜 → 제목 → 주요 행동 순서로 시선을 안내한다. */
 .home-hero {
-  padding: var(--sp-5) 0;
-  margin-bottom: var(--sp-5);
-  border-bottom: 1px solid var(--c-divider);
+  padding: var(--sp-6) 0 var(--sp-7);
+  margin-bottom: var(--sp-3);
 }
 .home-hero__date {
   margin: 0 0 var(--sp-4);
@@ -164,7 +167,7 @@
 }
 .home-hero__title {
   margin: 0;
-  font-size: calc(var(--fs-display) * 1.25);
+  font-size: var(--fs-display);
   font-weight: 800;
   line-height: 1.16;
   letter-spacing: -0.02em;
@@ -222,4 +225,50 @@
   .home-ul .list__body {
     flex-basis: 100%;
   }
+}
+
+/* Each appointment has a surface; the next reservation carries the visual weight. */
+.home-sum { display: grid; gap: var(--sp-7); }
+.home-sum__group { min-width: 0; background: var(--c-bg); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
+.home-sum__head { padding: var(--sp-5) var(--sp-6) var(--sp-2); }
+.home-page .home-section-title { font-size: var(--fs-sm); color: var(--c-text-sub); margin-bottom: var(--sp-4); }
+.home-sum .home-reservations > li:first-child .list__item { padding: var(--sp-6); }
+.home-reservation--next { position: relative; background: var(--c-action-bg); }
+.home-reservation--next::before { content: ''; position: absolute; left: 0; top: var(--sp-6); bottom: var(--sp-6); width: 3px; background: var(--c-accent); }
+.home-reservation__time { margin-bottom: var(--sp-2); font-size: var(--fs-md); font-weight: var(--fw-bold); letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.home-reservation--next .home-reservation__time { font-size: var(--fs-h2); line-height: 1.4; overflow-wrap: anywhere; }
+.home-next-label { display: block; margin-bottom: var(--sp-4); color: var(--c-text-sub); }
+.home-reservation--next .list__item { flex-wrap: wrap; }
+.home-reservation--next .list__body { flex-basis: 100%; }
+.home-reservation--next .list__chev { margin-left: auto; }
+.home-ul .list__item { border-radius: var(--r); }
+.home-ul .list__item--link::before { inset: 0; }
+.home-page { padding-inline: min(var(--gutter), 5vw); }
+:root[data-contrast='high'] .home-sum__group { outline: 2px solid var(--c-border); }
+
+/* 본문에 두 카드를 놓을 공간이 있을 때만 작업대와 보조 칼럼으로 나눈다. */
+.home-page { container: home / inline-size; }
+.home-workspace { display: grid; gap: var(--sp-8); align-items: start; }
+.home-primary, .home-secondary, .home-lounge { min-width: 0; }
+.home-workspace > .section, .home-secondary > .section { margin-block: 0; }
+.home-secondary { display: grid; gap: var(--sp-8); }
+.home-secondary .section__title { font-size: var(--fs-sm); color: var(--c-text-sub); }
+.home-secondary .section__head { margin-bottom: var(--sp-4); }
+.home-secondary .school-eclass-empty { display: grid; justify-items: start; gap: var(--sp-4); }
+.home-secondary .school-eclass-empty p { margin: 0; overflow-wrap: anywhere; }
+.home-secondary .school-eclass-empty .btn { white-space: normal; }
+.home-workspace .list__main, .home-workspace .list__sub { overflow-wrap: anywhere; }
+.home-reservation__time > span { display: inline-block; white-space: nowrap; }
+.home-page .code-chip { letter-spacing: 0.04em; }
+
+@container home (min-width: 64rem) {
+  .home-workspace { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--sp-7); }
+  .home-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--sp-7); padding-block: var(--sp-7) var(--sp-9); }
+  .home-hero__date, .home-hero__title, .home-hero__intro { grid-column: 1; }
+  .home-hero__title { max-width: 16ch; }
+  .home-hero__intro { max-width: 44ch; }
+  .home-hero__actions { grid-column: 2; grid-row: 1 / 4; align-self: end; flex-direction: column; align-items: stretch; margin-top: 0; gap: var(--sp-2); }
+  .home-hero__secondary { justify-content: center; }
+  .home-reservation--next .home-reservation__time { font-size: 2.8rem; }
+  .home-secondary { padding-top: 0; }
 }

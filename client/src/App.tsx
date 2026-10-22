@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { MotionConfig } from 'motion/react';
 import { api, ApiError, setOnUnauthorized } from './api';
 import { AuthContext, useAuth } from './auth';
 import type { User } from './types';
@@ -8,32 +9,55 @@ import { ConfirmProvider, DisplayProvider, Spinner, ToastProvider, useToast } fr
 import { AppFrame } from './shell/Shell';
 import { ErrorBoundary } from './shell/ErrorScreen';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import TimetablePage from './pages/TimetablePage';
 import Meetings from './pages/Meetings';
-import MeetingDetail from './pages/MeetingDetail';
-import Account from './pages/Account';
 import { LoungeProvider } from './lounge/LoungeContext';
 import { LOUNGE_ENABLED } from './features';
 import { SchoolProvider } from './school/SchoolContext';
-import LoungePage from './lounge/LoungePage';
-import MeetupPage from './lounge/MeetupPage';
-import ChatRoomPage from './lounge/ChatRoomPage';
-import AdminPage from './lounge/AdminPage';
+
+// 매일 여는 화면(로그인·홈·시간표·회의 목록)은 첫 묶음에 두고, 가끔 여는 화면은 열 때 불러온다.
+const Signup = lazy(() => import('./pages/Signup'));
+const MeetingDetail = lazy(() => import('./pages/MeetingDetail'));
+const Account = lazy(() => import('./pages/Account'));
+const LoungePage = lazy(() => import('./lounge/LoungePage'));
+const MeetupPage = lazy(() => import('./lounge/MeetupPage'));
+const ChatRoomPage = lazy(() => import('./lounge/ChatRoomPage'));
+const AdminPage = lazy(() => import('./lounge/AdminPage'));
+
+/**
+ * 나눠 불러오는 화면을 기다리는 동안: 헤더·탭바는 그대로 두고 본문 자리만 높이를 지켜
+ * 화면이 위아래로 튀지 않게 한다. 짧은 로딩에서 깜빡이지 않도록 스피너는 늦게 보인다.
+ */
+function RouteFallback() {
+  return (
+    <div className="route-fallback" role="status" aria-busy="true">
+      <Spinner />
+      <span className="sr-only">화면을 불러오는 중입니다.</span>
+    </div>
+  );
+}
 
 /** 로그인 후 화면: 로그인이 안 되어 있으면 로그인으로 보낸다. 헤더·탭바는 AppFrame 이 맡는다. */
 function Protected({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  return <AppFrame>{children}</AppFrame>;
+  return (
+    <AppFrame>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </AppFrame>
+  );
 }
 
 /** 로그인·가입 화면: 하단 탭바 없이 같은 컬럼 프레임만 쓴다. */
 function Public({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   if (user) return <Navigate to="/" replace />;
-  return <AppFrame tabs={false}>{children}</AppFrame>;
+  return (
+    <AppFrame tabs={false}>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </AppFrame>
+  );
 }
 
 /**
@@ -117,6 +141,8 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+      {/* OS "동작 줄이기"가 켜져 있으면 모든 motion 애니메이션의 이동·크기 변화를 끈다 */}
+      <MotionConfig reducedMotion="user">
       <DisplayProvider>
         <ToastProvider>
           <ConfirmProvider>
@@ -150,6 +176,7 @@ export default function App() {
           </ConfirmProvider>
         </ToastProvider>
       </DisplayProvider>
+      </MotionConfig>
     </ErrorBoundary>
   );
 }

@@ -23,6 +23,7 @@ import {
   useToast,
 } from '../ui';
 import { reservationStatus } from '../reservationStatus';
+import { Reveal, StaggerList, StaggerItem } from '../ui/motion';
 import {
   addDaysStr,
   fmtDate,
@@ -482,7 +483,12 @@ export default function MeetingDetail() {
   return (
     <>
       <AppHeader title={detail.name} backTo="/meetings" />
-      <main id="main" className="app-main">
+      <main id="main" className="app-main meeting-detail-page">
+        <header className="page-head meeting-detail-head">
+          <p className="eyebrow">회의 작업 공간</p>
+          <h1 className="page-title">{detail.name}</h1>
+          <p className="page-lead">팀원 {detail.members.length}명 · 함께 비는 시간을 찾아 예약하세요.</p>
+        </header>
         {syncFailed && (
           <section className="section">
             <Alert
@@ -499,6 +505,8 @@ export default function MeetingDetail() {
           </section>
         )}
 
+        <div className="mtg-workspace">
+          <Reveal className="mtg-workspace-overview">
         {/* ① 회의 코드 */}
         <section className="section" aria-labelledby="mtg-code-title">
           <div className="card mtg-code">
@@ -597,15 +605,15 @@ export default function MeetingDetail() {
                   aria-pressed={on}
                   onClick={() => toggleParticipant(m.id)}
                 >
-                  {on && <Icon name="check" className="tag__check" />}
+                  <Icon name="check" className="tag__check" />
                   <span
-                    className="tag__dot"
+                    className={`tag__dot${i % MEMBER_COLORS.length === 4 ? ' member-swatch--patterned' : ''}`}
                     style={{ background: on ? colorOf(i) : 'var(--gray-30)' }}
                     aria-hidden="true"
                   />
-                  <span>{m.name}</span>
+                  <span className="mtg-chip__name">{m.name}</span>
                   {m.isOwner ? <Badge tone="gray">방장</Badge> : null}
-                  {!on && <span className="mtg-chip__off">제외됨</span>}
+                  <span className="sr-only" aria-hidden={on}>제외됨</span>
                 </button>
               );
             })}
@@ -618,69 +626,9 @@ export default function MeetingDetail() {
           )}
         </section>
 
-        {/* ④ 팀원 시간표 */}
-        <section className="section" aria-labelledby="mtg-tt-title">
-          <div className="section__head">
-            <h2 className="section__title" id="mtg-tt-title">
-              팀원 시간표
-            </h2>
-          </div>
-          <div className="mtg-weeknav">
-            <WeekNav
-              label={fmtWeekLabel(weekStart)}
-              sub={`${fmtDayHeader(weekStart)} ~ ${fmtDayHeader(addDaysStr(weekStart, 4))}`}
-              onPrev={week.prevWeek}
-              onNext={week.nextWeek}
-              onToday={isCurrentWeek(weekStart) ? undefined : week.goToday}
-            />
-          </div>
-          {memberEntries.length === 0 ? (
-            <div className="card card--flat">
-              <EmptyState
-                icon="calendar"
-                title="아직 등록된 시간표가 없습니다."
-                description="각자 시간표를 등록하면 여기에 겹쳐 보입니다."
-                action={
-                  <Link to="/timetable" className={btnClass({ variant: 'secondary' })}>
-                    내 시간표 등록하기
-                  </Link>
-                }
-              />
-            </div>
-          ) : (
-            <div className="stack">
-              <ul className="mtg-legend" aria-label="팀원별 색 안내">
-                {detail.members.map((m, i) => (
-                  <li key={m.id} className="mtg-legend__item">
-                    <span
-                      className="mtg-legend__dot"
-                      style={{ background: colorOf(i) }}
-                      aria-hidden="true"
-                    />
-                    {m.name}
-                    {!activeIds.includes(m.id) && <span className="text-muted"> (제외됨)</span>}
-                  </li>
-                ))}
-                <li className="mtg-legend__item">
-                  <span className="tt-swatch tt-swatch--res" aria-hidden="true" />
-                  회의 예약 (팀원 전체 표시)
-                </li>
-              </ul>
-              <div className="mtg-grid">
-                <TimetableGrid
-                  entries={gridEntries}
-                  laneCount={detail.members.length}
-                  compact
-                  weekStart={weekStart}
-                  slide={week.slide}
-                />
-              </div>
-            </div>
-          )}
-        </section>
-
+          </Reveal>
         {/* ⑤ 예약 현황 */}
-        <section className="section" aria-labelledby="mtg-res-title">
+        <section className="section mtg-workspace-reservations" aria-labelledby="mtg-res-title">
           <div className="section__head">
             <h2 className="section__title" id="mtg-res-title" tabIndex={-1} ref={resHeadingRef}>
               예약 현황
@@ -738,12 +686,12 @@ export default function MeetingDetail() {
               />
             </div>
           ) : (
-            <ul className="card card--list mtg-res-list">
+            <StaggerList className="mtg-res-list">
               {reservations.map((r) => {
                 const status = reservationStatus(r);
                 const confirmed = r.schoolStatus === 'confirmed';
                 return (
-                  <li key={r.id} className="mtg-res">
+                  <StaggerItem key={r.id} className="mtg-res">
                     <div className="mtg-res__head">
                       <p className="mtg-res__title">
                         {r.facilityName} · {r.building}
@@ -796,10 +744,10 @@ export default function MeetingDetail() {
                         예약 취소하기
                       </Button>
                     </div>
-                  </li>
+                  </StaggerItem>
                 );
               })}
-            </ul>
+            </StaggerList>
           )}
 
           {/* 연동하지 않았거나 이 기기에서 쓸 수 없으면, 학교 사이트로 가는 기존 안내는 그대로 두고 연동을 권하는 한 줄만 붙인다 */}
@@ -812,6 +760,68 @@ export default function MeetingDetail() {
                 {school.linked ? '내 정보에서 다시 연동하기' : '내 정보에서 연동하기'}
               </Link>
             </p>
+          )}
+        </section>
+
+        </div>
+        {/* ④ 팀원 시간표 */}
+        <section className="section mtg-workspace-timetable" aria-labelledby="mtg-tt-title">
+          <div className="section__head">
+            <h2 className="section__title" id="mtg-tt-title">
+              팀원 시간표
+            </h2>
+          </div>
+          <div className="mtg-weeknav">
+            <WeekNav
+              label={fmtWeekLabel(weekStart)}
+              sub={`${fmtDayHeader(weekStart)} ~ ${fmtDayHeader(addDaysStr(weekStart, 4))}`}
+              onPrev={week.prevWeek}
+              onNext={week.nextWeek}
+              onToday={isCurrentWeek(weekStart) ? undefined : week.goToday}
+            />
+          </div>
+          {memberEntries.length === 0 ? (
+            <div className="card card--flat">
+              <EmptyState
+                icon="calendar"
+                title="아직 등록된 시간표가 없습니다."
+                description="각자 시간표를 등록하면 여기에 겹쳐 보입니다."
+                action={
+                  <Link to="/timetable" className={btnClass({ variant: 'secondary' })}>
+                    내 시간표 등록하기
+                  </Link>
+                }
+              />
+            </div>
+          ) : (
+            <div className="stack">
+              <ul className="mtg-legend" aria-label="팀원별 색과 무늬 안내">
+                {detail.members.map((m, i) => (
+                  <li key={m.id} className="mtg-legend__item">
+                    <span
+                      className={`mtg-legend__dot${i % MEMBER_COLORS.length === 4 ? ' member-swatch--patterned' : ''}`}
+                      style={{ background: colorOf(i) }}
+                      aria-hidden="true"
+                    />
+                    {m.name}
+                    {!activeIds.includes(m.id) && <span className="text-muted"> (제외됨)</span>}
+                  </li>
+                ))}
+                <li className="mtg-legend__item">
+                  <span className="tt-swatch tt-swatch--res" aria-hidden="true" />
+                  회의 예약 (팀원 전체 표시)
+                </li>
+              </ul>
+              <div className="mtg-grid">
+                <TimetableGrid
+                  entries={gridEntries}
+                  laneCount={detail.members.length}
+                  compact
+                  weekStart={weekStart}
+                  slide={week.slide}
+                />
+              </div>
+            </div>
           )}
         </section>
 

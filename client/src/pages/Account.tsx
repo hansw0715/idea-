@@ -122,14 +122,16 @@ export default function Account() {
   return (
     <>
       <AppHeader />
-      <main id="main" className="app-main">
+      <main id="main" className="app-main account-page">
         <div className="page-head">
+          <p className="eyebrow">나의 공간</p>
           <h1 className="page-title">내 정보</h1>
           <p className="page-lead">가입 정보를 확인하고 계정을 관리합니다.</p>
         </div>
 
         <section className="section" aria-labelledby="account-info-title">
-          <div className="card">
+            <div className="card account-identity">
+              <span className="account-monogram" aria-hidden="true">{user?.name?.slice(0, 1) || '나'}</span>
             <div className="account-card-head">
               <h2 className="card__title" id="account-info-title">
                 가입 정보

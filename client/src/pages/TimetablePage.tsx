@@ -42,6 +42,7 @@ import {
 import type { Reservation, TimetableEntry } from '../types';
 import SchoolTimetableAction from '../school/SchoolTimetableAction';
 import './timetable.css';
+import { StaggerList, StaggerItem } from '../ui/motion';
 
 type TabId = 'timetable' | 'search';
 type RepeatKind = 'weekly' | 'once';
@@ -308,6 +309,7 @@ export default function TimetablePage() {
       <main id="main" className="app-main tt-page">
         <div className="page-head tt-page__head">
           <div className="grow">
+              <p className="eyebrow">한 주의 리듬</p>
             <h1 className="page-title">내 시간표</h1>
             <p className="page-lead">시간표를 확인하고 일정을 추가합니다.</p>
           </div>
@@ -350,6 +352,8 @@ export default function TimetablePage() {
             </div>
           )}
 
+          <div className="tt-workspace">
+          <div className="tt-workspace__calendar">
           <WeekNav
             label={fmtWeekLabel(weekStart)}
             sub={`${fmtDayHeader(dates[0])} ~ ${fmtDayHeader(dates[dates.length - 1])}`}
@@ -412,6 +416,29 @@ export default function TimetablePage() {
               </div>
             </div>
           )}
+          </div>
+          <aside className="tt-agenda" aria-labelledby="tt-agenda-title" aria-busy={!fresh || undefined}>
+            <p className="eyebrow">WEEKLY AGENDA</p>
+            <h2 className="section__title" id="tt-agenda-title">이번 주 일정</h2>
+            <p className="tt-agenda__intro">{loadError ? '일정을 불러오지 못했습니다.' : fresh ? gridEntries.length + '개의 수업·예약' : '일정을 불러오는 중입니다.'}</p>
+            {fresh && gridEntries.length > 0 && (
+              <StaggerList key={weekStart} className="tt-agenda__list">
+                {[...gridEntries].sort((a, b) => a.day - b.day || a.startMin - b.startMin).map((entry) => (
+                  <StaggerItem key={entry.kind + '-' + entry.id}>
+                    <button type="button" className="tt-agenda__entry" onClick={() => openInfo(entry)}>
+                      <span className="tt-agenda__day">{DAY_NAMES[entry.day]}요일 <span className="tt-agenda__kind">{entry.kind === 'reservation' ? '예약' : '수업·일정'}</span></span>
+                      <span className="tt-agenda__title">{entry.title}</span>
+                      <span className="tt-agenda__time mono">{fmtMin(entry.startMin)} – {fmtMin(entry.endMin)}</span>
+                      {entry.place && <span className="tt-agenda__place">{entry.place}</span>}
+                    </button>
+                  </StaggerItem>
+                ))}
+              </StaggerList>
+            )}
+            {fresh && gridEntries.length === 0 && <p className="text-sub text-sm">빈 시간에 일정을 추가해 한 주를 계획해 보세요.</p>}
+            <Button variant="secondary" block onClick={() => openAdd(defaultAddRange())}>일정 추가하기</Button>
+          </aside>
+          </div>
         </div>
 
         <div

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { AppHeader } from '../shell/Shell';
 import { api } from '../api';
 import { reservationStatus } from '../reservationStatus';
-import { fmtDate, fmtRange } from '../time';
+import { fmtDate, fmtMin } from '../time';
 import { useWeek } from '../useWeek';
 import { Alert, Button, Icon } from '../ui';
 import { LOUNGE_ENABLED } from '../features';
@@ -11,6 +11,7 @@ import EclassHome from '../school/EclassHome';
 import MyLoungeSection from '../lounge/home/MyLoungeSection';
 import type { Meeting, Reservation } from '../types';
 import './home.css';
+import { StaggerList, StaggerItem } from '../ui/motion';
 
 /** 오늘 날짜 글자 (한국 시간): "10월 11일 (일)" */
 const TODAY_LABEL = () =>
@@ -64,7 +65,7 @@ export default function Dashboard() {
       <AppHeader />
       <main id="main" className="app-main home-page">
         <header className="home-hero">
-          <p className="home-hero__date">{TODAY_LABEL()}</p>
+          <p className="home-hero__date eyebrow">{TODAY_LABEL()}</p>
           <h1 className="home-hero__title">
             {data && meetings.length > 0 ? `참여 중인 회의 ${meetings.length}개` : '내 일정'}
           </h1>
@@ -94,16 +95,12 @@ export default function Dashboard() {
             {error}
           </Alert>
         ) : (
-          <>
-            {/* 0. 미수강 강의 알림(e-class) — 홈 첫 화면 맨 위. 자기 데이터를 따로 불러와 아래 구역의 로딩·오류와 서로 막지 않는다 */}
-            <EclassHome />
-
-            {/* 1~3. 다가오는 예약 · 내 회의 · 내 라운지 약속 — 한 상자 안에서 위에서 아래로 */}
-            <section className="section" aria-labelledby="home-sum-title">
+          <div className="home-workspace">
+            <section className="section home-primary" aria-labelledby="home-sum-title">
               <h2 className="home-section-title" id="home-sum-title">
-                내 일정
+                예약과 회의
               </h2>
-              <div className="card home-card--rows home-sum">
+              <div className="home-sum">
                 <section className="home-sum__group" aria-labelledby="home-res-title">
                   <div className="home-sum__head">
                     <h3 className="home-sum__title" id="home-res-title">
@@ -119,27 +116,31 @@ export default function Dashboard() {
                     <p className="home-sum__empty">아직 예정된 예약이 없어요.</p>
                   ) : (
                     <>
-                      <ul className="list home-ul">
-                        {reservations.slice(0, LIST_LIMIT).map((r) => {
+                      <StaggerList className="list home-ul home-reservations">
+                        {reservations.slice(0, LIST_LIMIT).map((r, index) => {
                           const status = reservationStatus(r);
                           return (
-                            <li key={r.id}>
+                            <StaggerItem key={r.id} className={index === 0 ? 'home-reservation--next' : undefined}>
                               <Link to={`/meetings/${r.meetingId}`} className="list__item list__item--link">
                                 <div className="list__body">
+                                  {index === 0 && <span className="eyebrow home-next-label">다음 예약 · {fmtDate(r.date)}</span>}
+                                  <div className="home-reservation__time mono">
+                                    <span>{fmtMin(r.startMin)}</span><wbr /><span>~{fmtMin(r.endMin)}</span>
+                                  </div>
                                   <div className="list__main">
                                     {r.facilityName} · {r.building}
                                   </div>
                                   <div className="list__sub tabular">
-                                    {fmtDate(r.date)} {fmtRange(r.startMin, r.endMin)} · {r.meetingName}
+                                    {index !== 0 && `${fmtDate(r.date)} · `}{r.meetingName}
                                   </div>
                                 </div>
                                 <span className={`badge ${status.className} home-badge`}>{status.label}</span>
                                 <Icon name="chevron-right" className="list__chev" />
                               </Link>
-                            </li>
+                            </StaggerItem>
                           );
                         })}
-                      </ul>
+                      </StaggerList>
                       {reservations.length > LIST_LIMIT && (
                         <p className="home-sum__more">
                           예약 {reservations.length}건 중 {LIST_LIMIT}건을 표시했어요.
@@ -169,9 +170,9 @@ export default function Dashboard() {
                     </p>
                   ) : (
                     <>
-                      <ul className="list home-ul">
+                      <StaggerList className="list home-ul">
                         {meetings.slice(0, LIST_LIMIT).map((m) => (
-                          <li key={m.id}>
+                          <StaggerItem key={m.id}>
                             <Link to={`/meetings/${m.id}`} className="list__item list__item--link">
                               <div className="list__body">
                                 <div className="list__main">{m.name}</div>
@@ -183,9 +184,9 @@ export default function Dashboard() {
                               </span>
                               <Icon name="chevron-right" className="list__chev" />
                             </Link>
-                          </li>
+                          </StaggerItem>
                         ))}
-                      </ul>
+                      </StaggerList>
                       {meetings.length > LIST_LIMIT && (
                         <p className="home-sum__more">
                           회의 {meetings.length}개 중 {LIST_LIMIT}개를 표시했어요.
@@ -195,11 +196,19 @@ export default function Dashboard() {
                   )}
                 </section>
 
-                {/* 라운지 약속은 자기 데이터를 따로 불러와서 위 묶음의 로딩·오류와 서로 막지 않는다 */}
-                {LOUNGE_ENABLED && <MyLoungeSection />}
               </div>
             </section>
-          </>
+            <aside className="home-secondary" aria-label="라운지와 학습 알림">
+              {/* 두 구역은 각각 데이터를 불러오므로 예약 로딩과 독립적으로 표시된다. */}
+              {LOUNGE_ENABLED && (
+                <div className="home-lounge">
+                  <p className="home-section-title">함께하는 약속</p>
+                  <MyLoungeSection />
+                </div>
+              )}
+              <EclassHome />
+            </aside>
+          </div>
         )}
       </main>
     </>
