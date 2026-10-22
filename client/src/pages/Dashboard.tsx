@@ -12,6 +12,7 @@ import EclassHome from '../school/EclassHome';
 import { ECLASS_URL } from '../school/eclassLogic';
 import MyLoungeSection from '../lounge/home/MyLoungeSection';
 import { HomeTableRow } from './HomeTableRow';
+import HomeNotices from './HomeNotices';
 import type { Meeting, Reservation } from '../types';
 import './home.css';
 
@@ -176,6 +177,9 @@ export default function Dashboard() {
                 </span>
               </Link>
             )}
+
+            {/* 공지: 학교 공지 → 내 학과 공지 (최근 2주). 자기 데이터를 따로 불러온다 */}
+            <HomeNotices />
 
             {/* 4. 미수강 강의 알림(e-class) — 자기 데이터를 따로 불러와 아래 구역과 서로 막지 않는다 */}
             <EclassHome />

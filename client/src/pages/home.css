@@ -314,7 +314,42 @@
   font-weight: var(--fw-bold);
   line-height: 1;
 }
+/* 공지 줄: 제목이 남는 폭을 다 쓰고, 날짜는 오른쪽에 */
+.home-notice__title {
+  color: var(--c-text);
+}
+.home-notice__date {
+  flex: none;
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+.home-table__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: var(--touch);
+  margin-top: var(--sp-2);
+  padding: var(--sp-3) var(--sp-7);
+  border: 0;
+  border-top: 1px solid var(--c-divider);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--c-text-sub);
+  cursor: pointer;
+}
+.home-table__toggle svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
 @media (hover: hover) {
+  .home-table__toggle:hover {
+    color: var(--c-action-text);
+  }
   .home-table__row:hover {
     background: var(--c-surface);
   }

@@ -11,6 +11,7 @@ import { facilitiesRouter } from './facilities.js';
 import { reservationsRouter } from './reservations.js';
 import { coursesRouter } from './coursesRouter.js';
 import { dashboardRouter } from './dashboard.js';
+import { noticesRouter } from './notices.js';
 import { healthRouter } from './health.js';
 import { loungeRouter } from './lounge/index.js';
 import { schoolRouter } from './school/index.js';
@@ -133,6 +134,7 @@ export function createApp() {
   app.use('/api/reservations', reservationsRouter);
   app.use('/api/courses', coursesRouter);
   app.use('/api/dashboard', dashboardRouter);
+  app.use('/api/notices', noticesRouter);
   app.use('/api/health', healthRouter);
   app.use('/api/lounge', loungeRouter);
   // 학교 계정 정보가 오가는 경로: 로그인 필수 (no-store 는 위에서 본문 해석보다 먼저 건다).
