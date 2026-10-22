@@ -3,7 +3,7 @@
    원본: DESIGN.md (프로젝트 루트)
 
    DESIGN.md "Explicit user selections"는 KRDS 관찰값보다 우선한다.
-     · Primary 색   #6366f1  → --primary-50
+     · Primary 색   #6366f1 → #2448c9 (UI 리디자인: 흰 글자 대비 확보, UI_REDESIGN.md 참고)
      · 라운드       4px      → --r (버튼·입력·카드·배지·시트). 원형/pill 만 1000px
      · 입력 스타일  underline → .input / .select 는 밑줄형
      · 내비 스타일  solid     → 상단 헤더·하단 탭바는 불투명 면(blur·반투명 금지)
@@ -23,8 +23,8 @@
 
   /* ── Gray ─────────────────────────────────────────────── */
   --gray-0: #ffffff;
-  --gray-5: #f4f5f6;
-  --gray-10: #e6e8ea;
+  --gray-5: #f5f4f0; /* 리디자인: 차가운 회색 대신 종이 느낌의 웜 그레이 */
+  --gray-10: #e8e6e0;
   --gray-20: #cdd1d5;
   --gray-30: #b1b8be;
   --gray-40: #8a949e;
@@ -36,18 +36,19 @@
   --gray-95: #131416;
   --gray-100: #000000;
 
-  /* ── Primary — 사용자 지정 #6366f1 이 50단계 ───────────── */
-  --primary-5: #eef2ff;
-  --primary-10: #e0e7ff;
-  --primary-20: #c7d2fe;
-  --primary-30: #a5b4fc;
-  --primary-40: #818cf8;
-  --primary-50: #6366f1;
-  --primary-60: #4f46e5; /* 밝은 면 위 텍스트·pressed (흰 배경 대비 6.3:1) */
-  --primary-70: #4338ca;
-  --primary-80: #3730a3;
-  --primary-90: #312e81;
-  --primary-95: #1e1b4b;
+  /* ── Primary — 잉크 코발트 (리디자인: 기존 #6366f1 은 Tailwind indigo-500 이라 교체)
+     50단계 흰 배경 대비 7.4:1 → 버튼 글자를 키우지 않아도 AA 통과 ─────────── */
+  --primary-5: #eef2fc;
+  --primary-10: #dde5f8;
+  --primary-20: #bccbf1;
+  --primary-30: #93a9e6;
+  --primary-40: #5d7dd8;
+  --primary-50: #2448c9;
+  --primary-60: #1d3aa6; /* 밝은 면 위 텍스트·pressed */
+  --primary-70: #172e85;
+  --primary-80: #112266;
+  --primary-90: #0c1849;
+  --primary-95: #070f2e;
 
   /* ── Secondary (Navy) ─────────────────────────────────── */
   --secondary-5: #eef2f7;
@@ -120,7 +121,7 @@
   --c-select-error: var(--point-60);
 
   /* 시간표에서 사람/영역을 구분하는 범주 색 (색만으로 의미를 전달하지 않도록 항상 이름과 함께 쓴다) */
-  --m-1: #052b57; /* secondary-80: 인디고(행위색)와 겹치지 않게 */
+  --m-1: #5c5000; /* 올리브: 코발트(행위색)·m-5 파랑과 겹치지 않게 */
   --m-2: #228738;
   --m-3: #c2650a;
   --m-4: #d63d4a;
@@ -187,7 +188,7 @@
   --shadow-drop: 0 0.2rem 0 0 rgba(0, 0, 0, 0.04), 0 0.4rem 0.8rem 0 rgba(0, 0, 0, 0.12);
   --shadow-modal: 0 0.2rem 0 0 rgba(0, 0, 0, 0.06), 0 0.8rem 2.4rem 0 rgba(0, 0, 0, 0.2);
 
-  /* ── 포커스: 흰 간격 2px + 정부 인디고 3px (모든 인터랙티브 요소) ─ */
+  /* ── 포커스: 흰 간격 2px + 코발트 3px (모든 인터랙티브 요소) ─ */
   --focus-ring: 0 0 0 2px var(--gray-0), 0 0 0 5px var(--primary-50);
 
   --backdrop: rgba(0, 0, 0, 0.5);

@@ -63,15 +63,22 @@ export default function Dashboard() {
     <>
       <AppHeader />
       <main id="main" className="app-main home-page">
-        {/* 왼쪽 위 "홈" 제목 + 오른쪽 오늘 날짜 */}
         <header className="home-hero">
-          <div className="home-hero__who">
-            <span className="home-hero__mark" aria-hidden="true">
-              <Icon name="home" />
-            </span>
-            <h1 className="home-hero__title">홈</h1>
-          </div>
           <p className="home-hero__date">{TODAY_LABEL()}</p>
+          <h1 className="home-hero__title">
+            {data && meetings.length > 0 ? `참여 중인 회의 ${meetings.length}개` : '내 일정'}
+          </h1>
+          <p className="home-hero__intro">
+            {data
+              ? `다가오는 예약 ${reservations.length}건 · 수업은 내 시간표에서 확인하세요.`
+              : '회의와 예약을 확인하고 내 시간표로 이동하세요.'}
+          </p>
+          <nav className="home-hero__actions" aria-label="빠른 시작">
+            <Link to="/meetings" state={{ sheet: 'create' }} className="btn btn--primary">
+              회의 만들기 <Icon name="chevron-right" />
+            </Link>
+            <Link to="/timetable" className="home-hero__secondary">내 시간표 보기</Link>
+          </nav>
         </header>
 
         {error && !data ? (
@@ -93,7 +100,7 @@ export default function Dashboard() {
 
             {/* 1~3. 다가오는 예약 · 내 회의 · 내 라운지 약속 — 한 상자 안에서 위에서 아래로 */}
             <section className="section" aria-labelledby="home-sum-title">
-              <h2 className="sr-only" id="home-sum-title">
+              <h2 className="home-section-title" id="home-sum-title">
                 내 일정
               </h2>
               <div className="card home-card--rows home-sum">

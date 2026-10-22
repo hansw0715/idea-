@@ -150,45 +150,76 @@
   padding-top: var(--sp-3);
 }
 
-/* ── 홈 머리: 왼쪽 위에 "홈", 오른쪽에 오늘 날짜 ───────────────────────────────────────── */
+/* 홈: 날짜 → 제목 → 주요 행동 순서로 시선을 안내한다. */
 .home-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  padding: var(--sp-3) 0 var(--sp-5);
-  margin-bottom: var(--sp-4);
-  border-bottom: 2px solid var(--c-action);
+  padding: var(--sp-5) 0;
+  margin-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--c-divider);
 }
-.home-hero__who {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  min-width: 0;
-}
-.home-hero__mark {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 4rem;
-  height: 4rem;
-  border-radius: var(--r);
-  background: var(--c-action-bg-strong);
-  color: var(--c-action-text);
-}
-.home-hero__mark svg {
-  width: 2.2rem;
-  height: 2.2rem;
+.home-hero__date {
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--c-text-sub);
 }
 .home-hero__title {
   margin: 0;
-  font-size: var(--fs-h1);
-  font-weight: var(--fw-bold);
-  line-height: 1.2;
+  font-size: calc(var(--fs-display) * 1.25);
+  font-weight: 800;
+  line-height: 1.16;
+  letter-spacing: -0.02em;
+  color: var(--c-text);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
-.home-hero__date {
-  margin: 0;
+.home-hero__intro {
+  margin: var(--sp-4) 0 0;
   font-size: var(--fs-sm);
   color: var(--c-text-sub);
-  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.home-hero__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-top: var(--sp-5);
+}
+.home-hero__actions > a {
+  min-height: 4.4rem;
+}
+.home-hero__secondary {
+  display: inline-flex;
+  align-items: center;
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  text-underline-offset: 0.3em;
+}
+.home-section-title {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.025em;
+}
+.home-sum__head {
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+.home-sum__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 4.4rem;
+}
+.home-sum .list__body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 360px) {
+  .home-ul .list__item {
+    flex-wrap: wrap;
+  }
+  .home-ul .list__body {
+    flex-basis: 100%;
+  }
 }

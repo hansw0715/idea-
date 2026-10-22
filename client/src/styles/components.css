@@ -237,9 +237,8 @@
   }
 }
 
-/* Primary(#6366f1) 위 흰 글자는 4.47:1 이라 큰 글자 기준(굵게 18.66px 이상, 3:1)으로 맞춘다 */
+/* Primary(#2448c9) 위 흰 글자는 7.4:1 이라 글자를 키우지 않고 굵기만 준다 */
 .btn.btn--primary:not(.btn--lg):not(.btn--xl) {
-  font-size: 1.87rem;
   font-weight: var(--fw-bold);
 }
 .btn.btn--primary.btn--lg,
