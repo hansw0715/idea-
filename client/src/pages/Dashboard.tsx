@@ -5,11 +5,8 @@ import { api } from '../api';
 import { fmtDate, fmtRange } from '../time';
 import { useWeek } from '../useWeek';
 import { Alert, Button, Icon } from '../ui';
-import type { IconName } from '../ui';
-import { useDisplay } from '../ui/Display';
 import { LOUNGE_ENABLED } from '../features';
 import EclassHome from '../school/EclassHome';
-import { ECLASS_URL } from '../school/eclassLogic';
 import MyLoungeSection from '../lounge/home/MyLoungeSection';
 import { HomeTableRow } from './HomeTableRow';
 import HomeNotices from './HomeNotices';
@@ -28,19 +25,9 @@ interface DashboardData {
   reservations: Reservation[];
 }
 
-/** 바로가기 한 칸: 앱 안 경로(to) 또는 바깥 주소(href) 또는 동작(onClick) */
-interface Shortcut {
-  label: string;
-  icon: IconName;
-  to?: string;
-  state?: unknown;
-  href?: string;
-  onClick?: () => void;
-}
 
 export default function Dashboard() {
   const { weekStart } = useWeek();
-  const { openSettings } = useDisplay();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -73,20 +60,6 @@ export default function Dashboard() {
   const reservations = data?.reservations ?? [];
   const next = reservations[0];
 
-  const shortcuts: Shortcut[] = [
-    { label: '내 시간표', icon: 'calendar', to: '/timetable' },
-    { label: '회의', icon: 'users', to: '/meetings' },
-    { label: '회의 만들기', icon: 'plus', to: '/meetings', state: { sheet: 'create' } },
-    ...(LOUNGE_ENABLED
-      ? [
-          { label: '밥약', icon: 'utensils' as IconName, to: '/lounge' },
-          { label: '미팅', icon: 'heart' as IconName, to: '/lounge' },
-        ]
-      : []),
-    { label: 'e-class', icon: 'external', href: ECLASS_URL },
-    { label: '내 정보', icon: 'user', to: '/account' },
-    { label: '화면 설정', icon: 'text-size', onClick: openSettings },
-  ];
 
   return (
     <>
@@ -150,16 +123,6 @@ export default function Dashboard() {
               </div>
             </section>
 
-            {/* 2. 바로가기 아이콘 줄 */}
-            <nav className="home-shortcuts" aria-label="바로가기">
-              <ul className="home-shortcuts__list">
-                {shortcuts.map((s) => (
-                  <li key={s.label}>
-                    <ShortcutItem item={s} />
-                  </li>
-                ))}
-              </ul>
-            </nav>
 
             {/* 3. 배너 — 라운지가 켜져 있을 때만 */}
             {LOUNGE_ENABLED && (
@@ -234,32 +197,3 @@ export default function Dashboard() {
   );
 }
 
-function ShortcutItem({ item }: { item: Shortcut }) {
-  const inner = (
-    <>
-      <span className="home-shortcuts__icon" aria-hidden="true">
-        <Icon name={item.icon} />
-      </span>
-      <span className="home-shortcuts__label">{item.label}</span>
-    </>
-  );
-  if (item.href) {
-    return (
-      <a href={item.href} target="_blank" rel="noreferrer" className="home-shortcuts__item">
-        {inner}
-      </a>
-    );
-  }
-  if (item.onClick) {
-    return (
-      <button type="button" onClick={item.onClick} className="home-shortcuts__item">
-        {inner}
-      </button>
-    );
-  }
-  return (
-    <Link to={item.to ?? '/'} state={item.state} className="home-shortcuts__item">
-      {inner}
-    </Link>
-  );
-}
