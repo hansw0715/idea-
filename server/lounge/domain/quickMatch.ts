@@ -323,8 +323,12 @@ export function isInstantBody(raw: unknown): boolean {
   return 'lat' in raw || 'lng' in raw;
 }
 
+/** 즉시 매칭 인원(본인 포함) 범위와 기본값 */
+export const INSTANT_SIZE_MIN = 2;
+export const INSTANT_SIZE_MAX = 4;
+
 /** 즉시 신청 본문 검증. 오류 문장에는 받은 값을 넣지 않는다 (좌표가 로그·응답에 남지 않게). */
-export function parseInstantInput(raw: unknown): Result<QuickInstantInput> {
+export function parseInstantInput(raw: unknown): Result<Required<QuickInstantInput>> {
   const body = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>;
   const { lat, lng } = body;
   if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng)) {
@@ -333,7 +337,11 @@ export function parseInstantInput(raw: unknown): Result<QuickInstantInput> {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
     return fail('INVALID', '위치 값이 올바른 범위가 아니에요.');
   }
-  return ok({ lat, lng });
+  const size = body.size === undefined ? INSTANT_SIZE_MIN : body.size;
+  if (typeof size !== 'number' || !Number.isInteger(size) || size < INSTANT_SIZE_MIN || size > INSTANT_SIZE_MAX) {
+    return fail('INVALID', `인원은 ${INSTANT_SIZE_MIN}~${INSTANT_SIZE_MAX}명까지예요.`);
+  }
+  return ok({ lat, lng, size });
 }
 
 /** 두 지점 사이 거리(m) — 하버사인 */
@@ -377,7 +385,44 @@ export function findNearest(
   return best ? { partner: best.partner, distanceM: roundUpDistance(best.d) } : null;
 }
 
-/** 내 반경 안에서 기다리는 다른 즉시 대기자 수 (나는 뺀다) */
+/**
+ * 즉시 대기표를 인원별 무리로 나눈다 — 찾는 중인 사람에게 "지금 누가 모였는지"를 보여 주고, 다 찬 무리를 방으로 만든다.
+ *
+ * 먼저 온 표부터 차례로 본다. 각 표는 **같은 인원**을 고른 무리 중 가장 먼저 생긴 무리에 들어갈 수 있으면 들어가고,
+ * 없으면 새 무리를 연다. 들어갈 수 있다 = 자리가 남았고, 무리를 연 사람(첫 표)과 반경 QUICK_RADIUS_M 안이고,
+ * 무리의 모두와 다른 사람이며 서로 차단하지 않았다.
+ * 같은 대기표 목록이면 누가 계산해도 같은 무리가 나온다 — 그래서 서로 다른 사람이 같은 무리를 보게 된다.
+ */
+export function formInstantGroups(
+  waiting: QuickRequest[],
+  hidden: (x: UserId, y: UserId) => boolean,
+  now: ISODateTime,
+): QuickRequest[][] {
+  const tickets = waiting
+    .filter((r) => r.instant && r.loc && r.status === 'waiting' && isInstantAlive(r, now))
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+  const groups: QuickRequest[][] = [];
+  for (const t of tickets) {
+    const home = groups.find((g) => {
+      const anchor = g[0];
+      if (anchor.size !== t.size || g.length >= anchor.size) return false;
+      if (!anchor.loc || !t.loc || haversineM(anchor.loc, t.loc) > QUICK_RADIUS_M) return false;
+      return g.every((m) => m.userId !== t.userId && !hidden(m.userId, t.userId));
+    });
+    if (home) home.push(t);
+    else groups.push([t]);
+  }
+  return groups;
+}
+
+/** 무리에서 가장 먼 사람까지의 거리(무리를 연 사람 기준, 화면용으로 올림) */
+export function groupDistanceM(group: QuickRequest[]): number {
+  const anchor = group[0]?.loc;
+  if (!anchor) return DISTANCE_STEP_M;
+  return roundUpDistance(Math.max(0, ...group.slice(1).map((r) => (r.loc ? haversineM(anchor, r.loc) : 0))));
+}
+
+/** 내 반경 안에서 기다리는 다른 즉시 대기자 수 (나는 뺀다). 같은 인원을 고른 사람만 센다 */
 export function countNearby(
   waiting: QuickRequest[],
   me: QuickRequest,
@@ -390,6 +435,7 @@ export function countNearby(
     (r) =>
       r.id !== me.id &&
       r.instant &&
+      r.size === me.size &&
       r.loc &&
       r.userId !== me.userId &&
       !hidden(me.userId, r.userId) &&
@@ -398,14 +444,14 @@ export function countNearby(
   ).length;
 }
 
-/** 즉시 후보 방: 2명, 시간 투표 없음, 수락 제한 QUICK_INSTANT_ROOM_TTL_MIN 분. 좌표는 담지 않고 거리만 담는다. */
+/** 즉시 후보 방: 모인 인원 그대로(2~4명), 시간 투표 없음, 수락 제한 QUICK_INSTANT_ROOM_TTL_MIN 분. 좌표는 담지 않고 거리만 담는다. */
 export function createInstantRoom(id: string, group: QuickRequest[], distanceM: number, now: ISODateTime): QuickRoom {
   return {
     id,
     memberIds: group.map((r) => r.userId),
     date: kstDate(now),
     placeType: '학식',
-    size: 2,
+    size: group.length,
     bands: [],
     votes: {},
     answers: {},

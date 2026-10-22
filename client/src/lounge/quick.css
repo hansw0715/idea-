@@ -63,3 +63,70 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--sp-3);
 }
+
+/* 모으는 중: 고른 인원만큼 자리를 놓고, 모인 사람은 캐릭터로, 빈자리는 찾는 중 표시 */
+.lounge-quick-seats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.2rem, 1fr));
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lounge-quick-seat {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: var(--sp-2);
+  min-width: 0;
+  padding: var(--sp-5) var(--sp-2);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+  background: var(--c-bg);
+  text-align: center;
+}
+.lounge-quick-seat--empty {
+  border-style: dashed;
+  background: var(--c-surface);
+}
+.lounge-quick-seat__wait {
+  display: grid;
+  place-items: center;
+  width: 5.6rem;
+  height: 5.6rem;
+}
+.lounge-quick-seat__name {
+  max-width: 100%;
+  font-weight: var(--fw-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lounge-quick-seat--empty .lounge-quick-seat__name {
+  font-weight: var(--fw-regular);
+  color: var(--c-text-sub);
+}
+.lounge-quick-seat__fact {
+  max-width: 100%;
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 다 모임: 한 사람씩 카드 + 수락 여부 */
+.lounge-quick-peer__list {
+  display: grid;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lounge-quick-peer__who {
+  flex: 1;
+  min-width: 0;
+}
+.lounge-quick-peer__card .badge {
+  flex: none;
+}

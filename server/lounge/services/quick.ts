@@ -10,8 +10,9 @@
  *  3) 모든 부수효과(모임 저장, 단톡방 열기, 대기표 복귀, 재매칭)는 요청 안에서 끝낸다 — 서버리스는 응답 뒤에 멈출 수 있다.
  *  4) 읽을 때마다 `sweep` 이 만료된 방을 정리한다 (별도 스케줄러 없음).
  *
- * 택시식 즉시 매칭(위치만 보냄)도 같은 틀을 쓴다: 대기표에 위치를 얹어 두고, 새 대기표가 들어오면 반경 안에서
- * 가장 가까운 대기자를 같은 방식으로 선점해 2명짜리 후보 방을 만든다. 위치는 선점·취소·만료와 같은 UPDATE 에서 지워진다.
+ * 택시식 즉시 매칭(위치 + 인원 2~4명)도 같은 틀을 쓴다: 대기표에 위치를 얹어 두고, 같은 인원을 고른 근처 대기자끼리
+ * 무리를 지어 두었다가(찾는 중 화면에 모인 사람이 보인다) 인원이 다 차면 같은 방식으로 선점해 후보 방을 만든다.
+ * 위치는 선점·취소·만료와 같은 UPDATE 에서 지워진다.
  */
 import { randomUUID } from 'node:crypto';
 import { BAND_KEYS, MEAL_SLOT, QUICK_WAIT_MIN } from '../../../shared/lounge/constants.js';
@@ -28,8 +29,9 @@ import {
   createRoom,
   dropPastBands,
   findGroup,
-  findNearest,
+  formInstantGroups,
   futureBands,
+  groupDistanceM,
   hasBlockedPair,
   isExpired,
   isFinishedRoom,
@@ -170,6 +172,9 @@ async function currentTicket(userId: string, now: ISODateTime): Promise<Ticket |
 /** 내 상태. 다른 사람의 대기표 내용은 내려보내지 않는다 (같은 방 사람의 이름표·투표·수락만 보인다). */
 export async function quickState(userId: string, now: ISODateTime = nowISO()): Promise<QuickState> {
   await sweep(now);
+  // 누가 그만둬서 무리가 다시 나뉘면, 새 사람이 오지 않아도 다 찬 무리가 생길 수 있다. 읽을 때 한 번 확인한다.
+  const ticket = await currentTicket(userId, now);
+  if (ticket?.request.instant && ticket.request.status === 'waiting') await tryMatchInstant(ticket.request.id, now);
   return buildState(userId, now);
 }
 
@@ -180,6 +185,7 @@ async function buildState(userId: string, now: ISODateTime): Promise<QuickState>
 
   const users = room ? await loadUsers(room.memberIds) : new Map<string, LoungeUser>();
   return {
+    forming: await formingFor(ticket?.request ?? null, now),
     request: ticket ? toRequestView(ticket.request) : null,
     room,
     members: room
@@ -192,6 +198,18 @@ async function buildState(userId: string, now: ISODateTime): Promise<QuickState>
     waitingCount: await waitingCountFor(ticket?.request ?? null, now),
     meId: userId,
   };
+}
+
+/** 즉시 매칭으로 찾는 중이면 지금 내 무리에 모인 사람들(나 포함, 먼저 온 순). 다른 사람의 위치·거리는 내보내지 않는다 */
+async function formingFor(request: QuickRequest | null, now: ISODateTime): Promise<QuickState['forming']> {
+  if (!request?.instant || request.status !== 'waiting' || !request.loc) return [];
+  const groups = formInstantGroups(await repo.listWaiting(), await blockChecker(), now);
+  const mine = groups.find((g) => g.some((r) => r.id === request.id)) ?? [request];
+  const users = await loadUsers(mine.map((r) => r.userId));
+  return mine.map((r) => {
+    const u = users.get(r.userId);
+    return u ? toPublicUser(u) : unknownUser(r.userId);
+  });
 }
 
 /**
@@ -232,8 +250,9 @@ export function prepareQuickMatch(
     const loc = parseInstantInput(raw);
     if (!loc.ok) return loc;
     if (user.banned) return fail('BANNED', banReason(user) ?? undefined);
-    const input: QuickLegacyInput = { date: kstDate(now), placeType: '학식', size: 2, bands: [...BAND_KEYS], tags: [] };
-    return ok({ input, bands: [...BAND_KEYS], now, loc: loc.value });
+    const { lat, lng, size } = loc.value;
+    const input: QuickLegacyInput = { date: kstDate(now), placeType: '학식', size, bands: [...BAND_KEYS], tags: [] };
+    return ok({ input, bands: [...BAND_KEYS], now, loc: { lat, lng } });
   }
 
   const parsed = parseQuickInput(raw);
@@ -370,10 +389,10 @@ async function tryMatch(requestId: string, now: ISODateTime): Promise<boolean> {
 }
 
 /**
- * 즉시 대기표 하나를 기준으로 반경 안에서 가장 가까운 대기자와 짝을 지어 2명짜리 방을 만든다. 만들었으면 true.
+ * 즉시 대기표 하나가 든 무리(formInstantGroups)가 고른 인원만큼 찼으면 그 무리로 후보 방을 만든다. 만들었으면 true.
+ * 덜 찼으면 대기표는 waiting 으로 남고(찾는 중 화면에 모인 사람이 보인다), QUICK_WAIT_MIN 이 지나면 sweep 이 expired 로 닫는다.
  * 방 저장 → 오래된 순 선점 → 하나라도 놓치면 되돌리고 다시 — 위 tryMatch 와 같은 순서다.
  * 선점(claimWaiting)은 위치를 지우므로, 되돌릴 때는 우리가 들고 있던 위치를 함께 돌려놓는다.
- * 짝이 없으면 대기표는 waiting 으로 남고, QUICK_WAIT_MIN 이 지나면 sweep 이 expired 로 닫는다.
  */
 async function tryMatchInstant(requestId: string, now: ISODateTime): Promise<boolean> {
   const hidden = await blockChecker();
@@ -381,11 +400,10 @@ async function tryMatchInstant(requestId: string, now: ISODateTime): Promise<boo
     const waiting = (await repo.listWaiting()).filter((r) => r.instant);
     const target = waiting.find((r) => r.id === requestId);
     if (!target) return false; // 이미 다른 방에 들어갔거나 취소·만료됐다
-    const found = findNearest(waiting, target, hidden, now);
-    if (!found) return false;
+    const group = formInstantGroups(waiting, hidden, now).find((g) => g.some((r) => r.id === requestId));
+    if (!group || group.length < target.size) return false;
 
-    const group = [target, found.partner];
-    const room = createInstantRoom(randomUUID(), group, found.distanceM, now);
+    const room = createInstantRoom(randomUUID(), group, groupDistanceM(group), now);
     await repo.insertRoom(room);
 
     const claimed: { id: string; loc: QuickLocation | undefined }[] = [];

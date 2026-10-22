@@ -158,7 +158,8 @@ export type RoomView = {
  * 택시식 즉시 매칭: 내 위치만 보낸다. 날짜·시간·장소 종류·인원은 서버가 "지금, 학식, 2명"으로 정한다.
  * 위치는 매칭에만 쓰고, 매칭·취소·만료가 되면 서버가 지운다. 다른 사람에게는 거리(50m 단위)만 보인다.
  */
-export type QuickInstantInput = { lat: number; lng: number };
+/** 즉시 매칭 입력. size 는 본인 포함 인원(2~4, 없으면 2) — 같은 인원을 고른 사람끼리만 모인다 */
+export type QuickInstantInput = { lat: number; lng: number; size?: number };
 
 /** (옛 방식) 날짜·시간대를 직접 고르는 빠른 매칭 입력. 지금 화면은 쓰지 않는다. */
 export type QuickLegacyInput = {
@@ -219,6 +220,11 @@ export type QuickState = {
   waitingCount: number;
   /** 방이 열린 상태에서의 "나". 투표·수락 표시에 쓴다. */
   meId: string;
+  /**
+   * 즉시 매칭으로 찾는 중일 때 지금까지 내 무리에 모인 사람(나 포함, 먼저 온 순). 인원이 다 차면 후보 방이 된다.
+   * 찾는 중이 아니면 빈 배열.
+   */
+  forming: PublicUser[];
 };
 
 /** `PATCH /api/lounge/meals/quick` — 둘 중 하나만 보낸다 */
