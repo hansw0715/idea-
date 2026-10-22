@@ -132,7 +132,6 @@ export default function Dashboard() {
                     <br />
                     라운지에서 바로 찾기!
                   </strong>
-                  <span className="home-banner__sub">밥약 · 미팅 · 단톡방</span>
                 </span>
                 <span className="home-banner__art" aria-hidden="true">
                   <Icon name="utensils" />
