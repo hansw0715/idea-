@@ -399,7 +399,7 @@ export default function Signup() {
                 { value: 'male', label: '남' },
                 { value: 'female', label: '여' },
               ]}
-              help={schoolFieldErrors.gender ?? '미팅에서 남자는 위, 여자는 아래 자리에 앉아요. 사실과 다르면 신고될 수 있어요.'}
+              help={schoolFieldErrors.gender}
             />
 
             {verifying && <SchoolWaiting label="학교에 확인하는 중…" />}
