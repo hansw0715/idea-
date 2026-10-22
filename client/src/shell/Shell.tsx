@@ -6,6 +6,8 @@ import type { IconName } from '../ui';
 import { useDisplay } from '../ui/Display';
 import { LOUNGE_ENABLED } from '../features';
 import { useAuth } from '../auth';
+import { useLoungeOptional } from '../lounge/LoungeContext';
+import Avatar from '../lounge/parts/Avatar';
 
 /* ── 하단 탭바 숨김 제어 (전체 화면 흐름에서 사용) ─────────────── */
 interface ShellApi {
@@ -131,6 +133,8 @@ interface AppHeaderProps {
 export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppHeaderProps) {
   const { openSettings } = useDisplay();
   const { user } = useAuth();
+  // 라운지 프로필이 있으면 고른 캐릭터를, 없으면 이름 첫 글자를 보여 준다
+  const loungeProfile = useLoungeOptional()?.profile ?? null;
   const hasBack = title !== undefined;
   const showAvatar = !hasBack && !bare && user;
 
@@ -176,8 +180,16 @@ export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppH
           <Icon name="text-size" className="btn__icon" />
         </button>
         {showAvatar && (
-          <Link to="/account" className="app-header__avatar" aria-label={`내 정보 (${user.name})`}>
-            <span aria-hidden="true">{user.name.trim().charAt(0) || '나'}</span>
+          <Link
+            to="/account"
+            className={`app-header__avatar${loungeProfile ? ' app-header__avatar--lounge' : ''}`}
+            aria-label={`내 정보 (${loungeProfile?.nickname ?? user.name})`}
+          >
+            {loungeProfile ? (
+              <Avatar user={loungeProfile} size="md" />
+            ) : (
+              <span aria-hidden="true">{user.name.trim().charAt(0) || '나'}</span>
+            )}
           </Link>
         )}
       </div>

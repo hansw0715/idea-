@@ -37,6 +37,11 @@ export function useLounge(): LoungeState {
   return ctx;
 }
 
+/** 라운지가 꺼져 있어(LoungeProvider 없음) 써도 되는 곳용 — 헤더처럼 라운지 밖 화면. 없으면 null */
+export function useLoungeOptional(): LoungeState | null {
+  return useContext(LoungeContext);
+}
+
 /** 로그인한 동안 내 라운지 프로필을 들고 있고, 프로필 만들기 시트를 한 곳에서 연다. */
 export function LoungeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
