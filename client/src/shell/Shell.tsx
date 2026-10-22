@@ -5,6 +5,7 @@ import { Icon } from '../ui';
 import type { IconName } from '../ui';
 import { useDisplay } from '../ui/Display';
 import { LOUNGE_ENABLED } from '../features';
+import { useAuth } from '../auth';
 
 /* ── 하단 탭바 숨김 제어 (전체 화면 흐름에서 사용) ─────────────── */
 interface ShellApi {
@@ -129,7 +130,9 @@ interface AppHeaderProps {
 
 export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppHeaderProps) {
   const { openSettings } = useDisplay();
+  const { user } = useAuth();
   const hasBack = title !== undefined;
+  const showAvatar = !hasBack && !bare && user;
 
   return (
     <header className={`app-header${hasBack ? ' app-header--back' : ''}${bare ? ' app-header--bare' : ''}`}>
@@ -172,6 +175,11 @@ export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppH
         >
           <Icon name="text-size" className="btn__icon" />
         </button>
+        {showAvatar && (
+          <Link to="/account" className="app-header__avatar" aria-label={`내 정보 (${user.name})`}>
+            <span aria-hidden="true">{user.name.trim().charAt(0) || '나'}</span>
+          </Link>
+        )}
       </div>
     </header>
   );

@@ -126,14 +126,15 @@ export default function MyLoungeSection() {
   return (
     <section className="home-sum__group" aria-labelledby="home-lounge-title">
       <div className="home-sum__head">
-        <h3 className="home-sum__title" id="home-lounge-title">
+        <h2 className="home-sum__title" id="home-lounge-title">
           내 라운지 약속
-        </h3>
+        </h2>
         <Link to="/lounge" className="home-sum__link">
-          라운지에서 보기
+          더 보기
+          <Icon name="chevron-right" />
         </Link>
       </div>
-      {body}
+      <div className="home-board__card">{body}</div>
     </section>
   );
 }

@@ -1,71 +1,372 @@
-/* 홈(대시보드) 전용 스타일 — 접두사 home- */
+/* 홈(대시보드) 전용 스타일 — 접두사 home-
+   배치: 학교 이름 → 옆으로 넘기는 요약 카드 → 바로가기 아이콘 줄 → 배너 → e-class → 게시판형 목록
+   색·버튼은 공통 토큰을 그대로 쓰고, 홈의 카드만 둥글기를 크게(--home-r) 준다. */
 
-/* 목록 카드: 행이 카드 가장자리까지 닿아 눌렀을 때 면이 끝까지 보이게 한다. */
-.card.home-card--rows {
-  padding: 0;
+.home-page {
+  --home-r: 1.6rem;
 }
 
-.home-ul > li {
-  border-bottom: 1px solid var(--c-divider);
+/* ── 학교 이름 + 오늘 날짜 ───────────────────────────────────── */
+.home-hero {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-2) 0 var(--sp-6);
+}
+.home-hero__title {
+  margin: 0;
+  font-size: var(--fs-display);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+}
+.home-hero__date {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  white-space: nowrap;
 }
 
-.home-ul > li:last-child {
-  border-bottom: 0;
+/* ── 옆으로 넘기는 요약 카드 ─────────────────────────────────── */
+/* 카드가 화면 오른쪽 끝에 걸쳐 보여 "옆으로 더 있다"는 걸 알린다 */
+.home-cards {
+  margin: 0 calc(var(--gutter) * -1);
 }
-
-.home-ul .list__item {
-  padding: var(--sp-4) var(--sp-5);
-  gap: var(--sp-3);
-  border-bottom: 0;
+.home-cards__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(24rem, 64%);
+  gap: var(--sp-5);
+  padding: 0 var(--gutter) var(--sp-2);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 var(--gutter);
+  scrollbar-width: none;
 }
-
+.home-cards__track::-webkit-scrollbar {
+  display: none;
+}
+.home-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: 15rem;
+  padding: var(--sp-7) var(--sp-7) var(--sp-6);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--home-r);
+  background: var(--c-bg);
+  scroll-snap-align: start;
+}
+.home-card--accent {
+  border-color: var(--c-action-bg-strong);
+  background: var(--c-action-bg);
+}
+.home-card__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+}
+.home-card__sub {
+  margin: 0;
+  font-size: var(--fs-md);
+  color: var(--c-text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-card__more,
+.home-card__act {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--touch);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--c-text-sub);
+  text-decoration: none;
+}
+.home-card__more {
+  margin-top: auto;
+  align-self: flex-start;
+}
+.home-card--accent .home-card__more {
+  color: var(--c-action-text);
+}
+.home-card__more svg,
+.home-card__act svg {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+.home-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-6);
+  margin-top: auto;
+}
 @media (hover: hover) {
-  .home-ul .list__item--link:hover {
+  .home-card__more:hover,
+  .home-card__act:hover {
+    color: var(--c-action-text);
+  }
+}
+
+/* ── 바로가기 아이콘 줄 ──────────────────────────────────────── */
+.home-shortcuts {
+  margin: var(--sp-8) calc(var(--gutter) * -1) 0;
+}
+.home-shortcuts__list {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 7.6rem;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0 var(--gutter);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.home-shortcuts__list::-webkit-scrollbar {
+  display: none;
+}
+.home-shortcuts__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-2) 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--c-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+.home-shortcuts__icon {
+  display: grid;
+  place-items: center;
+  width: 5.6rem;
+  height: 5.6rem;
+  border-radius: var(--home-r);
+  background: var(--c-action-bg);
+  color: var(--c-action);
+  transition: background-color 0.15s;
+}
+.home-shortcuts__icon svg {
+  width: 2.8rem;
+  height: 2.8rem;
+}
+.home-shortcuts__label {
+  font-size: var(--fs-sm);
+  line-height: 1.3;
+  text-align: center;
+  word-break: keep-all;
+}
+.home-shortcuts__item:active .home-shortcuts__icon {
+  background: var(--c-action-bg-strong);
+}
+@media (hover: hover) {
+  .home-shortcuts__item:hover .home-shortcuts__icon {
+    background: var(--c-action-bg-strong);
+  }
+}
+
+/* ── 배너 ───────────────────────────────────────────────────── */
+.home-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  margin-top: var(--sp-8);
+  padding: var(--sp-7);
+  border-radius: var(--home-r);
+  background: var(--c-action);
+  color: var(--c-on-action);
+  text-decoration: none;
+}
+.home-banner__text {
+  display: grid;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.home-banner__text strong {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  line-height: 1.35;
+}
+.home-banner__sub {
+  font-size: var(--fs-sm);
+  opacity: 0.85;
+}
+.home-banner__art {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 6.4rem;
+  height: 6.4rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+.home-banner__art svg {
+  width: 3.2rem;
+  height: 3.2rem;
+}
+@media (hover: hover) {
+  .home-banner:hover {
+    background: var(--c-action-hover);
+  }
+}
+
+/* e-class 구역: 아래 게시판형 묶음과 같은 제목 크기·둥근 상자 */
+.home-page .section {
+  margin-top: var(--sp-9);
+}
+.home-page .section .section__title {
+  font-size: var(--fs-h2);
+}
+.home-page .section .card {
+  border-color: var(--c-border-soft);
+  border-radius: var(--home-r);
+}
+
+/* ── 게시판형 목록: 굵은 제목 + 더 보기, 아래 둥근 상자 ─────────── */
+.home-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-9);
+  margin-top: var(--sp-9);
+}
+.home-sum__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.home-sum__title {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-bold);
+}
+.home-sum__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: var(--touch);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--c-text-sub);
+  text-decoration: none;
+}
+.home-sum__link svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+.home-sum__link:hover {
+  color: var(--c-action-text);
+}
+.home-board__card {
+  overflow: hidden;
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--home-r);
+  background: var(--c-bg);
+}
+
+.home-ul > li + li {
+  border-top: 1px solid var(--c-divider);
+}
+
+/* 한 줄: 굵은 이름 · 흐린 설명 · 오른쪽 표시 */
+.home-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  min-height: 5.6rem;
+  padding: var(--sp-4) var(--sp-6);
+  color: var(--c-text);
+  text-decoration: none;
+}
+.home-row__main {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-row__sub {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: var(--fs-md);
+  color: var(--c-text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-row__chev {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+  color: var(--c-text-muted);
+}
+@media (hover: hover) {
+  .home-row:hover,
+  .home-board__card .list__item--link:hover {
     background: var(--c-surface);
   }
 }
 
-.home-badge {
-  flex: none;
+/* 라운지 약속 행(list__item)도 같은 상자 안 여백에 맞춘다 */
+.home-board__card .list__item {
+  padding: var(--sp-4) var(--sp-6);
+  gap: var(--sp-3);
+  border-bottom: 0;
 }
 
-.home-more {
-  margin-top: var(--sp-3);
+/* 상태 배지는 길면 줄여서 끝을 … 로 — 행 높이는 그대로 */
+.home-badge {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 2.4rem;
+}
+
+.home-sum__empty {
+  margin: 0;
+  padding: var(--sp-6);
   font-size: var(--fs-sm);
   color: var(--c-text-sub);
 }
-
-.home-empty-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+.home-sum__empty a {
+  color: var(--c-action-text);
+}
+.home-sum__more {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-6) var(--sp-5);
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+  border-top: 1px solid var(--c-divider);
+}
+.home-sum__error {
+  display: grid;
   gap: var(--sp-3);
+  justify-items: start;
+  padding: var(--sp-6);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
 }
-
-.home-empty-actions .btn {
-  margin-top: var(--sp-3);
-}
-
-/* 시간표 미리보기: 격자가 자기 테두리를 가지므로 바깥 카드는 두지 않는다. */
-/* "이번 주로"는 이동 바 밖에 둔다. 나타나도 ‹ › 버튼 위치가 움직이지 않아 연달아 누르기 편하다. */
-.home-tt .home-today {
-  display: flex;
-  justify-content: center;
-  margin: calc(var(--sp-3) * -1) 0 var(--sp-2);
-}
-
-.home-tt .home-grid-alert {
-  margin-bottom: var(--sp-3);
-}
-
-/* 구역 제목 오른쪽 링크: 글자가 거터 끝에 맞도록 버튼 안쪽 여백만큼 당긴다. */
-.home-page .section__head > .btn--text {
-  margin-right: calc(var(--sp-3) * -1);
+.home-sum__error p {
+  margin: 0;
 }
 
 /* ───────────────────────────────────────────────────────────────
    내 라운지 약속 구역 (접두사 lounge-home-) — C4
-   목록 틀(home-card--rows · home-ul)은 위 홈 공통 규칙을 그대로 쓴다.
    ─────────────────────────────────────────────────────────────── */
 
 /* 미팅/밥약을 알려 주는 종류 아이콘 (글자 배지가 따로 있어 장식) */
@@ -95,100 +396,22 @@
   line-height: 1.3;
 }
 
-/* ── 내 일정 상자: 다가오는 예약 · 내 회의 · 내 라운지 약속을 한 카드 안에 묶음으로 ───────── */
-.home-sum__group + .home-sum__group {
-  border-top: 1px solid var(--c-border);
-}
-.home-sum__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  padding: var(--sp-4) var(--sp-5) var(--sp-2);
-}
-.home-sum__title {
-  margin: 0;
-  font-size: var(--fs-md);
-  font-weight: var(--fw-bold);
-}
-.home-sum__link {
-  font-size: var(--fs-sm);
-  color: var(--c-action-text);
-  text-decoration: none;
-}
-.home-sum__link:hover {
-  text-decoration: underline;
-}
-.home-sum__empty {
-  margin: 0;
-  padding: var(--sp-2) var(--sp-5) var(--sp-5);
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-}
-.home-sum__empty a {
-  color: var(--c-action-text);
-}
-.home-sum__more {
-  margin: 0;
-  padding: var(--sp-1) var(--sp-5) var(--sp-4);
-  font-size: var(--fs-xs);
-  color: var(--c-text-sub);
-}
-.home-sum__error {
-  display: grid;
-  gap: var(--sp-3);
-  justify-items: start;
-  padding: var(--sp-2) var(--sp-5) var(--sp-5);
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-}
-.home-sum__error p {
-  margin: 0;
-}
-/* 묶음 안의 행은 머리글 아래에서 카드 가장자리까지 닿는다 */
-.home-sum .home-ul > li:first-child .list__item {
-  padding-top: var(--sp-3);
-}
-
-/* ── 홈 머리: 왼쪽 위에 "홈", 오른쪽에 오늘 날짜 ───────────────────────────────────────── */
-.home-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  padding: var(--sp-3) 0 var(--sp-5);
-  margin-bottom: var(--sp-4);
-  border-bottom: 2px solid var(--c-action);
-}
-.home-hero__who {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  min-width: 0;
-}
-.home-hero__mark {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 4rem;
-  height: 4rem;
-  border-radius: var(--r);
-  background: var(--c-action-bg-strong);
-  color: var(--c-action-text);
-}
-.home-hero__mark svg {
-  width: 2.2rem;
-  height: 2.2rem;
-}
-.home-hero__title {
-  margin: 0;
-  font-size: var(--fs-h1);
-  font-weight: var(--fw-bold);
-  line-height: 1.2;
-}
-.home-hero__date {
-  margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-  white-space: nowrap;
+/* 넓은 화면: 요약 카드를 넘기지 않고 나란히 */
+@media (min-width: 768px) {
+  .home-cards {
+    margin: 0;
+  }
+  .home-cards__track {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr 1fr;
+    padding: 0;
+    overflow: visible;
+  }
+  .home-shortcuts {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .home-shortcuts__list {
+    padding: 0;
+  }
 }

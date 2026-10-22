@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { AppHeader } from '../shell/Shell';
 import { api } from '../api';
@@ -6,8 +7,11 @@ import { reservationStatus } from '../reservationStatus';
 import { fmtDate, fmtRange } from '../time';
 import { useWeek } from '../useWeek';
 import { Alert, Button, Icon } from '../ui';
+import type { IconName } from '../ui';
+import { useDisplay } from '../ui/Display';
 import { LOUNGE_ENABLED } from '../features';
 import EclassHome from '../school/EclassHome';
+import { ECLASS_URL } from '../school/eclassLogic';
 import MyLoungeSection from '../lounge/home/MyLoungeSection';
 import type { Meeting, Reservation } from '../types';
 import './home.css';
@@ -18,16 +22,27 @@ const TODAY_LABEL = () =>
     new Date(),
   );
 
-/** 홈에 보여 주는 목록의 최대 개수 — 세 구역이 한 화면에 거의 다 들어오게 3건씩 */
-const LIST_LIMIT = 3;
+/** 홈에 보여 주는 목록의 최대 개수 — 게시판 목록처럼 짧게 4건씩 */
+const LIST_LIMIT = 4;
 
 interface DashboardData {
   meetings: Meeting[];
   reservations: Reservation[];
 }
 
+/** 바로가기 한 칸: 앱 안 경로(to) 또는 바깥 주소(href) 또는 동작(onClick) */
+interface Shortcut {
+  label: string;
+  icon: IconName;
+  to?: string;
+  state?: unknown;
+  href?: string;
+  onClick?: () => void;
+}
+
 export default function Dashboard() {
   const { weekStart } = useWeek();
+  const { openSettings } = useDisplay();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -58,19 +73,30 @@ export default function Dashboard() {
 
   const meetings = data?.meetings ?? [];
   const reservations = data?.reservations ?? [];
+  const next = reservations[0];
+
+  const shortcuts: Shortcut[] = [
+    { label: '내 시간표', icon: 'calendar', to: '/timetable' },
+    { label: '회의', icon: 'users', to: '/meetings' },
+    { label: '회의 만들기', icon: 'plus', to: '/meetings', state: { sheet: 'create' } },
+    ...(LOUNGE_ENABLED
+      ? [
+          { label: '밥약', icon: 'utensils' as IconName, to: '/lounge' },
+          { label: '미팅', icon: 'heart' as IconName, to: '/lounge' },
+        ]
+      : []),
+    { label: 'e-class', icon: 'external', href: ECLASS_URL },
+    { label: '내 정보', icon: 'user', to: '/account' },
+    { label: '화면 설정', icon: 'text-size', onClick: openSettings },
+  ];
 
   return (
     <>
       <AppHeader />
       <main id="main" className="app-main home-page">
-        {/* 왼쪽 위 "홈" 제목 + 오른쪽 오늘 날짜 */}
+        {/* 학교 이름 + 오늘 날짜 */}
         <header className="home-hero">
-          <div className="home-hero__who">
-            <span className="home-hero__mark" aria-hidden="true">
-              <Icon name="home" />
-            </span>
-            <h1 className="home-hero__title">홈</h1>
-          </div>
+          <h1 className="home-hero__title">한성대</h1>
           <p className="home-hero__date">{TODAY_LABEL()}</p>
         </header>
 
@@ -88,113 +114,183 @@ export default function Dashboard() {
           </Alert>
         ) : (
           <>
-            {/* 0. 미수강 강의 알림(e-class) — 홈 첫 화면 맨 위. 자기 데이터를 따로 불러와 아래 구역의 로딩·오류와 서로 막지 않는다 */}
-            <EclassHome />
-
-            {/* 1~3. 다가오는 예약 · 내 회의 · 내 라운지 약속 — 한 상자 안에서 위에서 아래로 */}
-            <section className="section" aria-labelledby="home-sum-title">
-              <h2 className="sr-only" id="home-sum-title">
-                내 일정
-              </h2>
-              <div className="card home-card--rows home-sum">
-                <section className="home-sum__group" aria-labelledby="home-res-title">
-                  <div className="home-sum__head">
-                    <h3 className="home-sum__title" id="home-res-title">
-                      다가오는 예약
-                    </h3>
-                    <Link to="/meetings" className="home-sum__link">
-                      회의 보기
-                    </Link>
-                  </div>
-                  {!data ? (
-                    <p className="home-sum__empty">불러오는 중이에요.</p>
-                  ) : reservations.length === 0 ? (
-                    <p className="home-sum__empty">아직 예정된 예약이 없어요.</p>
-                  ) : (
-                    <>
-                      <ul className="list home-ul">
-                        {reservations.slice(0, LIST_LIMIT).map((r) => {
-                          const status = reservationStatus(r);
-                          return (
-                            <li key={r.id}>
-                              <Link to={`/meetings/${r.meetingId}`} className="list__item list__item--link">
-                                <div className="list__body">
-                                  <div className="list__main">
-                                    {r.facilityName} · {r.building}
-                                  </div>
-                                  <div className="list__sub tabular">
-                                    {fmtDate(r.date)} {fmtRange(r.startMin, r.endMin)} · {r.meetingName}
-                                  </div>
-                                </div>
-                                <span className={`badge ${status.className} home-badge`}>{status.label}</span>
-                                <Icon name="chevron-right" className="list__chev" />
-                              </Link>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      {reservations.length > LIST_LIMIT && (
-                        <p className="home-sum__more">
-                          예약 {reservations.length}건 중 {LIST_LIMIT}건을 표시했어요.
-                        </p>
-                      )}
-                    </>
-                  )}
-                </section>
-
-                <section className="home-sum__group" aria-labelledby="home-meet-title">
-                  <div className="home-sum__head">
-                    <h3 className="home-sum__title" id="home-meet-title">
-                      내 회의
-                    </h3>
-                    <Link to="/meetings" className="home-sum__link">
-                      회의 관리하기
-                    </Link>
-                  </div>
-                  {!data ? (
-                    <p className="home-sum__empty">불러오는 중이에요.</p>
-                  ) : meetings.length === 0 ? (
-                    <p className="home-sum__empty">
-                      아직 참여 중인 회의가 없어요.{' '}
-                      <Link to="/meetings" state={{ sheet: 'create' }}>
-                        회의 만들기
-                      </Link>
+            {/* 1. 옆으로 넘기는 요약 카드: 다음 예약(강조) · 내 회의 */}
+            <section className="home-cards" aria-label="오늘 요약">
+              <div className="home-cards__track">
+                <article className="home-card home-card--accent">
+                  <h2 className="home-card__title">다음 예약</h2>
+                  <p className="home-card__sub tabular">
+                    {!data ? '불러오는 중이에요.' : next ? fmtDate(next.date) : '아직 예정된 예약이 없어요.'}
+                  </p>
+                  {next && (
+                    <p className="home-card__sub tabular">
+                      {fmtRange(next.startMin, next.endMin)} · {next.facilityName}
                     </p>
-                  ) : (
-                    <>
-                      <ul className="list home-ul">
-                        {meetings.slice(0, LIST_LIMIT).map((m) => (
-                          <li key={m.id}>
-                            <Link to={`/meetings/${m.id}`} className="list__item list__item--link">
-                              <div className="list__body">
-                                <div className="list__main">{m.name}</div>
-                                <div className="list__sub">멤버 {m.memberCount ?? 0}명</div>
-                              </div>
-                              <span className="badge badge--gray code-chip">
-                                <span className="sr-only">회의 코드 </span>
-                                {m.code}
-                              </span>
-                              <Icon name="chevron-right" className="list__chev" />
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                      {meetings.length > LIST_LIMIT && (
-                        <p className="home-sum__more">
-                          회의 {meetings.length}개 중 {LIST_LIMIT}개를 표시했어요.
-                        </p>
-                      )}
-                    </>
                   )}
-                </section>
+                  <Link to="/timetable" className="home-card__more">
+                    일정 더 보기
+                    <Icon name="chevron-right" />
+                  </Link>
+                </article>
 
-                {/* 라운지 약속은 자기 데이터를 따로 불러와서 위 묶음의 로딩·오류와 서로 막지 않는다 */}
-                {LOUNGE_ENABLED && <MyLoungeSection />}
+                <article className="home-card">
+                  <h2 className="home-card__title">내 회의</h2>
+                  <p className="home-card__sub">
+                    {!data ? '불러오는 중이에요.' : meetings.length === 0 ? '참여 중인 회의가 없어요.' : `${meetings.length}개 참여 중`}
+                  </p>
+                  <div className="home-card__actions">
+                    <Link to="/meetings" state={{ sheet: 'create' }} className="home-card__act">
+                      <Icon name="plus" />
+                      만들기
+                    </Link>
+                    <Link to="/meetings" className="home-card__act">
+                      <Icon name="list" />
+                      전체 보기
+                    </Link>
+                  </div>
+                </article>
               </div>
             </section>
+
+            {/* 2. 바로가기 아이콘 줄 */}
+            <nav className="home-shortcuts" aria-label="바로가기">
+              <ul className="home-shortcuts__list">
+                {shortcuts.map((s) => (
+                  <li key={s.label}>
+                    <ShortcutItem item={s} />
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* 3. 배너 — 라운지가 켜져 있을 때만 */}
+            {LOUNGE_ENABLED && (
+              <Link to="/lounge" className="home-banner">
+                <span className="home-banner__text">
+                  <strong>
+                    공강에 같이 밥 먹을 사람,
+                    <br />
+                    라운지에서 바로 찾기!
+                  </strong>
+                  <span className="home-banner__sub">밥약 · 미팅 · 단톡방</span>
+                </span>
+                <span className="home-banner__art" aria-hidden="true">
+                  <Icon name="utensils" />
+                </span>
+              </Link>
+            )}
+
+            {/* 4. 미수강 강의 알림(e-class) — 자기 데이터를 따로 불러와 아래 구역과 서로 막지 않는다 */}
+            <EclassHome />
+
+            {/* 5. 게시판처럼: 구역 제목 + 더 보기, 아래 둥근 목록 상자 */}
+            <div className="home-board">
+              <BoardGroup id="home-res-title" title="다가오는 예약" to="/meetings">
+                {!data ? (
+                  <p className="home-sum__empty">불러오는 중이에요.</p>
+                ) : reservations.length === 0 ? (
+                  <p className="home-sum__empty">아직 예정된 예약이 없어요.</p>
+                ) : (
+                  <ul className="list home-ul">
+                    {reservations.slice(0, LIST_LIMIT).map((r) => {
+                      const status = reservationStatus(r);
+                      return (
+                        <li key={r.id}>
+                          <Link to={`/meetings/${r.meetingId}`} className="home-row">
+                            <span className="home-row__main">{r.facilityName}</span>
+                            <span className="home-row__sub tabular">
+                              {fmtDate(r.date)} {fmtRange(r.startMin, r.endMin)}
+                            </span>
+                            <span className={`badge ${status.className} home-badge`} title={status.label}>
+                              {status.label}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </BoardGroup>
+
+              <BoardGroup id="home-meet-title" title="내 회의" to="/meetings">
+                {!data ? (
+                  <p className="home-sum__empty">불러오는 중이에요.</p>
+                ) : meetings.length === 0 ? (
+                  <p className="home-sum__empty">
+                    아직 참여 중인 회의가 없어요.{' '}
+                    <Link to="/meetings" state={{ sheet: 'create' }}>
+                      회의 만들기
+                    </Link>
+                  </p>
+                ) : (
+                  <ul className="list home-ul">
+                    {meetings.slice(0, LIST_LIMIT).map((m) => (
+                      <li key={m.id}>
+                        <Link to={`/meetings/${m.id}`} className="home-row">
+                          <span className="home-row__main">{m.name}</span>
+                          <span className="home-row__sub">멤버 {m.memberCount ?? 0}명</span>
+                          <Icon name="chevron-right" className="home-row__chev" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </BoardGroup>
+
+              {/* 라운지 약속은 자기 데이터를 따로 불러와서 위 묶음의 로딩·오류와 서로 막지 않는다 */}
+              {LOUNGE_ENABLED && <MyLoungeSection />}
+            </div>
           </>
         )}
       </main>
     </>
+  );
+}
+
+function ShortcutItem({ item }: { item: Shortcut }) {
+  const inner = (
+    <>
+      <span className="home-shortcuts__icon" aria-hidden="true">
+        <Icon name={item.icon} />
+      </span>
+      <span className="home-shortcuts__label">{item.label}</span>
+    </>
+  );
+  if (item.href) {
+    return (
+      <a href={item.href} target="_blank" rel="noreferrer" className="home-shortcuts__item">
+        {inner}
+      </a>
+    );
+  }
+  if (item.onClick) {
+    return (
+      <button type="button" onClick={item.onClick} className="home-shortcuts__item">
+        {inner}
+      </button>
+    );
+  }
+  return (
+    <Link to={item.to ?? '/'} state={item.state} className="home-shortcuts__item">
+      {inner}
+    </Link>
+  );
+}
+
+/** 게시판 한 묶음: 굵은 제목 + 오른쪽 "더 보기 >", 아래 둥근 상자 */
+function BoardGroup({ id, title, to, children }: { id: string; title: string; to: string; children: ReactNode }) {
+  return (
+    <section className="home-sum__group" aria-labelledby={id}>
+      <div className="home-sum__head">
+        <h2 className="home-sum__title" id={id}>
+          {title}
+        </h2>
+        <Link to={to} className="home-sum__link">
+          더 보기
+          <Icon name="chevron-right" />
+        </Link>
+      </div>
+      <div className="home-board__card">{children}</div>
+    </section>
   );
 }
