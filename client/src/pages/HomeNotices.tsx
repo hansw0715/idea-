@@ -50,6 +50,7 @@ export default function HomeNotices() {
       {data && data.department ? (
         <NoticeTable
           id="home-notice-dept"
+          panel
           title={`${data.department.name} 공지`}
           section={data.department}
           loading={false}
@@ -58,7 +59,7 @@ export default function HomeNotices() {
           today={today}
         />
       ) : (
-        <section className="home-table" aria-labelledby="home-notice-dept">
+        <section className="home-table home-table--panel" aria-labelledby="home-notice-dept">
           <div className="home-sum__head">
             <h2 className="home-sum__title" id="home-notice-dept">
               {data?.departmentName ? `${data.departmentName} 공지` : '학과 공지'}
@@ -87,6 +88,8 @@ export default function HomeNotices() {
 
 interface NoticeTableProps {
   id: string;
+  /** 옅은 회색 면 상자로 (학과 공지) */
+  panel?: boolean;
   title: string;
   section: NoticeSection | null;
   loading: boolean;
@@ -95,7 +98,7 @@ interface NoticeTableProps {
   today: string;
 }
 
-function NoticeTable({ id, title, section, loading, failed, days, today }: NoticeTableProps) {
+function NoticeTable({ id, title, section, loading, failed, days, today, panel = false }: NoticeTableProps) {
   const [open, setOpen] = useState(false);
   const items = section?.items ?? [];
   const shown = open ? items : items.slice(0, SHOW);
@@ -106,7 +109,7 @@ function NoticeTable({ id, title, section, loading, failed, days, today }: Notic
   else if (items.length === 0) empty = `최근 ${days}일 동안 올라온 공지가 없어요.`;
 
   return (
-    <section className="home-table" aria-labelledby={id}>
+    <section className={`home-table${panel ? ' home-table--panel' : ''}`} aria-labelledby={id}>
       <div className="home-sum__head">
         <h2 className="home-sum__title" id={id}>
           {title}
