@@ -316,7 +316,7 @@ export default function Signup() {
         </div>
 
         <div className="auth-steps">
-          <p className="signup-progress mono" aria-hidden="true">{String(currentIndex).padStart(2, '0')} <span>/ 04</span></p>
+          <p className="signup-progress" aria-hidden="true">{currentIndex} <span>/ {STEPS.length}</span></p>
           <Stepper steps={STEPS} current={currentIndex} />
         </div>
         </div>

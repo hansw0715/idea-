@@ -188,8 +188,8 @@ export default function Dashboard() {
                 )}
               </section>
 
-              {/* 공지: 학교 공지 → 내 학과 공지 (최근 2주). 자기 데이터를 따로 불러온다 */}
-              <HomeNotices />
+              {/* 공지(최근 2주): 학교 공지는 왼쪽, 내 학과 공지는 오른쪽 — 두 열 길이를 맞춘다 */}
+              <HomeNotices part="school" />
             </div>
 
             <div className="home-col home-col--side">
@@ -289,6 +289,8 @@ export default function Dashboard() {
                   </>
                 )}
               </section>
+
+              <HomeNotices part="department" />
 
               {/* 라운지 약속은 가장 덜 급한 정보라 맨 아래. 각자 데이터를 불러와 예약 로딩과 독립적이다. */}
               {LOUNGE_ENABLED && (

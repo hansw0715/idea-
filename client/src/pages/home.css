@@ -397,15 +397,17 @@
   color: var(--c-text-sub);
 }
 
+/* 상태 표시라 옅은 블루 면 + 진한 블루 글자 (꽉 찬 블루는 주 버튼 전용) */
 .home-notice__new {
   display: grid;
   flex: none;
   place-items: center;
-  width: 2rem;
+  min-width: 2rem;
   height: 2rem;
-  border-radius: 50%;
-  background: var(--c-action);
-  color: var(--c-on-action);
+  padding: 0 var(--sp-1);
+  border-radius: var(--r);
+  background: var(--c-action-bg);
+  color: var(--c-action-text);
   font-size: var(--fs-xs);
   font-weight: var(--fw-bold);
 }

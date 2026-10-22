@@ -12,18 +12,29 @@ const todayKst = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul'
 /** "2026-10-22" → "10.22" */
 const shortDate = (d: string) => `${d.slice(5, 7)}.${d.slice(8, 10)}`;
 
+/** 학교 공지·학과 공지 패널이 같은 화면에서 동시에 불러올 때 요청을 한 번만 보낸다 */
+let inflight: Promise<NoticesResponse> | null = null;
+function loadNotices(): Promise<NoticesResponse> {
+  if (!inflight) {
+    inflight = api.get<NoticesResponse>('/notices');
+    // 끝나면 비워서 다음에 홈을 열 때는 새로 읽는다
+    void inflight.catch(() => undefined).finally(() => setTimeout(() => (inflight = null), 0));
+  }
+  return inflight;
+}
+
 /**
- * 홈의 "학교 공지 → 내 학과 공지" — 최근 2주 안에 올라온 글을 학교 홈페이지에서 읽어 표로 보여 준다.
+ * 홈의 학교 공지 / 내 학과 공지 패널 — 최근 2주 안에 올라온 글을 학교 홈페이지에서 읽어 보여 준다.
+ * 넓은 화면에서 두 열의 길이를 맞추려고 패널을 하나씩 따로 놓는다(part).
  * 홈의 다른 구역과 따로 불러온다(학교 홈페이지가 느려도 위 구역은 먼저 보인다).
  */
-export default function HomeNotices() {
+export default function HomeNotices({ part }: { part: 'school' | 'department' }) {
   const [data, setData] = useState<NoticesResponse | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    api
-      .get<NoticesResponse>('/notices')
+    loadNotices()
       .then((d) => !cancelled && setData(d))
       .catch(() => !cancelled && setFailed(true));
     return () => {
@@ -34,8 +45,8 @@ export default function HomeNotices() {
   const today = todayKst();
   const days = data?.days ?? 14;
 
-  return (
-    <>
+  if (part === 'school') {
+    return (
       <NoticeTable
         id="home-notice-school"
         title="학교 공지"
@@ -45,40 +56,44 @@ export default function HomeNotices() {
         days={days}
         today={today}
       />
+    );
+  }
 
-      {data && data.department ? (
-        <NoticeTable
-          id="home-notice-dept"
-          title={`${data.department.name} 공지`}
-          section={data.department}
-          loading={false}
-          failed={false}
-          days={days}
-          today={today}
-        />
-      ) : (
-        <section className="home-panel home-panel--notice" aria-labelledby="home-notice-dept">
-          <div className="home-panel__head">
-            <h2 className="home-panel__title" id="home-notice-dept">
-              {data?.departmentName ? `${data.departmentName} 공지` : '학과 공지'}
-            </h2>
-          </div>
-          <p className="home-panel__empty">
-              {!data && !failed ? (
-                '불러오는 중이에요.'
-              ) : failed ? (
-                '공지를 불러오지 못했어요. 잠시 후 다시 열어 주세요.'
-              ) : data?.departmentName ? (
-                '우리 학과 공지 게시판을 찾지 못했어요.'
-              ) : (
-                <>
-                  학교 계정을 연동하면 내 학과 공지를 볼 수 있어요. <Link to="/account">연동하기</Link>
-                </>
-            )}
-          </p>
-        </section>
-      )}
-    </>
+  if (data && data.department) {
+    return (
+      <NoticeTable
+        id="home-notice-dept"
+        title={`${data.department.name} 공지`}
+        section={data.department}
+        loading={false}
+        failed={false}
+        days={days}
+        today={today}
+      />
+    );
+  }
+
+  return (
+    <section className="home-panel home-panel--notice" aria-labelledby="home-notice-dept">
+      <div className="home-panel__head">
+        <h2 className="home-panel__title" id="home-notice-dept">
+          {data?.departmentName ? `${data.departmentName} 공지` : '학과 공지'}
+        </h2>
+      </div>
+      <p className="home-panel__empty">
+        {!data && !failed ? (
+          '불러오는 중이에요.'
+        ) : failed ? (
+          '공지를 불러오지 못했어요. 잠시 후 다시 열어 주세요.'
+        ) : data?.departmentName ? (
+          '우리 학과 공지 게시판을 찾지 못했어요.'
+        ) : (
+          <>
+            학교 계정을 연동하면 내 학과 공지를 볼 수 있어요. <Link to="/account">연동하기</Link>
+          </>
+        )}
+      </p>
+    </section>
   );
 }
 
