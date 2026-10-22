@@ -29,7 +29,7 @@ export interface NoticeSection {
   name: string;
   /** 게시판 화면 주소 (더 보기) */
   url: string;
-  /** 최근 2주 안에 올라온 공지, 최신순 */
+  /** 가장 최근에 올라온 공지 (최대 limit 개), 최신순 */
   items: NoticeItem[];
   /** 학교 홈페이지를 읽지 못했으면 true (items 는 빈 배열) */
   failed?: boolean;
@@ -37,8 +37,8 @@ export interface NoticeSection {
 
 /** GET /api/notices 응답 */
 export interface NoticesResponse {
-  /** 며칠 안의 공지인지 (14) */
-  days: number;
+  /** 학교·학과 공지를 각각 몇 개까지 보여 주는지 (5) */
+  limit: number;
   school: NoticeSection;
   /** 내 학과 공지. 학과를 모르거나 게시판을 못 찾으면 null */
   department: NoticeSection | null;

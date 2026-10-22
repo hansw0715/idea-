@@ -4,9 +4,6 @@ import { api } from '../api';
 import { Icon } from '../ui';
 import type { NoticeItem, NoticeSection, NoticesResponse } from '../../../shared/notices/types';
 
-/** 처음에 보여 주는 공지 수. 나머지는 "모두 보기"로 펼친다 */
-const SHOW = 5;
-
 /** 오늘 날짜 YYYY-MM-DD (한국 시간) — 오늘 올라온 글에 N 표시 */
 const todayKst = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
 
@@ -14,7 +11,8 @@ const todayKst = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul'
 const shortDate = (d: string) => `${d.slice(5, 7)}.${d.slice(8, 10)}`;
 
 /**
- * 홈의 "학교 공지 → 내 학과 공지" — 최근 2주 안에 올라온 글을 학교 홈페이지에서 읽어 표로 보여 준다.
+ * 홈의 "학교 공지 → 내 학과 공지" — 가장 최근에 올라온 글 5개씩을 학교 홈페이지에서 읽어 표로 보여 준다.
+ * 더 보려면 "더 보기"로 학교 홈페이지 게시판을 연다.
  * 홈의 다른 구역과 따로 불러온다(학교 홈페이지가 느려도 위 구역은 먼저 보인다).
  */
 export default function HomeNotices() {
@@ -33,7 +31,6 @@ export default function HomeNotices() {
   }, []);
 
   const today = todayKst();
-  const days = data?.days ?? 14;
 
   return (
     <>
@@ -43,7 +40,6 @@ export default function HomeNotices() {
         section={data?.school ?? null}
         loading={!data && !failed}
         failed={failed}
-        days={days}
         today={today}
       />
 
@@ -55,7 +51,6 @@ export default function HomeNotices() {
           section={data.department}
           loading={false}
           failed={false}
-          days={days}
           today={today}
         />
       ) : (
@@ -94,19 +89,16 @@ interface NoticeTableProps {
   section: NoticeSection | null;
   loading: boolean;
   failed: boolean;
-  days: number;
   today: string;
 }
 
-function NoticeTable({ id, title, section, loading, failed, days, today, panel = false }: NoticeTableProps) {
-  const [open, setOpen] = useState(false);
+function NoticeTable({ id, title, section, loading, failed, today, panel = false }: NoticeTableProps) {
   const items = section?.items ?? [];
-  const shown = open ? items : items.slice(0, SHOW);
 
   let empty: string | null = null;
   if (loading) empty = '불러오는 중이에요.';
   else if (failed || section?.failed) empty = '학교 홈페이지에서 공지를 읽지 못했어요. 잠시 후 다시 열어 주세요.';
-  else if (items.length === 0) empty = `최근 ${days}일 동안 올라온 공지가 없어요.`;
+  else if (items.length === 0) empty = '아직 올라온 공지가 없어요.';
 
   return (
     <section className={`home-table${panel ? ' home-table--panel' : ''}`} aria-labelledby={id}>
@@ -127,17 +119,9 @@ function NoticeTable({ id, title, section, loading, failed, days, today, panel =
         </div>
       ) : (
         <ul className="home-table__box">
-          {shown.map((n) => (
+          {items.map((n) => (
             <NoticeRow key={n.id} notice={n} isNew={n.date === today} />
           ))}
-          {items.length > SHOW && (
-            <li>
-              <button type="button" className="home-table__toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-                {open ? '접기' : `최근 ${days}일 공지 ${items.length}건 모두 보기`}
-                <Icon name={open ? 'chevron-up' : 'chevron-down'} />
-              </button>
-            </li>
-          )}
         </ul>
       )}
     </section>
