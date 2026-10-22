@@ -124,9 +124,7 @@ export default function Account() {
       <AppHeader />
       <main id="main" className="app-main account-page">
         <div className="page-head">
-          <p className="eyebrow">나의 공간</p>
           <h1 className="page-title">내 정보</h1>
-          <p className="page-lead">가입 정보를 확인하고 계정을 관리합니다.</p>
         </div>
 
         <section className="section" aria-labelledby="account-info-title">
@@ -151,8 +149,6 @@ export default function Account() {
           </div>
         </section>
 
-        {/* 라운지 프로필 → 학교 계정 연동 (C4/C5). 학교 카드는 자기 안에서 제목·여백을 맡는다. */}
-        {LOUNGE_ENABLED && <LoungeProfileCard />}
         <div className="section lounge-acct-school">
           <SchoolLinkCard />
         </div>
@@ -167,8 +163,15 @@ export default function Account() {
             <Icon name="text-size" className="btn__icon" />
             글자·화면 설정
           </button>
-          {LOUNGE_ENABLED && <LoungeAccountRows />}
         </section>
+
+        {LOUNGE_ENABLED && (
+          <details className="section account-secondary">
+            <summary>라운지 프로필·설정</summary>
+            <LoungeProfileCard />
+            <LoungeAccountRows />
+          </details>
+        )}
 
         <section className="section account-logout">
           <Button variant="tertiary" block loading={loggingOut} onClick={logout}>

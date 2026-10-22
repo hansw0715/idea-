@@ -1,7 +1,7 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Icon, SPRING, pageVariants } from '../ui';
 import type { IconName } from '../ui';
 import { useDisplay } from '../ui/Display';
@@ -88,7 +88,65 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/account', label: '내 정보', icon: 'user' },
 ];
 
+/** 레일(데스크톱)인지: 표시줄이 움직이는 축이 가로(하단 탭바)에서 세로(레일)로 바뀐다 */
+const RAIL_QUERY = '(min-width: 1024px)';
+
+interface Mark {
+  pos: number;
+  size: number;
+}
+
+/**
+ * 활성 탭 표시줄. layoutId(화면 전체 좌표로 재는 공유 레이아웃) 대신
+ * 목록 안에서의 offset 값만 읽어 한 축으로만 움직인다.
+ * 스크롤 위치와 무관해서, 스크롤한 뒤 탭을 바꿔도 아래에서 올라오지 않는다.
+ */
+function useActiveMark(listRef: RefObject<HTMLUListElement | null>): { mark: Mark | null; rail: boolean } {
+  const { pathname } = useLocation();
+  const [mark, setMark] = useState<Mark | null>(null);
+  const [rail, setRail] = useState(() => window.matchMedia(RAIL_QUERY).matches);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const mq = window.matchMedia(RAIL_QUERY);
+    const measure = () => {
+      const isRail = mq.matches;
+      setRail(isRail);
+      const item = list.querySelector<HTMLElement>('.tabbar__item[aria-current="page"]');
+      if (!item) return setMark(null);
+      setMark(
+        isRail
+          ? { pos: item.offsetTop, size: item.offsetHeight }
+          : // 하단 탭바: 칸 가운데 56% 폭의 선
+            { pos: item.offsetLeft + item.offsetWidth * 0.22, size: item.offsetWidth * 0.56 },
+      );
+    };
+    measure();
+    // 글자 확대·좁은 폭 단계(활성 칸이 넓어짐)로 칸 크기가 바뀌면 다시 잰다
+    const ro = new ResizeObserver(measure);
+    ro.observe(list);
+    mq.addEventListener('change', measure);
+    return () => {
+      ro.disconnect();
+      mq.removeEventListener('change', measure);
+    };
+  }, [listRef, pathname]);
+
+  return { mark, rail };
+}
+
 export function TabBar() {
+  const listRef = useRef<HTMLUListElement>(null);
+  const { mark, rail } = useActiveMark(listRef);
+  const reduce = useReducedMotion();
+  const first = useRef(true);
+  // 첫 표시는 제자리에, 이후에는 같은 직선 위를 일정한 속도(linear)로 이동
+  const markTransition = reduce || first.current ? { duration: 0 } : { duration: 0.2, ease: 'linear' as const };
+  useEffect(() => {
+    if (mark) first.current = false;
+  }, [mark]);
+
   return (
     <motion.nav
       className="tabbar"
@@ -104,18 +162,22 @@ export function TabBar() {
           상상Book<i>-</i>E
         </span>
       </Link>
-      <ul className="tabbar__list">
+      <ul className="tabbar__list" ref={listRef}>
+        {mark && (
+          <motion.li
+            aria-hidden="true"
+            className="tabbar__pill"
+            initial={false}
+            // 하단 탭바는 가로(x)만, 레일은 세로(y)만 움직인다
+            animate={rail ? { x: 0, y: mark.pos, height: mark.size, width: '100%' } : { x: mark.pos, y: 0, width: mark.size, height: 3 }}
+            transition={markTransition}
+          />
+        )}
         {TABS.map((t) => (
           <li key={t.to}>
             <NavLink to={t.to} end={t.end} className="tabbar__item">
-              {({ isActive }) => (
-                <>
-                  {/* 활성 칸 배경 알약: 탭을 옮기면 이전 칸에서 미끄러져 온다 */}
-                  {isActive && <motion.span layoutId="tabbar-pill" className="tabbar__pill" transition={SPRING} />}
-                  <Icon name={t.icon} className="tabbar__icon" />
-                  <span className="tabbar__label">{t.label}</span>
-                </>
-              )}
+              <Icon name={t.icon} className="tabbar__icon" />
+              <span className="tabbar__label">{t.label}</span>
             </NavLink>
           </li>
         ))}

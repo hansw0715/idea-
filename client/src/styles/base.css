@@ -330,6 +330,7 @@ hr {
 }
 
 .tabbar__list {
+  position: relative; /* 활성 표시줄의 offset 기준 */
   display: flex;
   min-height: var(--tabbar-h);
 }
@@ -374,7 +375,7 @@ hr {
   }
 }
 
-.tabbar__item > :not(.tabbar__pill) {
+.tabbar__item > * {
   position: relative;
   z-index: 1;
 }
@@ -384,15 +385,16 @@ hr {
   font-weight: var(--fw-bold);
 }
 
-/* 활성 표시: 모바일은 칸 위쪽 3px 파란 선 (레일에서는 왼쪽 선 + 옅은 면으로 바뀐다) */
+/*
+ * 활성 표시: 모바일은 탭바 위 가장자리를 가로로만 달리는 3px 파란 선.
+ * 위치·폭은 Shell.tsx 가 목록 안 offset 으로 계산해 transform 으로 준다(스크롤과 무관).
+ */
 .tabbar__pill {
   position: absolute;
   top: 0;
-  left: 22%;
-  right: 22%;
-  height: 3px;
+  left: 0;
   z-index: 0;
-  border-radius: 0;
+  pointer-events: none;
   background: var(--c-accent);
 }
 
@@ -541,13 +543,10 @@ hr {
     padding: var(--sp-3) var(--sp-5);
     font-size: var(--fs-md);
   }
-  /* 레일의 활성 칸: 옅은 블루 면 + 왼쪽 3px 선 */
+  /* 레일의 활성 칸: 옆 띠 없이 옅은 블루 면만 (세로로만 이동) */
   .tabbar__pill {
-    inset: 0;
-    height: auto;
     border-radius: var(--r);
     background: var(--c-action-bg);
-    box-shadow: inset 3px 0 0 var(--c-accent);
   }
 }
 

@@ -1,5 +1,21 @@
 # UI 리디자인 공동 작업 노트 (Claude + Codex)
 
+## Codex — 모바일 핵심 정보와 스크롤 탭 전환 검증 (2026-10-22)
+- 홈의 DOM 순서를 미수강 강의 → 다음 예약 → 접힌 회의 → 접힌 라운지로 변경. 강의·예약은 각각 한 건부터 표시하고 더 보기로 나머지 항목에 접근. 강의/과제 개수 요약 자체를 선택 버튼으로 합쳐 중복 종류 선택 줄 제거. 완료 보기·확인 시각·새로고침은 목록 아래에 유지.
+- 390×844 샘플 화면에서 미수강 강의 요약·첫 항목과 다음 예약이 모두 탭바 위에 표시됨(예약 카드 하단 709px, 탭바 시작 780px). 200% 글자는 줄이거나 잘라 넣지 않으며 필요할 때 세로 스크롤 허용.
+- 회의 상세는 DOM에서 예약 현황을 첫 구역으로 이동하고 한 건부터 표시. 넓은 화면의 정보/예약 두 열은 유지. 내 정보는 학교 연동과 화면 설정을 라운지보다 앞에 두고 라운지를 접음. 중복 소개 문구·프로필 장식 공간 축소.
+- 320px·글자 200%에서 학교 계정의 '이 기기에서는 쓸 수 없음' 배지가 가로 넘침을 만드는 문제 발견. 상태 행 줄바꿈 및 배지 다중 행 처리로 수정.
+- Shell의 기존 layoutRoot 유지. 홈과 회의 목록 하단에서 내 정보로 이동하는 동안 requestAnimationFrame으로 활성 표시 위치를 수집. 390px, 320px·200%, 1280px 모두 표시선이 고정 메뉴 밖으로 벗어나는 프레임 없음. 이는 샘플 브라우저 검증이며 실제 iPhone 확인은 아님.
+- scripts/review-compact.mjs: 샘플 API/로컬 캐시만 사용. 세 화면의 가로 넘침·실행 오류 없음, 예약 더 보기/접기 및 키보드 details 조작 통과. 주요 모바일 캡처 직접 확인. 외부 폰트는 네트워크 제한으로 폴백 서체 사용.
+- 검증: npx.cmd tsc -p client/tsconfig.json 통과. npm.cmd run build는 esbuild 상위 폴더 읽기 권한 오류. npm.cmd run build -- --configLoader runner 통과, 첫 묶음 482.55kB, 번들 경고 없음. 추가 권한 조치 불필요.
+- Claude 다음 작업: 시간표의 가져오기/추가·주간 이동을 상단에서 짧게 묶고 설명·범례를 보조 구역으로 정리. 글자·터치 영역 축소로 압축하지 말 것. layoutRoot는 이번 검증에서 유지 가능.
+
+## Claude — 탭바 표시 바 버그 + 홈 중요도 재배치 (2026-10-22, 완료·브라우저 미확인)
+- 버그: Shell.tsx `motion.nav.tabbar`에 `layoutRoot` 추가. 원인 추정: 스크롤 상태에서 탭 이동 → ScrollToTop이 맨 위로 올리는 동안 고정 탭바 안 `layoutId="tabbar-pill"`의 측정 좌표가 스크롤만큼 어긋남. 미끄러짐은 유지. 재현 확인 전이라 해결 확정 아님.
+- 홈 순서: 예약 → 미수강 강의 → 회의 → 라운지 약속(맨 아래). DOM을 평평하게 만들어 좁은 화면은 이 순서 한 열, 넓은 화면은 grid-area(왼쪽 예약·회의 / 오른쪽 강의·라운지).
+- 글자 줄이기: 머리는 날짜(h1)+바로가기 2개 한 줄. 소개 문장·"예약과 회의" 묶음 제목 삭제. 구역 제목 "예약/회의/라운지 약속/미수강 강의", 링크는 "전체", "N건 중 3건을 표시" → "외 N건".
+- e-class: 미수강 강의·미제출 과제 숫자 두 칸을 카드 맨 위로(큰 숫자). 처음 3개만 표시(PAGE 5→3). 빈 상태 안내 한 문장으로.
+
 ## Codex — 선택 상태 안정화와 강조 면 정리 (2026-10-22, 완료)
 - 담당: MeetingDetail/BookingFlow/CreateGatheringSheet 선택 표시, meeting-detail/account/gathering/timetable 페이지 CSS. 공통 토큰·components.css는 수정하지 않음.
 - 팀원·시간·날짜·밥약 태그는 체크 아이콘 공간을 항상 확보하고 선택 여부만 visibility로 표시. 선택 전후 글자 굵기 500 고정. 팀원 제외 문구는 스크린리더용으로 전달하고 aria-pressed 유지. 긴 이름 줄바꿈 및 최대 폭 보정.
@@ -181,3 +197,12 @@ KRDS·4px·Pretendard GOV 폐기. 아래가 새 규칙이다.
 - 회의 상세·시간표: 1280px/390px/320px·글자 200% 가로 넘침 없음, 실행 오류 없음. 5인 범례와 격자 데스크톱 캡처 확인. 외부 폰트는 네트워크 제한으로 폴백 사용.
 - 검증: npx.cmd tsc -p client/tsconfig.json 통과. npm.cmd run build는 esbuild 상위 폴더 접근 거부로 실패. npm.cmd run build -- --configLoader runner 통과, 첫 묶음 483.73kB·500kB 경고 없음.
 - Claude 다음 작업: 공통 체크박스의 border-radius: 0.7rem을 --r-xs로 변경. 팀원 선택 칩이 모두 파란 면으로 채워져 기본 예약 버튼과 강조가 경쟁하므로 선택 상태를 옅은 블루 면+진한 글자로 조정. 포커스 수정은 이번 차례에서 완료.
+
+
+### Codex: desktop home layout correction (2026-10-22)
+- Replaced spanning grid rows with independent lecture and agenda columns; aligned section headers and removed nested lecture card borders on desktop.
+- Desktop meetings open initially; narrow and enlarged text layouts retain the compact lecture-first order and native keyboard disclosures.
+- Removed the extra blue underline from lecture/assignment selection; kept the surface and font weight.
+- Playwright fixture review: 1280/1440 desktop, 390 mobile, 320 at 200%, 1280 at 200%; no horizontal overflow or runtime errors. Reservation expand/collapse passed. Desktop screenshots visually checked. External font blocked by network; fallback font used.
+- npx.cmd tsc -p client/tsconfig.json: PASS. npm.cmd run build: blocked by esbuild parent-directory access. npm.cmd run build -- --configLoader runner: PASS, initial JS 483.94 kB, no bundle warning.
+- Next: verify the independent-axis tab indicator in the user's scroll reproduction before changing timetable presentation. No tab indicator changes in this turn.

@@ -154,50 +154,32 @@
   padding-top: var(--sp-3);
 }
 
-/* 홈: 날짜 → 제목 → 주요 행동 순서로 시선을 안내한다. */
+/* 홈 머리: 날짜 제목과 바로가기 두 개를 한 줄에. 세로 공간을 최소로 쓴다. */
 .home-hero {
-  padding: var(--sp-6) 0 var(--sp-7);
-  margin-bottom: var(--sp-3);
-}
-.home-hero__date {
-  margin: 0 0 var(--sp-4);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-bold);
-  color: var(--c-text-sub);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3) var(--sp-4);
+  padding: var(--sp-3) 0 var(--sp-5);
 }
 .home-hero__title {
   margin: 0;
-  font-size: var(--fs-display);
-  font-weight: 800;
-  line-height: 1.16;
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
   letter-spacing: -0.02em;
   color: var(--c-text);
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
-.home-hero__intro {
-  margin: var(--sp-4) 0 0;
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-  word-break: keep-all;
-  overflow-wrap: anywhere;
-}
 .home-hero__actions {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
-  gap: var(--sp-4);
-  margin-top: var(--sp-5);
+  gap: var(--sp-2);
 }
 .home-hero__actions > a {
-  min-height: 4.4rem;
-}
-.home-hero__secondary {
-  display: inline-flex;
-  align-items: center;
-  color: var(--c-text);
-  font-size: var(--fs-sm);
-  text-underline-offset: 0.3em;
+  min-height: 4rem;
 }
 .home-section-title {
   margin: 0 0 var(--sp-3);
@@ -228,13 +210,13 @@
 }
 
 /* Each appointment has a surface; the next reservation carries the visual weight. */
-.home-sum { display: grid; gap: var(--sp-7); }
+.home-sum { display: grid; gap: var(--sp-4); }
 .home-sum__group { min-width: 0; background: var(--c-bg); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
 .home-sum__head { padding: var(--sp-5) var(--sp-6) var(--sp-2); }
 .home-page .home-section-title { font-size: var(--fs-sm); color: var(--c-text-sub); margin-bottom: var(--sp-4); }
 .home-sum .home-reservations > li:first-child .list__item { padding: var(--sp-6); }
 .home-reservation--next { position: relative; background: var(--c-action-bg); }
-.home-reservation--next::before { content: ''; position: absolute; left: 0; top: var(--sp-6); bottom: var(--sp-6); width: 3px; background: var(--c-accent); }
+/* 옆 띠 대신 면 색과 큰 시각만으로 강조한다 */
 .home-reservation__time { margin-bottom: var(--sp-2); font-size: var(--fs-md); font-weight: var(--fw-bold); letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .home-reservation--next .home-reservation__time { font-size: var(--fs-h2); line-height: 1.4; overflow-wrap: anywhere; }
 .home-next-label { display: block; margin-bottom: var(--sp-4); color: var(--c-text-sub); }
@@ -248,27 +230,78 @@
 
 /* 본문에 두 카드를 놓을 공간이 있을 때만 작업대와 보조 칼럼으로 나눈다. */
 .home-page { container: home / inline-size; }
-.home-workspace { display: grid; gap: var(--sp-8); align-items: start; }
-.home-primary, .home-secondary, .home-lounge { min-width: 0; }
-.home-workspace > .section, .home-secondary > .section { margin-block: 0; }
-.home-secondary { display: grid; gap: var(--sp-8); }
-.home-secondary .section__title { font-size: var(--fs-sm); color: var(--c-text-sub); }
-.home-secondary .section__head { margin-bottom: var(--sp-4); }
-.home-secondary .school-eclass-empty { display: grid; justify-items: start; gap: var(--sp-4); }
-.home-secondary .school-eclass-empty p { margin: 0; overflow-wrap: anywhere; }
-.home-secondary .school-eclass-empty .btn { white-space: normal; }
+/* 좁은 화면: DOM 순서(예약 → 미수강 강의 → 회의 → 라운지) 그대로 한 열 */
+.home-workspace { align-items: start; }
+.home-workspace > *, .home-lounge { min-width: 0; }
+.home-area--eclass > .section { margin-block: 0; }
+.home-area--eclass .section__head { margin-bottom: var(--sp-2); }
+.home-area--eclass .section__title { font-size: var(--fs-md); }
+.home-area--eclass .school-eclass-empty { display: grid; justify-items: start; gap: var(--sp-3); }
+.home-area--eclass .school-eclass-empty p { margin: 0; overflow-wrap: anywhere; }
+.home-area--eclass .school-eclass-empty .btn { white-space: normal; }
+.home-sum__head { padding-block: var(--sp-4) var(--sp-1); }
 .home-workspace .list__main, .home-workspace .list__sub { overflow-wrap: anywhere; }
 .home-reservation__time > span { display: inline-block; white-space: nowrap; }
 .home-page .code-chip { letter-spacing: 0.04em; }
 
-@container home (min-width: 64rem) {
-  .home-workspace { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--sp-7); }
-  .home-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--sp-7); padding-block: var(--sp-7) var(--sp-9); }
-  .home-hero__date, .home-hero__title, .home-hero__intro { grid-column: 1; }
-  .home-hero__title { max-width: 16ch; }
-  .home-hero__intro { max-width: 44ch; }
-  .home-hero__actions { grid-column: 2; grid-row: 1 / 4; align-self: end; flex-direction: column; align-items: stretch; margin-top: 0; gap: var(--sp-2); }
-  .home-hero__secondary { justify-content: center; }
-  .home-reservation--next .home-reservation__time { font-size: 2.8rem; }
-  .home-secondary { padding-top: 0; }
+.home-disclosure > summary {
+  min-height: var(--touch);
+  padding: var(--sp-4);
+  cursor: pointer;
+  font-weight: var(--fw-bold);
+  overflow-wrap: anywhere;
 }
+.home-disclosure > summary span { color: var(--c-text-sub); font-weight: var(--fw-regular); margin-left: var(--sp-2); }
+.home-disclosure > summary:focus-visible { outline: 2px solid var(--c-action); outline-offset: 2px; }
+.home-sum .home-reservations > li:first-child .list__item { padding: var(--sp-4); }
+.home-next-label { margin-bottom: var(--sp-2); }
+.home-reservation--next .list__item { flex-wrap: nowrap; }
+.home-reservation--next .list__body { flex-basis: auto; flex-grow: 1; }
+.home-reservation--next .home-reservation__time { font-size: var(--fs-lg); }
+.home-sum__head { padding-inline: var(--sp-4); }
+.home-area--eclass .school-eclass { gap: var(--sp-3); padding: var(--sp-4); }
+.home-area--eclass .school-eclass__textbtn { min-height: var(--touch); }
+
+/* Independent columns avoid empty grid rows when lecture content grows. */
+.home-agenda { display: grid; gap: var(--sp-4); min-width: 0; align-content: start; }
+.home-area--res, .home-disclosure {
+  border: 1px solid var(--c-border); box-shadow: none; border-radius: var(--r-lg);
+}
+.home-disclosure > summary {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-4); list-style: none;
+}
+.home-disclosure > summary::-webkit-details-marker { display: none; }
+.home-disclosure > summary::after {
+  content: '+'; margin-left: auto; color: var(--c-text-sub); font-size: var(--fs-lg);
+}
+.home-disclosure[open] > summary::after { content: '\2212'; }
+.home-area--meet .home-sum__head { justify-content: flex-end; padding-top: 0; }
+.home-area--meet .home-sum__title {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%);
+}
+@container home (min-width: 64rem) {
+  .home-workspace {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--sp-6);
+  }
+  .home-agenda { gap: var(--sp-6); }
+  .home-hero { padding-block: var(--sp-4) var(--sp-6); }
+  .home-area--eclass .section__head { min-height: 4.4rem; margin-bottom: var(--sp-3); }
+  .home-area--eclass .school-eclass { padding: var(--sp-5); }
+  .home-sum__head { padding: var(--sp-5) var(--sp-5) var(--sp-2); }
+  .home-sum .home-reservations > li:first-child .list__item { padding: var(--sp-5); }
+  .home-reservation--next .home-reservation__time { font-size: 2.8rem; }
+  .home-disclosure > summary { padding: var(--sp-5); }
+}
+
+@container home (min-width: 64rem) {
+  .home-area--eclass { border: 1px solid var(--c-border); border-radius: var(--r-lg); }
+  .home-area--eclass .section__head { padding: var(--sp-5) var(--sp-5) var(--sp-2); min-height: 0; margin: 0; }
+  .home-area--eclass .card { border: 0; box-shadow: none; }
+  .home-reservation--next .list__item { flex-wrap: wrap; }
+  .home-reservation--next .list__body { flex-basis: 100%; }
+  .home-reservation--next .home-reservation__time { font-size: var(--fs-h2); }
+}
+/* Selection uses a surface and weight, without another decorative blue strip. */
+.home-area--eclass .school-eclass__tally > button[aria-pressed='true'] { border-bottom-color: transparent; font-weight: var(--fw-bold); }

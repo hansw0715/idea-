@@ -457,7 +457,7 @@
 .meeting-detail-head { padding-top: var(--sp-5); }
 .meeting-detail-head .eyebrow { margin-bottom: var(--sp-3); }
 .meeting-detail-head .page-title { overflow-wrap: anywhere; }
-.meeting-detail-page .mtg-code { position: relative; padding: var(--sp-6); background: var(--c-action-bg); color: var(--c-text); border-left: 3px solid var(--c-action); }
+.meeting-detail-page .mtg-code { position: relative; padding: var(--sp-6); background: var(--c-action-bg); color: var(--c-text); border-radius: var(--r-lg); }
 .meeting-detail-page .mtg-code__label,
 .meeting-detail-page .mtg-code__value { color: var(--c-action-text); }
 .meeting-detail-page .mtg-code__value { font-size: var(--fs-display); font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
@@ -480,6 +480,9 @@
 .meeting-detail-page .mtg-danger .btn { width: auto; }
 @container (min-width: 64rem) {
   .mtg-workspace { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: start; gap: var(--sp-8); }
+  .mtg-workspace { grid-template-areas: 'overview reservations'; }
+  .mtg-workspace-overview { grid-area: overview; }
+  .mtg-workspace-reservations { grid-area: reservations; }
   .mtg-workspace-reservations { margin: 0; }
   .mtg-workspace-timetable > .section__head { margin-bottom: var(--sp-6); }
 }

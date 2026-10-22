@@ -222,6 +222,11 @@
 .account-page .lounge-acct-who__text { flex-basis: 12rem; overflow-wrap: anywhere; }
 .account-page .lounge-acct-line .lounge-temp { flex-wrap: wrap; }
 .account-identity { position: relative; padding-top: var(--sp-7); }
+.account-page .account-identity { padding-top: var(--sp-4); }
+.account-page .account-monogram { width: 4.4rem; height: 4.4rem; margin-bottom: var(--sp-3); font-size: var(--fs-lg); }
+.account-secondary { border-block: 1px solid var(--c-divider); }
+.account-secondary > summary { min-height: var(--touch); padding: var(--sp-4); cursor: pointer; font-weight: var(--fw-bold); }
+.account-secondary > summary:focus-visible { outline: 2px solid var(--c-action); outline-offset: 2px; }
 .account-monogram { display: grid; place-items: center; width: 6.4rem; height: 6.4rem; margin-bottom: var(--sp-6); border: 1px solid var(--c-line); border-radius: var(--r-lg); background: var(--c-action-bg); color: var(--c-ink); font-size: 2.8rem; font-weight: var(--fw-bold); }
 .account-page .account-info__val--name { font-size: var(--fs-h2); letter-spacing: -0.03em; }
 .account-page .account-menu .list__item { min-height: 8rem; gap: var(--sp-4); }
