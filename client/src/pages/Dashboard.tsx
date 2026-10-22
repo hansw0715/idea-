@@ -15,6 +15,12 @@ import { HomeTableRow } from './HomeTableRow';
 import type { Meeting, Reservation } from '../types';
 import './home.css';
 
+/** 오늘 날짜 글자 (한국 시간): "10월 11일 (일)" */
+const TODAY_LABEL = () =>
+  new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', weekday: 'short' }).format(
+    new Date(),
+  );
+
 
 interface DashboardData {
   meetings: Meeting[];
@@ -85,8 +91,11 @@ export default function Dashboard() {
     <>
       <AppHeader />
       <main id="main" className="app-main home-page">
-        {/* 화면 제목은 화면 읽기용으로만 둔다 (라우트 이동 때 포커스가 h1 로 간다) */}
-        <h1 className="sr-only">홈</h1>
+        {/* 학교 이름 + 오늘 날짜 */}
+        <header className="home-hero">
+          <h1 className="home-hero__title">한성대</h1>
+          <p className="home-hero__date">{TODAY_LABEL()}</p>
+        </header>
 
         {error && !data ? (
           <Alert
