@@ -24,9 +24,9 @@ export function withRo(word: string): string {
   return `${word}로`;
 }
 
-/** 연동 성공 화면의 확인 문장. 예: "박○재님, AI응용학과로 확인했어요" */
+/** 연동 성공 화면의 확인 문장. 예: "박민재님, AI응용학과로 확인했어요" — 본인에게만 보이는 문장이라 이름을 가리지 않는다 */
 export function verifiedLine(name: string, department: string): string {
-  const who = maskName(name);
+  const who = name.trim();
   const dept = department.trim();
   const head = who ? `${who}님, ` : '';
   return dept ? `${head}${withRo(dept)} 확인했어요` : `${head}학교 계정으로 확인했어요`;

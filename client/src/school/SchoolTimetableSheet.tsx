@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SchoolClass, TimetableImportResult, TimetablePreview } from '../../../shared/school/types';
 import { Alert, Button, EmptyState, Sheet, useToast } from '../ui';
 import { schoolApi } from './api';
-import { DAY_LABELS, maskName } from './format';
+import { DAY_LABELS } from './format';
 import { SchoolErrorAlert, SchoolFoot, SchoolWaiting, useCloseGuard, useOpenSession } from './SchoolParts';
 import { useSchool } from './SchoolContext';
 
@@ -171,7 +171,7 @@ function TimetableSheetBody({ open, onClose, onImported, onRelink, viewAction }:
 
           <div className="school-summary">
             <p className="school-summary__who">
-              {[maskName(preview.profile.name), preview.profile.department].filter(Boolean).join(' · ')}
+              {[preview.profile.name.trim(), preview.profile.department].filter(Boolean).join(' · ')}
             </p>
             <p className="school-summary__count">수업 {preview.classes.length}개</p>
           </div>

@@ -284,6 +284,32 @@ hr {
   flex: none;
 }
 
+/* 홈에서 글자 설정(AA) 왼쪽에 붙는 오늘 날짜 */
+.app-header__date {
+  margin-right: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  white-space: nowrap;
+}
+
+/* 서비스 이름은 한 줄로. 좁은 휴대폰(400px 미만)에서는 날짜·이름을 한 단계 줄여 한 줄에 다 들어가게 */
+.app-header__brand {
+  white-space: nowrap;
+}
+@media (max-width: 399px) {
+  .app-header__brand {
+    font-size: var(--fs-h4);
+  }
+  .app-header__mark {
+    width: 4rem;
+    height: 4rem;
+  }
+  .app-header__date {
+    margin-right: 0;
+    font-size: var(--fs-xs);
+  }
+}
+
 /* 위쪽 UI(로고·글자 설정·프로필)를 한 단계 크게 */
 .app-header__actions .btn__icon {
   width: 2.8rem;

@@ -63,14 +63,12 @@ export default function Dashboard() {
 
   return (
     <>
-      <AppHeader />
+      {/* 오늘 날짜는 헤더 오른쪽, 글자 설정(AA) 왼쪽에 작게 */}
+      <AppHeader actions={<span className="app-header__date">{TODAY_LABEL()}</span>} />
       <main id="main" className="app-main home-page">
         {/* 학교 이름 + 오늘 날짜 */}
-        {/* 화면 제목은 화면 읽기용으로만 두고(라우트 이동 때 포커스가 h1 로 간다), 오늘 날짜를 가운데에 크게 */}
-        <header className="home-hero">
-          <h1 className="sr-only">홈</h1>
-          <p className="home-hero__date">{TODAY_LABEL()}</p>
-        </header>
+        {/* 화면 제목은 화면 읽기용으로만 둔다 (라우트 이동 때 포커스가 h1 로 간다) */}
+        <h1 className="sr-only">홈</h1>
 
         {error && !data ? (
           <Alert

@@ -7,19 +7,6 @@
 }
 
 /* ── 학교 이름 + 오늘 날짜 ───────────────────────────────────── */
-.home-hero {
-  display: flex;
-  justify-content: center;
-  padding: var(--sp-2) 0 var(--sp-6);
-}
-.home-hero__date {
-  margin: 0;
-  font-size: var(--fs-h2);
-  font-weight: var(--fw-bold);
-  color: var(--c-text);
-  white-space: nowrap;
-}
-
 /* ── 옆으로 넘기는 요약 카드 ─────────────────────────────────── */
 /* 카드가 화면 오른쪽 끝에 걸쳐 보여 "옆으로 더 있다"는 걸 알린다 */
 .home-cards {

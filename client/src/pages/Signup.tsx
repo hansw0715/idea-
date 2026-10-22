@@ -10,7 +10,7 @@ import { SCHOOL_PASSWORD_WARNING, isStudentId } from '../../../shared/school/typ
 import type { SchoolCredentials, SchoolVerifyResponse } from '../../../shared/school/types';
 import { authApi } from '../school/authApi';
 import { classifySchoolError } from '../school/errors';
-import { maskName, verifiedLine } from '../school/format';
+import { verifiedLine } from '../school/format';
 import { cacheKey } from '../school/loginKey';
 import { SchoolErrorAlert, SchoolWaiting } from '../school/SchoolParts';
 import { vault } from '../school/vault';
@@ -476,12 +476,14 @@ export default function Signup() {
               enterKeyHint="go"
             />
 
-            <Button type="submit" size="lg" block disabled={checking}>
-              다음
-            </Button>
-            <Button variant="tertiary" block onClick={backToSchool}>
-              학교 인증부터 다시 하기
-            </Button>
+            <div className="school-step__actions">
+              <Button type="submit" size="lg" block disabled={checking}>
+                다음
+              </Button>
+              <Button variant="tertiary" block onClick={backToSchool}>
+                학교 인증부터 다시 하기
+              </Button>
+            </div>
           </form>
         )}
 
@@ -504,7 +506,7 @@ export default function Signup() {
                 </div>
                 <div className="kv">
                   <dt className="kv__key">이름</dt>
-                  <dd className="kv__val">{maskName(verified.profile.name) || '확인했어요'}</dd>
+                  <dd className="kv__val">{verified.profile.name || '확인했어요'}</dd>
                 </div>
                 <div className="kv">
                   <dt className="kv__key">학번</dt>
@@ -562,19 +564,21 @@ export default function Signup() {
 
             {signingUp && <SchoolWaiting label={signingUp === 'key' ? '보안 열쇠를 만드는 중…' : '가입하는 중…'} />}
 
-            <Button
-              size="lg"
-              block
-              disabled={!consent}
-              loading={signingUp !== null}
-              aria-describedby={consent ? undefined : 'signup-consent-reason'}
-              onClick={() => void complete()}
-            >
-              {signingUp === 'key' ? '열쇠를 만드는 중…' : signingUp === 'send' ? '가입하는 중…' : '가입 완료'}
-            </Button>
-            <Button variant="tertiary" block disabled={signingUp !== null} onClick={() => setStep('account')}>
-              이전
-            </Button>
+            <div className="school-step__actions">
+              <Button
+                size="lg"
+                block
+                disabled={!consent}
+                loading={signingUp !== null}
+                aria-describedby={consent ? undefined : 'signup-consent-reason'}
+                onClick={() => void complete()}
+              >
+                {signingUp === 'key' ? '열쇠를 만드는 중…' : signingUp === 'send' ? '가입하는 중…' : '가입 완료'}
+              </Button>
+              <Button variant="tertiary" block disabled={signingUp !== null} onClick={() => setStep('account')}>
+                이전
+              </Button>
+            </div>
           </div>
         )}
 
@@ -582,7 +586,7 @@ export default function Signup() {
         {step === 'done' && pendingUser && (
           <div>
             <h2 className="school-step__title" id={ID.done} tabIndex={-1}>
-              환영해요, {pendingUser.name ? `${maskName(pendingUser.name)}님` : '한성대 학우님'}
+              환영해요, {pendingUser.name ? `${pendingUser.name}님` : '한성대 학우님'}
             </h2>
             <Alert tone="success" title="가입과 학교 연동이 끝났어요.">
               이제 학교 시간표 가져오기와 시설 바로 신청을 쓸 수 있어요.
