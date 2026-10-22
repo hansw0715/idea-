@@ -117,7 +117,8 @@ describe('신고', () => {
 
   it('신고 사유는 정해진 목록뿐이다', () => {
     expect(REPORT_REASONS).toContain('약속 불이행(노쇼)');
-    expect(REPORT_REASONS).toHaveLength(5);
+    expect(REPORT_REASONS).toContain('성별을 속였어요');
+    expect(REPORT_REASONS).toHaveLength(6);
   });
 });
 

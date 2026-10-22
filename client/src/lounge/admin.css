@@ -224,3 +224,23 @@
 :root[data-contrast='high'] .lounge-admin-report__detail {
   border: 1px solid var(--c-border);
 }
+
+/* 탈퇴 학번 탭 */
+.lounge-admin-withdrawn {
+  display: grid;
+  gap: var(--sp-5);
+}
+.lounge-admin-withdrawn__form {
+  display: grid;
+  gap: var(--sp-4);
+  justify-items: start;
+}
+.lounge-admin-withdrawn__form .field {
+  width: 100%;
+}
+.lounge-admin-withdrawn__list {
+  padding: 0;
+}
+.lounge-admin-withdrawn__list .list__item {
+  padding: var(--sp-4) var(--sp-5);
+}

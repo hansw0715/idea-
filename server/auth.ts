@@ -9,6 +9,7 @@ import { get, run, insert, isServerless, resolveDataDir } from './db.js';
 import { createRateLimiter } from './rateLimit.js';
 import { sendVerificationCode } from './mailer.js';
 import { releaseLoungeForWithdrawal } from './lounge/services/withdraw.js';
+import { assertNotWithdrawn, recordWithdrawal } from './school/withdrawn.js';
 import { schoolProfileValues } from './lounge/services/schoolProfile.js';
 import { ApiInputError, errorResponseOf } from './school/http.js';
 import {
@@ -293,6 +294,11 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
       const cipher = parseSealedBox(body.cipher);
       // 암호문 자리에 평문이 들어오지 않았는지: 플랫폼 비밀번호가 그대로 보이면 거절한다(학교 평문은 이 요청에 없다)
       if (!cipher || cipherLooksLikePlaintext(cipher, [password])) throw invalid('암호문 형식이 올바르지 않아요.', 'cipher');
+      // 성별: 가입 때 고른 값 (없으면 나중에 내 정보에서 고른다)
+      if (body.gender !== undefined && body.gender !== 'male' && body.gender !== 'female') {
+        throw invalid('성별은 남 또는 여 중에서 골라 주세요.', 'gender');
+      }
+      const chosenGender = body.gender === 'male' || body.gender === 'female' ? body.gender : null;
 
       if (!signupLimiter.hit(String(req.ip))) {
         throw new ApiInputError('RATE_LIMITED', '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.');
@@ -301,6 +307,8 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
       // ② ticket 서명·만료·용도
       const ticket = readTicket(body.ticket);
       if (!ticket) throw new ApiInputError('TICKET_INVALID', TICKET_INVALID_MESSAGE);
+      // 인증 확인표를 받은 뒤 그 학번이 탈퇴 처리됐을 수도 있다 — 계정을 만들기 직전에 한 번 더 본다
+      await assertNotWithdrawn(ticket.sh);
 
       // ③ 아이디 중복
       if (await get('SELECT 1 AS x FROM users WHERE username = ?', [username])) throw taken();
@@ -313,9 +321,9 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
       try {
         id = await insert(
           `INSERT INTO users (username, name, password_hash, school_cipher, school_hint, school_student_hash,
-                              school_linked_at, school_department, school_admission_year, school_gender,
+                              school_linked_at, school_department, school_admission_year, school_gender, gender,
                               nickname, college, department, admission_year, profile_done)
-           VALUES (?, ?, ?, ?, ?, ?, now(), ?, ?, ?, ?, '', ?, ?, TRUE) RETURNING id`,
+           VALUES (?, ?, ?, ?, ?, ?, now(), ?, ?, ?, ?, ?, '', ?, ?, TRUE) RETURNING id`,
           [
             username,
             realName,
@@ -326,6 +334,7 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
             ticket.department,
             ticket.admissionYear,
             ticket.gender ?? null,
+            chosenGender,
             // 라운지 프로필 = 학교 계정 정보 (실명을 가린 닉네임·학과·입학년도)
             profile.nickname,
             profile.department,
@@ -638,6 +647,12 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
       );
       // 라운지 정리가 끝내 실패하면 예외로 끝나 사용자 행은 그대로 남는다 (탈퇴를 다시 시도할 수 있다).
       await releaseLoungeForWithdrawal(String(id));
+      // 연동한 학번이 있으면 남겨 둔다 — 관리자가 풀어 주기 전까지 같은 학번으로 다시 가입할 수 없다
+      const school = await get<{ hash: string | null; hint: string | null }>(
+        'SELECT school_student_hash AS hash, school_hint AS hint FROM users WHERE id = ?',
+        [id],
+      );
+      await recordWithdrawal(school?.hash ?? null, school?.hint ?? null);
       await run('DELETE FROM users WHERE id = ?', [id]);
       // 같은 주소로 다시 가입할 수 있도록 남은 인증 기록도 정리한다. (학교 메일로 가입한 옛 계정만 이메일이 있다)
       if (row.email) await run('DELETE FROM email_verifications WHERE email = ?', [row.email]);

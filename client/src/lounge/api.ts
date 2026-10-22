@@ -74,4 +74,9 @@ export const loungeApi = {
   adminHandleReport: (reportId: string, action: ReportAction) =>
     api.post<{ ok: true }>(`${L}/admin/reports`, { reportId, action }),
   adminStats: () => api.get<AdminStats>(`${L}/admin/stats`),
+  adminWithdrawn: () =>
+    api
+      .get<{ items: { hint: string; withdrawnAt: string; releasedAt: string | null }[] }>(`${L}/admin/withdrawn`)
+      .then((r) => r.items),
+  adminReleaseWithdrawn: (studentId: string) => api.post<{ ok: true }>(`${L}/admin/withdrawn/release`, { studentId }),
 };

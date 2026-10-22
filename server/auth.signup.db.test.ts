@@ -35,6 +35,7 @@ import { all, get, insert, ready, run } from './db.js';
 import { studentHash, studentLinkHash } from './school/guard.js';
 import { SCHOOL_ORIGINS } from './school/http.js';
 import { createSchoolService } from './school/service.js';
+import { WITHDRAWN_BLOCKED_MESSAGE, releaseWithdrawn } from './school/withdrawn.js';
 import { createFakeSchool } from './school/testkit.js';
 
 const SCHOOL_PW = 'right-pass';
@@ -148,6 +149,7 @@ beforeEach(async () => {
   await run('DELETE FROM users');
   await run('DELETE FROM school_login_guard');
   await run('DELETE FROM email_verifications');
+  await run('DELETE FROM withdrawn_students');
   await startApp();
 });
 
@@ -551,7 +553,16 @@ describe('학교 메일 가입 (EMAIL_SIGNUP_ENABLED)', () => {
 });
 
 describe('탈퇴 (DELETE /api/auth/me)', () => {
-  it('이메일이 없는 새 계정도 비밀번호 확인 뒤 탈퇴되고, 학번은 다시 가입할 수 있게 풀린다', async () => {
+  it('가입할 때 고른 성별을 저장하고, 남/여가 아닌 값은 400 이다', async () => {
+    const bad = await signup(signupBody(await ticketFor(), { gender: 'x' }));
+    expect(bad.status).toBe(400);
+    const made = await signup(signupBody(await ticketFor(), { gender: 'female' }));
+    expect(made.status).toBe(201);
+    const row = await get<{ gender: string | null }>("SELECT gender FROM users WHERE username = 'minjae44'");
+    expect(row?.gender).toBe('female');
+  });
+
+  it('이메일이 없는 새 계정도 비밀번호 확인 뒤 탈퇴되고, 그 학번은 관리자가 풀어 주기 전까지 다시 가입할 수 없다', async () => {
     const ticket = await ticketFor();
     const made = await signup(signupBody(ticket));
     expect(made.status).toBe(201);
@@ -559,9 +570,17 @@ describe('탈퇴 (DELETE /api/auth/me)', () => {
     expect((await call('/api/auth/me', 'DELETE', { password: 'wrong-wrong-1' }, cookie)).status).toBe(401);
     expect((await call('/api/auth/me', 'DELETE', { password: PLATFORM_PW }, cookie)).status).toBe(200);
     expect((await get<{ n: number }>('SELECT COUNT(*)::int AS n FROM users'))!.n).toBe(0);
-    // 같은 학번으로 다시 인증·가입
+    // 같은 학번으로 다시 인증하면 학교 인증 뒤 403 — 탈퇴한 학번은 막힌다
+    const blocked = await verify('2021204044');
+    expect(blocked.status).toBe(403);
+    expect(blocked.json!.error).toBe(WITHDRAWN_BLOCKED_MESSAGE);
+    // 관리자가 학번을 입력해 풀어 주면 다시 가입할 수 있다
+    expect(await releaseWithdrawn('2021204044', 1)).toBe(true);
     const again = await signup(signupBody(await ticketFor(), { username: 'minjae45' }));
     expect(again.status).toBe(201);
+    // 다시 탈퇴하면 또 막힌다
+    expect((await call('/api/auth/me', 'DELETE', { password: PLATFORM_PW }, cookieOf(again))).status).toBe(200);
+    expect((await verify('2021204044')).status).toBe(403);
   });
 });
 

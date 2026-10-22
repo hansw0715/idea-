@@ -4,7 +4,7 @@
  *
  * 암호문(school_cipher)은 브라우저가 만든 AES-GCM 결과뿐이다. 서버는 키를 모른다.
  */
-export const SCHOOL_TABLES = ['school_login_guard', 'school_bookings', 'school_link_probe'] as const;
+export const SCHOOL_TABLES = ['school_login_guard', 'school_bookings', 'school_link_probe', 'withdrawn_students'] as const;
 
 export const SCHOOL_MIGRATIONS = `
   ALTER TABLE users ADD COLUMN IF NOT EXISTS school_cipher TEXT;
@@ -39,6 +39,16 @@ export const SCHOOL_MIGRATIONS = `
     fails INTEGER NOT NULL DEFAULT 0,
     first_fail_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, student_hash)
+  );
+
+  -- 탈퇴한 학번(HMAC). 관리자가 풀어 주기(released_at) 전까지 이 학번으로는 다시 가입·연동할 수 없다.
+  -- 실명·학과는 남기지 않는다. hint(가린 학번)와 날짜만 관리자 화면에 보인다.
+  CREATE TABLE IF NOT EXISTS withdrawn_students (
+    student_hash TEXT PRIMARY KEY,
+    hint TEXT,
+    withdrawn_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    released_at TIMESTAMPTZ,
+    released_by INTEGER
   );
 
   -- 학교에 보낸 예약 신청 기록: 같은 예약 계획을 두 번 보내지 않게 한다

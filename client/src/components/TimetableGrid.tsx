@@ -238,7 +238,7 @@ type LegendItem = 'class' | 'reservation' | 'free' | 'pending';
 
 const LEGEND_TEXT: Record<LegendItem, string> = {
   class: '내 수업·일정',
-  reservation: '회의 예약과 계획 (학교 처리 상태 확인)',
+  reservation: '회의 예약과 계획',
   free: '모두 비는 시간',
   pending: '선택한 시간',
 };

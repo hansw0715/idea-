@@ -5,6 +5,7 @@ import { Alert, Button, EmptyState, LoadingBlock, Tabs, btnClass } from '../ui';
 import { useLounge } from './LoungeContext';
 import ReportsTab from './admin/ReportsTab';
 import StatsTab from './admin/StatsTab';
+import WithdrawnTab from './admin/WithdrawnTab';
 import './admin.css';
 
 /**
@@ -13,11 +14,12 @@ import './admin.css';
  * 규칙: docs/lounge/00-overview.md, docs/lounge/01-contract.md §6, docs/UI-KIT.md
  */
 
-type TabKey = 'reports' | 'stats';
+type TabKey = 'reports' | 'stats' | 'withdrawn';
 
 const TABS: { value: TabKey; label: string }[] = [
   { value: 'reports', label: '신고' },
   { value: 'stats', label: '통계' },
+  { value: 'withdrawn', label: '탈퇴 학번' },
 ];
 
 const ID_BASE = 'lounge-admin';
@@ -26,14 +28,15 @@ export default function AdminPage() {
   const { isAdmin, loading, error, refresh } = useLounge();
   const [params, setParams] = useSearchParams();
   // 통계 탭은 처음 열 때 불러오고, 이후에는 숨기기만 해서 탭을 오가도 다시 받지 않는다
-  const tab: TabKey = params.get('tab') === 'stats' ? 'stats' : 'reports';
+  const raw = params.get('tab');
+  const tab: TabKey = raw === 'stats' || raw === 'withdrawn' ? raw : 'reports';
   const [statsOpened, setStatsOpened] = useState(tab === 'stats');
   const [retrying, setRetrying] = useState(false);
 
   function changeTab(next: TabKey) {
     if (next === 'stats') setStatsOpened(true);
     // 주소에 남겨 두면 새로 고침·공유해도 같은 탭이 열린다. 뒤로 가기로 탭 이력이 쌓이지 않게 replace.
-    setParams(next === 'stats' ? { tab: 'stats' } : {}, { replace: true });
+    setParams(next === 'reports' ? {} : { tab: next }, { replace: true });
   }
 
   async function retry() {
@@ -101,6 +104,14 @@ export default function AdminPage() {
           hidden={tab !== 'stats'}
         >
           {statsOpened && <StatsTab />}
+        </div>
+        <div
+          role="tabpanel"
+          id={`${ID_BASE}-panel-withdrawn`}
+          aria-labelledby={`${ID_BASE}-tab-withdrawn`}
+          hidden={tab !== 'withdrawn'}
+        >
+          {tab === 'withdrawn' && <WithdrawnTab />}
         </div>
       </>
     );

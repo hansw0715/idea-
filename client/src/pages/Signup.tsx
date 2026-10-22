@@ -14,7 +14,7 @@ import { maskName, verifiedLine } from '../school/format';
 import { cacheKey } from '../school/loginKey';
 import { SchoolErrorAlert, SchoolWaiting } from '../school/SchoolParts';
 import { vault } from '../school/vault';
-import { Alert, Button, Choice, PasswordField, Stepper, TextField, btnClass, useToast } from '../ui';
+import { Alert, Button, Choice, PasswordField, Segmented, Stepper, TextField, btnClass, useToast } from '../ui';
 import './auth.css';
 
 /** 한성대 정보 시스템 → 플랫폼 아이디·비밀번호 → 연동 동의 → 가입 완료 */
@@ -123,7 +123,9 @@ export default function Signup() {
   }
 
   // ── ① 학교 인증 ────────────────────────────────────────────
-  const [schoolFieldErrors, setSchoolFieldErrors] = useState<{ studentId?: string; password?: string }>({});
+  const [schoolFieldErrors, setSchoolFieldErrors] = useState<{ studentId?: string; password?: string; gender?: string }>({});
+  // 성별: 학교 인증과 함께 받는다. 미팅 자리(위 남자 / 아래 여자)에 쓰이고, 나중에 내 정보에서 바꿀 수 있다
+  const [gender, setGender] = useState<'male' | 'female' | ''>('');
 
   async function verifySchool(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -134,7 +136,8 @@ export default function Signup() {
     const studentId = String(data.get(NAME_SCHOOL_ID) ?? '').trim();
     const schoolPassword = String(data.get(NAME_SCHOOL_PW) ?? '');
 
-    const errors: { studentId?: string; password?: string } = {};
+    const errors: { studentId?: string; password?: string; gender?: string } = {};
+    if (!gender) errors.gender = '성별을 골라 주세요.';
     if (!isStudentId(studentId)) {
       errors.studentId = '학번 형식이 맞지 않아요. 학교 포털에 로그인할 때 쓰는 숫자 6~10자리를 입력해 주세요.';
     }
@@ -144,7 +147,7 @@ export default function Signup() {
       errors.password = `비밀번호가 너무 길어요. 학교 포털 비밀번호는 ${MAX_SCHOOL_PASSWORD}자 이하만 확인할 수 있어요.`;
     }
     setSchoolFieldErrors(errors);
-    if (errors.studentId || errors.password) {
+    if (errors.studentId || errors.password || errors.gender) {
       setFocusTarget(errors.studentId ? ID.schoolId : ID.schoolPw);
       return;
     }
@@ -240,7 +243,7 @@ export default function Signup() {
       const key = await vault.deriveKey(name, password);
       const cipher = await vault.seal(null, name, credsRef.current, key);
       if (alive.current) setSigningUp('send');
-      const user = await authApi.signup({ ticket: verified.ticket, username: name, password, cipher });
+      const user = await authApi.signup({ ticket: verified.ticket, username: name, password, cipher, ...(gender ? { gender } : {}) });
       const saved = cacheKey(user.id, key);
       key.fill(0);
       wipeCreds();
@@ -385,6 +388,20 @@ export default function Signup() {
               disabled={verifying}
             />
 
+            <Segmented
+              label="성별"
+              value={gender as 'male' | 'female'}
+              onChange={(g) => {
+                setGender(g);
+                setSchoolFieldErrors((prev) => ({ ...prev, gender: undefined }));
+              }}
+              options={[
+                { value: 'male', label: '남' },
+                { value: 'female', label: '여' },
+              ]}
+              help={schoolFieldErrors.gender ?? '미팅에서 남자는 위, 여자는 아래 자리에 앉아요. 사실과 다르면 신고될 수 있어요.'}
+            />
+
             {verifying && <SchoolWaiting label="학교에 확인하는 중…" />}
 
             <Button type="submit" size="lg" block loading={verifying}>
@@ -493,6 +510,12 @@ export default function Signup() {
                   <dt className="kv__key">학번</dt>
                   <dd className="kv__val">{verified.hint}</dd>
                 </div>
+                {gender && (
+                  <div className="kv">
+                    <dt className="kv__key">성별</dt>
+                    <dd className="kv__val">{gender === 'male' ? '남' : '여'}</dd>
+                  </div>
+                )}
                 {verified.profile.department && (
                   <div className="kv">
                     <dt className="kv__key">소속</dt>

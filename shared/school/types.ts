@@ -224,4 +224,6 @@ export type SchoolSignupRequest = {
   username: string;
   password: string;
   cipher: SealedBox;
+  /** 가입 때 고른 성별 (미팅 자리에 쓴다). 학교에서 읽은 값이 있으면 그쪽이 우선이다 */
+  gender?: 'male' | 'female';
 };

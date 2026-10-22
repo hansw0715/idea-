@@ -54,6 +54,7 @@ import {
 } from './http.js';
 import type { FetchLike, SchoolOrigins } from './http.js';
 import { fetchProfile, fetchTimetable, loginInfo } from './info.js';
+import { assertNotWithdrawn } from './withdrawn.js';
 import { createEclassFlow } from './eclass.js';
 import type { EclassSnapshot } from '../../shared/school/eclass.js';
 import {
@@ -336,6 +337,8 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
       }
       throw err;
     }
+    // 탈퇴한 학번은 관리자가 풀어 주기 전까지 다른 계정에도 연동할 수 없다 (학교 로그인 성공 뒤에만 알린다)
+    if (!owner) await assertNotWithdrawn(linkHash);
     const profile = toProfile(await fetchProfile(http));
 
     const hint = studentIdHint(creds.studentId);
@@ -374,6 +377,8 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
     const linkHash = studentLinkHash(creds.studentId);
     const taken = await get<{ x: number }>('SELECT 1 AS x FROM users WHERE school_student_hash = ?', [linkHash]);
     if (taken) throw alreadyRegistered();
+    // 탈퇴한 학번은 관리자가 풀어 주기 전까지 다시 가입할 수 없다
+    await assertNotWithdrawn(linkHash);
     return { profile, hint: studentIdHint(creds.studentId), linkHash };
   }
 
