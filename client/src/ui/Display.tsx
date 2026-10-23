@@ -12,6 +12,10 @@ interface DisplayApi {
   /** 다크 모드 (내 정보 → 설정에서 켜고 끈다. 이 기기에 저장) */
   dark: boolean;
   setDark: (on: boolean) => void;
+  /** 설정에서 따로 고르지 않아 휴대폰 화면 모드를 따르는 중인지 */
+  followPhone: boolean;
+  /** 고른 모드를 지우고 다시 휴대폰 화면 모드를 따른다 */
+  followPhoneAgain: () => void;
 }
 
 const STORAGE_KEY = 'sangsang-booke-display';
@@ -61,7 +65,13 @@ if (typeof document !== 'undefined') {
   applyTheme(readDark());
 }
 
-const DisplayContext = createContext<DisplayApi>({ zoom: BASE_ZOOM, dark: false, setDark: () => {} });
+const DisplayContext = createContext<DisplayApi>({
+  zoom: BASE_ZOOM,
+  dark: false,
+  setDark: () => {},
+  followPhone: true,
+  followPhoneAgain: () => {},
+});
 
 export function useDisplay(): DisplayApi {
   return useContext(DisplayContext);
@@ -69,8 +79,10 @@ export function useDisplay(): DisplayApi {
 
 export function DisplayProvider({ children }: { children: ReactNode }) {
   const [dark, setDarkState] = useState(readDark);
+  const [followPhone, setFollowPhone] = useState(() => readChoice() === null);
   const setDark = useCallback((on: boolean) => {
     setDarkState(on);
+    setFollowPhone(false);
     applyTheme(on);
     try {
       localStorage.setItem(THEME_KEY, on ? 'dark' : 'light');
@@ -80,17 +92,37 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
     // 설치한 앱의 맨 아래 버튼 줄 색도 고른 모드를 따르도록 서버의 앱 설정 파일(/api/manifest)에 알린다
     document.cookie = `sb-theme=${on ? 'dark' : 'light'}; path=/; max-age=31536000; samesite=lax; secure`;
   }, []);
-  // 직접 고르기 전에는 휴대폰 화면 모드가 바뀌면 바로 따라간다
+  const followPhoneAgain = useCallback(() => {
+    try {
+      localStorage.removeItem(THEME_KEY);
+    } catch {
+      /* 저장소가 막힌 환경 — 무시 */
+    }
+    document.cookie = 'sb-theme=; path=/; max-age=0; samesite=lax; secure';
+    setFollowPhone(true);
+    const now = phoneDark();
+    setDarkState(now);
+    applyTheme(now);
+  }, []);
+  // 직접 고르기 전에는 휴대폰 화면 모드가 바뀌면 바로 따라간다.
+  // 앱이 뒤에 있는 동안 바뀐 경우도 놓치지 않게, 앱으로 돌아올 때도 다시 확인한다
   useEffect(() => {
     const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
     if (!mq) return;
-    const onChange = () => {
+    const sync = () => {
       if (readChoice()) return;
       setDarkState(mq.matches);
       applyTheme(mq.matches);
     };
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') sync();
+    };
+    mq.addEventListener('change', sync);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      mq.removeEventListener('change', sync);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
   useEffect(() => {
     apply();
@@ -105,5 +137,9 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
       /* 저장소가 막힌 환경 — 무시 */
     }
   }, []);
-  return <DisplayContext.Provider value={{ zoom: BASE_ZOOM, dark, setDark }}>{children}</DisplayContext.Provider>;
+  return (
+    <DisplayContext.Provider value={{ zoom: BASE_ZOOM, dark, setDark, followPhone, followPhoneAgain }}>
+      {children}
+    </DisplayContext.Provider>
+  );
 }
