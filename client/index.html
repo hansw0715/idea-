@@ -11,6 +11,20 @@
     <meta name="apple-mobile-web-app-title" content="상상Book-E" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>상상Book-E</title>
+    <script>
+      // 카카오톡 등 앱 안 브라우저에서는 홈 화면에 추가할 수 없어, 들어오자마자 기본 브라우저(크롬·사파리)로 다시 연다
+      (function () {
+        var ua = navigator.userAgent || '';
+        var url = location.href;
+        if (/KAKAOTALK/i.test(ua)) {
+          location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
+        } else if (/Line\//i.test(ua) && url.indexOf('openExternalBrowser=1') < 0) {
+          location.href = url + (url.indexOf('?') < 0 ? '?' : '&') + 'openExternalBrowser=1';
+        } else if (/android/i.test(ua) && /NAVER|Instagram|FBAN|FBAV|everytimeApp|DaumApps|wv\)/i.test(ua)) {
+          location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+        }
+      })();
+    </script>
     <link rel="icon" href="/brand/mark-64.png" type="image/png" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
