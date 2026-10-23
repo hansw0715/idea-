@@ -8,25 +8,6 @@ import './auth.css';
  * 설치한 앱(홈 화면 아이콘)으로 열면 이 화면 대신 원래 앱이 열린다 (main.tsx).
  */
 export default function DownloadPage() {
-  // 설치 화면은 언제나 휴대폰 화면 모드(다크/라이트)를 그대로 따르고, 바뀌면 바로 따라간다
-  useEffect(() => {
-    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
-    if (!mq) return;
-    const apply = () => {
-      const dark = mq.matches;
-      if (dark) document.documentElement.setAttribute('data-theme', 'dark');
-      else document.documentElement.removeAttribute('data-theme');
-      document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', dark ? 'only dark' : 'only light');
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#16181b' : '#ffffff');
-      // 여기서 설치하면 크롬이 서버의 앱 설정 파일(/api/manifest)을 읽어 가므로, 지금 모드를 쿠키로 알려
-      // 설치한 앱의 맨 아래 버튼 줄·시작 화면이 휴대폰 모드 색으로 만들어지게 한다
-      document.cookie = `sb-theme=${dark ? 'dark' : 'light'}; path=/; max-age=31536000; samesite=lax; secure`;
-    };
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, []);
-
   // 로그인 화면처럼 아래로 내려가지 않게 막는다
   useEffect(() => {
     document.documentElement.classList.add('no-scroll');

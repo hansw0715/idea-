@@ -4,23 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#ffffff" />
-    <!-- 휴대폰 다크 모드(크롬·삼성 인터넷의 강제 어둡게)가 색을 바꾸지 않게 한다.
-         어두운 화면은 내 정보 → 설정의 다크 모드로만 켠다 (Display.tsx 가 이 값을 바꾼다) -->
+    <!-- 휴대폰 다크 모드(크롬의 강제 어둡게)가 사이트 색을 바꾸지 않게 밝은 화면만 쓴다고 알린다 -->
     <meta name="color-scheme" content="only light" />
-    <script>
-      // 화면 모드를 첫 화면이 그려지기 전에 적용한다 (Display.tsx 와 같은 규칙):
-      // 설정에서 직접 고른 값이 없으면 휴대폰의 다크/라이트 모드를 따른다
-      (function () {
-        try {
-          var saved = localStorage.getItem('sangsang-booke-theme-mode');
-          var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (!dark) return;
-          document.documentElement.setAttribute('data-theme', 'dark');
-          document.querySelector('meta[name="color-scheme"]').setAttribute('content', 'only dark');
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#16181b');
-        } catch (e) {}
-      })();
-    </script>
     <meta name="description" content="같이 밥 먹고, 같이 만나고, 같이 이용하는 한성 캠퍼스 연결 플랫폼 상상Book-E" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -64,7 +49,7 @@
     </script>
     <link rel="icon" href="/brand/mark-64.png" type="image/png" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
-    <link rel="manifest" href="/api/manifest" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <!-- KRDS 기본 서체 Pretendard GOV -->
     <link

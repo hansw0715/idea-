@@ -1167,21 +1167,3 @@ body:has(.app-frame.has-tabbar) .toast-region {
 .field__labelrow .field__label {
   margin-bottom: 0;
 }
-
-/* 다크 모드 버튼: 남색 면 + 보라 테두리가 튀지 않게, 어두운 회색 면 + 옅은 테두리로 */
-:root[data-theme='dark'] .btn--secondary {
-  background: var(--gray-5);
-  border-color: var(--gray-20);
-  color: var(--c-action-text);
-}
-:root[data-theme='dark'] .btn--secondary:active {
-  background: var(--gray-10);
-}
-@media (hover: hover) {
-  :root[data-theme='dark'] .btn--secondary:hover {
-    background: var(--gray-10);
-  }
-}
-:root[data-theme='dark'] .btn--tertiary {
-  border-color: var(--gray-20);
-}

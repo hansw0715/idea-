@@ -103,7 +103,7 @@
   font: inherit;
   font-size: var(--fs-md);
   font-weight: var(--fw-bold);
-  color: var(--c-green-text);
+  color: var(--success-70);
   cursor: pointer;
 }
 .home-card__list {

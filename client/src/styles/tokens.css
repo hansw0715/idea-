@@ -96,7 +96,6 @@
   --c-panel-strong: #e6e9f0;
   --c-green-bg: #e5f3d6; /* 예약 블록·미수강 카드 연두색 */
   --c-green-bg-strong: #d6ebc2;
-  --c-green-text: var(--success-70); /* 연두색 상자 위 링크 글자 */
   --r-panel: 1.2rem;
   --c-text: var(--gray-90);
   --c-text-sub: var(--gray-70);
@@ -259,43 +258,7 @@
 }
 
 /* 문서 전체(각 요소)에도 걸어 두어, 크롬이 요소 단위로 어둡게 바꾸는 것도 막는다 */
-:root:not([data-theme='dark']) body,
-:root:not([data-theme='dark']) body * {
+body,
+body * {
   color-scheme: only light;
-}
-
-/* ── 다크 모드 (내 정보 → 설정 → 다크 모드). 회색 단계를 뒤집고 옅은 색 면을 어둡게 바꾼다 ── */
-:root[data-theme='dark'] {
-  --gray-0: #16181b;
-  --gray-5: #1e2125;
-  --gray-10: #2a2e33;
-  --gray-20: #3a3f45;
-  --gray-30: #4e555c;
-  --gray-40: #6d7680;
-  --gray-50: #8a949e;
-  --gray-60: #a3acb5;
-  --gray-70: #bfc6cc;
-  --gray-80: #d5dadf;
-  --gray-90: #e8ebee;
-  --gray-95: #f2f4f6;
-  --gray-100: #ffffff;
-  --primary-5: #23244a;
-  --primary-10: #2d2f5e;
-  --secondary-5: #22272f;
-  --danger-5: #3a2220;
-  --warning-5: #3a3020;
-  --success-5: #1f3324;
-  --info-5: #1d2e3d;
-  --point-5: #3a2226;
-  --c-bg-outer: #0e0f11;
-  --c-panel: #1f2226;
-  --c-panel-strong: #2a2e33;
-  --c-green-bg: #24361c;
-  --c-green-bg-strong: #2f4625;
-  --c-green-text: #a8dc8f;
-  --c-action-text: var(--primary-30);
-}
-:root[data-theme='dark'],
-:root[data-theme='dark'] body {
-  color-scheme: only dark;
 }
