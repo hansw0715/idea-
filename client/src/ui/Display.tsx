@@ -47,9 +47,10 @@ function applyTheme(dark: boolean) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#16181b' : '#ffffff');
   document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', dark ? 'only dark' : 'only light');
   // 설치한 앱의 맨 아래 버튼 줄 색도 맞도록 앱 설정 파일을 바꿔 건넨다 (크롬이 앱을 업데이트할 때 반영)
-  document
-    .querySelector('link[rel="manifest"]')
-    ?.setAttribute('href', dark ? '/manifest-dark.webmanifest' : '/manifest.webmanifest');
+  // 같은 값을 다시 넣으면 크롬이 설정 파일을 새로 읽으며 설치 가능 여부를 다시 따지므로, 바뀔 때만 넣는다
+  const manifest = document.querySelector('link[rel="manifest"]');
+  const href = dark ? '/manifest-dark.webmanifest' : '/manifest.webmanifest';
+  if (manifest && manifest.getAttribute('href') !== href) manifest.setAttribute('href', href);
 }
 
 function apply() {
