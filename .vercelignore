@@ -1,6 +1,5 @@
 # 업로드에 필요 없는 것들 (개발 중 생긴 임시 파일·캡처·참고 자료·비밀값)
 .tmp
-.netlify
 .git
 shots
 docs

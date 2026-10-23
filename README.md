@@ -146,7 +146,7 @@ npm run dev          # API 서버와 클라이언트를 함께 실행
 3. `LOUNGE_DEV_SEED`·`SCHOOL_MOCK_ORIGIN` 은 등록하지 않습니다(등록해도 운영에서는 동작하지 않습니다).
 4. 배포합니다. 첫 요청에서 테이블이 자동으로 만들어집니다.
 
-서버리스라서 요청 제한(rate limit)은 인스턴스 메모리 기준이어서 약합니다. Netlify(`netlify.toml`)와 Fly.io(`fly.toml`, `Dockerfile`) 설정도 있으며 같은 환경 변수를 씁니다.
+서버리스라서 요청 제한(rate limit)은 인스턴스 메모리 기준이어서 약합니다. Fly.io(`fly.toml`, `Dockerfile`) 설정도 있으며 같은 환경 변수를 씁니다. (Netlify 설정은 2026-10-24 에 Vercel 로 모두 옮기며 지웠습니다)
 
 ## 테스트
 
@@ -190,7 +190,6 @@ client/src/
   lounge/          라운지 (world 지도 · sheets 시트 · parts 공용 조각 · admin · 채팅방)
   school/          학교 연동 (금고 vault · 연동 흐름 · 시트)
 api/               Vercel 서버리스 함수 진입점
-netlify/           Netlify 함수 진입점
 docs/              UI-KIT.md(UI 계약) · lounge/ · school/ · tasks/(작업 지시서)
 scripts/           seed-demo.mjs · shot.mjs · lib.mjs (화면 확인 도구)
 ```
