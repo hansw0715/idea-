@@ -62,7 +62,8 @@
         } catch (e) {}
       })();
     </script>
-    <link rel="manifest" href="/api/manifest" />
+    <!-- 쿠키(sb-scheme)를 함께 보내야 서버가 휴대폰 화면 모드를 안다 (설정 파일은 기본으로 쿠키 없이 받는다) -->
+    <link rel="manifest" href="/api/manifest" crossorigin="use-credentials" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <!-- KRDS 기본 서체 Pretendard GOV -->
     <link
