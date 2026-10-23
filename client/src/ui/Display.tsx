@@ -17,11 +17,20 @@ interface DisplayApi {
 const STORAGE_KEY = 'sangsang-booke-display';
 const THEME_KEY = 'sangsang-booke-theme';
 
+/**
+ * 화면 모드. 저장된 값이 없으면(처음 실행) 휴대폰의 화면 모드(다크/라이트)를 따르고, 그 값을 저장해 둔다.
+ * 이후에는 내 정보 → 설정의 화이트 모드/다크 모드 버튼으로만 바뀐다.
+ * (index.html 의 첫 스크립트도 같은 규칙으로 첫 화면이 그려지기 전에 적용한다)
+ */
 function readDark(): boolean {
   try {
-    return localStorage.getItem(THEME_KEY) === 'dark';
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'dark' || saved === 'light') return saved === 'dark';
+    const dark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+    localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
+    return dark;
   } catch {
-    return false;
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
   }
 }
 

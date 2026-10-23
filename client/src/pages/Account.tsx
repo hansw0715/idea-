@@ -188,11 +188,10 @@ export default function Account() {
           <button
             type="button"
             className={btnClass({ variant: 'secondary', size: 'sm' })}
-            aria-pressed={dark}
             onClick={() => setDark(!dark)}
           >
-            <Icon name="moon" className="btn__icon" />
-            {dark ? '다크 모드 끄기' : '다크 모드'}
+            <Icon name={dark ? 'sun' : 'moon'} className="btn__icon" />
+            {dark ? '화이트 모드' : '다크 모드'}
           </button>
           {LOUNGE_ENABLED && <LoungeAccountRows />}
         </section>
