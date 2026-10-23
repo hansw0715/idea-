@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-/** 설정에서 고른 화면 모드를 담는 쿠키 (client/src/ui/Display.tsx 가 쓴다). 없으면 고르지 않은 것 */
+/** 앱에 지금 보이는 화면 모드(설정에서 고른 값, 없으면 휴대폰 화면 모드)를 담는 쿠키. client/src/ui/Display.tsx 가 쓴다 */
 export const THEME_COOKIE = 'sb-theme';
 
 const LIGHT = '#ffffff';
@@ -9,8 +9,8 @@ const DARK = '#16181b';
 /**
  * 앱 설정 파일(웹 앱 매니페스트). 크롬은 설치·업데이트 때 이 파일의 theme_color 로
  * 설치한 앱의 맨 아래 버튼 줄을 칠한다.
- *  - 설정에서 모드를 고르지 않았으면 theme_color 를 적지 않는다 → 휴대폰 화면 모드를 따른다
- *  - 골랐으면 그 모드의 색을 적는다 (크롬이 앱을 업데이트할 때 반영된다)
+ *  - 앱이 마지막으로 보인 모드(쿠키)의 색을 적는다 (크롬이 앱을 업데이트할 때 반영된다)
+ *  - 쿠키가 없으면(처음 설치) theme_color 를 적지 않는다
  * 주소는 /api/manifest 하나로 고정해, 모드에 따라 주소가 바뀌며 생기던 업데이트 꼬임을 없앤다.
  */
 export const manifestRouter = Router();

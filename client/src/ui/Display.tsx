@@ -12,16 +12,12 @@ interface DisplayApi {
   /** 다크 모드 (내 정보 → 설정에서 켜고 끈다. 이 기기에 저장) */
   dark: boolean;
   setDark: (on: boolean) => void;
-  /** 설정에서 따로 고르지 않아 휴대폰 화면 모드를 따르는 중인지 */
-  followPhone: boolean;
-  /** 고른 모드를 지우고 다시 휴대폰 화면 모드를 따른다 */
-  followPhoneAgain: () => void;
 }
 
 const STORAGE_KEY = 'sangsang-booke-display';
-/** 설정에서 직접 고른 화면 모드 ('dark' | 'light'). 예전 키(-theme)는 처음 실행 때 자동 저장된 값이라 쓰지 않는다 */
-const THEME_KEY = 'sangsang-booke-theme-choice';
-const OLD_THEME_KEY = 'sangsang-booke-theme';
+/** 설정에서 직접 고른 화면 모드 ('dark' | 'light'). 예전 키들은 지운다 (모두 다시 휴대폰 설정을 따르게) */
+const THEME_KEY = 'sangsang-booke-theme-mode';
+const OLD_THEME_KEYS = ['sangsang-booke-theme', 'sangsang-booke-theme-choice'];
 
 const phoneDark = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
 
@@ -50,6 +46,9 @@ function applyTheme(dark: boolean) {
   else root.removeAttribute('data-theme');
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#16181b' : '#ffffff');
   document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', dark ? 'only dark' : 'only light');
+  // 설치한 앱의 맨 아래 버튼 줄·시작 화면 색은 크롬이 앱을 업데이트할 때 서버의 앱 설정 파일(/api/manifest)에서
+  // 가져간다. 지금 보이는 모드를 쿠키로 알려 두어 다음 업데이트 때 그 색이 되게 한다
+  document.cookie = `sb-theme=${dark ? 'dark' : 'light'}; path=/; max-age=31536000; samesite=lax; secure`;
 }
 
 function apply() {
@@ -69,8 +68,6 @@ const DisplayContext = createContext<DisplayApi>({
   zoom: BASE_ZOOM,
   dark: false,
   setDark: () => {},
-  followPhone: true,
-  followPhoneAgain: () => {},
 });
 
 export function useDisplay(): DisplayApi {
@@ -79,30 +76,14 @@ export function useDisplay(): DisplayApi {
 
 export function DisplayProvider({ children }: { children: ReactNode }) {
   const [dark, setDarkState] = useState(readDark);
-  const [followPhone, setFollowPhone] = useState(() => readChoice() === null);
   const setDark = useCallback((on: boolean) => {
     setDarkState(on);
-    setFollowPhone(false);
     applyTheme(on);
     try {
       localStorage.setItem(THEME_KEY, on ? 'dark' : 'light');
     } catch {
       /* 저장이 막혀도 이번에는 바뀐다 */
     }
-    // 설치한 앱의 맨 아래 버튼 줄 색도 고른 모드를 따르도록 서버의 앱 설정 파일(/api/manifest)에 알린다
-    document.cookie = `sb-theme=${on ? 'dark' : 'light'}; path=/; max-age=31536000; samesite=lax; secure`;
-  }, []);
-  const followPhoneAgain = useCallback(() => {
-    try {
-      localStorage.removeItem(THEME_KEY);
-    } catch {
-      /* 저장소가 막힌 환경 — 무시 */
-    }
-    document.cookie = 'sb-theme=; path=/; max-age=0; samesite=lax; secure';
-    setFollowPhone(true);
-    const now = phoneDark();
-    setDarkState(now);
-    applyTheme(now);
   }, []);
   // 직접 고르기 전에는 휴대폰 화면 모드가 바뀌면 바로 따라간다.
   // 앱이 뒤에 있는 동안 바뀐 경우도 놓치지 않게, 앱으로 돌아올 때도 다시 확인한다
@@ -127,18 +108,15 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     apply();
     // 예전 설정(글자 크기·화면 모드) 저장값은 더 쓰지 않으니 지운다
-    // 예전에 고른 모드가 있으면 서버의 앱 설정 파일도 알 수 있게 쿠키로 맞춰 둔다
-    const choice = readChoice();
-    if (choice) document.cookie = `sb-theme=${choice}; path=/; max-age=31536000; samesite=lax; secure`;
     try {
       localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(OLD_THEME_KEY);
+      OLD_THEME_KEYS.forEach((k) => localStorage.removeItem(k));
     } catch {
       /* 저장소가 막힌 환경 — 무시 */
     }
   }, []);
   return (
-    <DisplayContext.Provider value={{ zoom: BASE_ZOOM, dark, setDark, followPhone, followPhoneAgain }}>
+    <DisplayContext.Provider value={{ zoom: BASE_ZOOM, dark, setDark }}>
       {children}
     </DisplayContext.Provider>
   );

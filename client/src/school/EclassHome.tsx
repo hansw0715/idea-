@@ -1,5 +1,5 @@
 /**
- * 홈 첫 화면의 "미수강 강의 알림" — 연동한 학교 계정으로 한성대 e-class 의 강의·과제·출석 현황을 읽기만 해서 보여 준다.
+ * 홈 첫 화면의 "미수강 강의" — 연동한 학교 계정으로 한성대 e-class 의 강의·과제·출석 현황을 읽기만 해서 보여 준다.
  *
  * - 마지막으로 읽은 결과는 이 기기에만 둔다(localStorage, 사용자별). 먼저 그것을 보여 주고, 5분이 지났으면 한 번 새로 읽는다.
  * - 학교 계정은 필요한 순간에만 풀어(withCredentials) 서버로 보낸다. 인증 실패·잠금 뒤에는 자동으로 다시 시도하지 않는다.
@@ -155,7 +155,7 @@ export default function EclassHome() {
   const head = (
     <div className="section__head">
       <h2 className="section__title" id="eclass-title">
-        미수강 강의 알림
+        미수강 강의
       </h2>
     </div>
   );

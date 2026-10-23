@@ -33,7 +33,7 @@ const PHRASE_FIELD = 'withdraw-phrase';
 /** 내 정보: 가입 정보 · 로그아웃 · 회원 탈퇴 */
 export default function Account() {
   const { user, setUser } = useAuth();
-  const { dark, setDark, followPhone, followPhoneAgain } = useDisplay();
+  const { dark, setDark } = useDisplay();
   const school = useSchool();
   // 학번 전체는 이 기기에 암호화해 둔 학교 계정 정보를 기기 안에서만 잠깐 풀어 보여 준다 (서버에는 학번 원문이 없다).
   // 풀 수 없는 기기(다른 기기에서 연동 등)에서는 가린 학번(hint)만 보인다.
@@ -193,17 +193,6 @@ export default function Account() {
             <Icon name={dark ? 'sun' : 'moon'} className="btn__icon" />
             {dark ? '화이트 모드' : '다크 모드'}
           </button>
-          {/* 화면 모드를 직접 골랐으면, 다시 휴대폰 설정을 따르게 되돌리는 버튼 */}
-          {!followPhone && (
-            <button
-              type="button"
-              className={btnClass({ variant: 'secondary', size: 'sm' })}
-              onClick={followPhoneAgain}
-            >
-              <Icon name="refresh" className="btn__icon" />
-              휴대폰 설정 따르기
-            </button>
-          )}
           {LOUNGE_ENABLED && <LoungeAccountRows />}
         </section>
 

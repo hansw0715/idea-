@@ -94,7 +94,7 @@ export default function Dashboard() {
               </Alert>
             ) : (
               <>
-                {/* 1. 옆으로 넘기는 요약 카드: 다음 예약(강조) · 미수강 강의 알림 · 내 회의 */}
+                {/* 1. 옆으로 넘기는 요약 카드: 다음 예약(강조) · 미수강 강의 · 내 회의 */}
                 <section className="home-cards" aria-label="오늘 요약">
                   <div className="home-cards__track">
                     <article className="home-card home-card--accent">
@@ -118,7 +118,7 @@ export default function Dashboard() {
                       </Link>
                     </article>
 
-                    {/* 두 번째: 미수강 강의 알림 (연두색 상자) */}
+                    {/* 두 번째: 미수강 강의 (연두색 상자) */}
                     <EclassHomeCard />
 
                     <article className="home-card">
@@ -169,7 +169,7 @@ export default function Dashboard() {
                   {/* 공지: 학교 공지 → 내 학과 공지 (최근 2주). 자기 데이터를 따로 불러온다 */}
                   <HomeNotices />
 
-                  {/* 4. 미수강 강의 알림(e-class) — 자기 데이터를 따로 불러와 아래 구역과 서로 막지 않는다 */}
+                  {/* 4. 미수강 강의(e-class) — 자기 데이터를 따로 불러와 아래 구역과 서로 막지 않는다 */}
                   <EclassHome />
 
                   {/* 5. 표: 이름 · 가장 가까운 항목 · 개수. 줄마다 눌러서 해당 화면으로 */}

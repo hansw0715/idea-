@@ -31,8 +31,8 @@ function courseLabel(name: string): string {
 }
 
 /**
- * 홈 옆으로 넘기는 요약 카드의 세 번째: "미수강 강의 알림" + 아직 안 들은 강의 이름 (› 이름).
- * 아래 미수강 강의 알림 구역이 이 기기에 저장해 둔 e-class 결과를 그대로 읽는다 (따로 학교에 묻지 않는다).
+ * 홈 옆으로 넘기는 요약 카드의 세 번째: "미수강 강의" + 아직 안 들은 강의 이름 (› 이름).
+ * 아래 미수강 강의 구역이 이 기기에 저장해 둔 e-class 결과를 그대로 읽는다 (따로 학교에 묻지 않는다).
  */
 export default function EclassHomeCard() {
   const { user } = useAuth();
@@ -80,7 +80,7 @@ export default function EclassHomeCard() {
 
   return (
     <article className="home-card home-card--green">
-      <h2 className="home-card__title">미수강 강의 알림</h2>
+      <h2 className="home-card__title">미수강 강의</h2>
       {body}
       <button type="button" className="home-card__more" onClick={scrollToSection}>
         자세히 보기

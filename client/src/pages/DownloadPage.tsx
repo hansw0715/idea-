@@ -18,6 +18,9 @@ export default function DownloadPage() {
       else document.documentElement.removeAttribute('data-theme');
       document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', dark ? 'only dark' : 'only light');
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#16181b' : '#ffffff');
+      // 여기서 설치하면 크롬이 서버의 앱 설정 파일(/api/manifest)을 읽어 가므로, 지금 모드를 쿠키로 알려
+      // 설치한 앱의 맨 아래 버튼 줄·시작 화면이 휴대폰 모드 색으로 만들어지게 한다
+      document.cookie = `sb-theme=${dark ? 'dark' : 'light'}; path=/; max-age=31536000; samesite=lax; secure`;
     };
     apply();
     mq.addEventListener('change', apply);
