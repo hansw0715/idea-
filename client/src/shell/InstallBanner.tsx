@@ -103,7 +103,7 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
         {installed ? '완료' : !pressed && '앱 설치하기'}
       </Button>
       {big && (
-        <p className="install-cta__note">안전하지 않은 앱 차단됨시 &gt; 세부정보 더보기 &gt; 무시하고 설치하기</p>
+        <p className="install-cta__note">안전하지 않은 앱 차단됨 시 &gt; 세부 정보 더 보기 &gt; 무시하고 설치하기</p>
       )}
       {showHelp && isMobile() && (
         <p className="install-cta__help">
