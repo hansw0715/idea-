@@ -46,11 +46,6 @@ function applyTheme(dark: boolean) {
   else root.removeAttribute('data-theme');
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#16181b' : '#ffffff');
   document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', dark ? 'only dark' : 'only light');
-  // 설치한 앱의 맨 아래 버튼 줄 색도 맞도록 앱 설정 파일을 바꿔 건넨다 (크롬이 앱을 업데이트할 때 반영)
-  // 같은 값을 다시 넣으면 크롬이 설정 파일을 새로 읽으며 설치 가능 여부를 다시 따지므로, 바뀔 때만 넣는다
-  const manifest = document.querySelector('link[rel="manifest"]');
-  const href = dark ? '/manifest-dark.webmanifest' : '/manifest.webmanifest';
-  if (manifest && manifest.getAttribute('href') !== href) manifest.setAttribute('href', href);
 }
 
 function apply() {
@@ -82,6 +77,8 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
     } catch {
       /* 저장이 막혀도 이번에는 바뀐다 */
     }
+    // 설치한 앱의 맨 아래 버튼 줄 색도 고른 모드를 따르도록 서버의 앱 설정 파일(/api/manifest)에 알린다
+    document.cookie = `sb-theme=${on ? 'dark' : 'light'}; path=/; max-age=31536000; samesite=lax; secure`;
   }, []);
   // 직접 고르기 전에는 휴대폰 화면 모드가 바뀌면 바로 따라간다
   useEffect(() => {
@@ -98,6 +95,9 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     apply();
     // 예전 설정(글자 크기·화면 모드) 저장값은 더 쓰지 않으니 지운다
+    // 예전에 고른 모드가 있으면 서버의 앱 설정 파일도 알 수 있게 쿠키로 맞춰 둔다
+    const choice = readChoice();
+    if (choice) document.cookie = `sb-theme=${choice}; path=/; max-age=31536000; samesite=lax; secure`;
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(OLD_THEME_KEY);
