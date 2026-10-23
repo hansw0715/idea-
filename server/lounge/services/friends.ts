@@ -12,7 +12,9 @@ import { all, get, run } from '../../db.js';
 import { fail, ok } from '../../../shared/lounge/types.js';
 import type { Result } from '../../../shared/lounge/types.js';
 import type { FriendsView } from '../../../shared/lounge/view.js';
-import { loadUsers, toPublicUser } from '../users.js';
+import { findUser, loadUsers, toPublicUser, toQuickMember } from '../users.js';
+import { resolveWeekStart, weekEndOf } from '../../dates.js';
+import { notify } from './push.js';
 import { hiddenFor } from './safety.js';
 
 interface FriendRow {
@@ -46,14 +48,17 @@ export async function myFriends(me: string): Promise<FriendsView> {
   const [rows, hidden] = await Promise.all([rowsInvolving(me), hiddenFor(me)]);
   const other = (r: FriendRow) => String(r.requester_id === Number(me) ? r.addressee_id : r.requester_id);
   const users = await loadUsers(rows.map(other));
-  const pick = (filter: (r: FriendRow) => boolean) =>
+  const visible = (filter: (r: FriendRow) => boolean) =>
     rows.filter(filter).flatMap((r) => {
       const u = users.get(other(r));
-      return u?.profileDone && !hidden.has(u.id) ? [toPublicUser(u)] : [];
+      return u?.profileDone && !hidden.has(u.id) ? [u] : [];
     });
-  const byName = (list: ReturnType<typeof pick>) => list.sort((a, b) => a.nickname.localeCompare(b.nickname, 'ko'));
+  const pick = (filter: (r: FriendRow) => boolean) => visible(filter).map(toPublicUser);
   return {
-    friends: byName(pick((r) => r.status === 'accepted')),
+    // 친구끼리는 실명도 보여 준다 (요청 단계에서는 닉네임만)
+    friends: visible((r) => r.status === 'accepted')
+      .map(toQuickMember)
+      .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
     incoming: pick((r) => r.status === 'pending' && String(r.addressee_id) === me),
     outgoing: pick((r) => r.status === 'pending' && String(r.requester_id) === me),
   };
@@ -81,12 +86,21 @@ export async function requestFriend(me: string, username: string): Promise<Resul
       `UPDATE lounge_friends SET status = 'accepted', responded_at = now() WHERE requester_id = ? AND addressee_id = ?`,
       [Number(targetId), Number(me)],
     );
+    await notifyAccepted(me, targetId);
     return ok('accepted');
   }
   await run('INSERT INTO lounge_friends (requester_id, addressee_id) VALUES (?, ?) ON CONFLICT DO NOTHING', [
     Number(me),
     Number(targetId),
   ]);
+  // 아직 친구가 아니라 실명 대신 라운지 닉네임으로 알린다
+  const sender = await findUser(me);
+  await notify(targetId, {
+    title: '친구 요청',
+    body: `${sender?.nickname || '누군가'} 님이 친구 요청을 보냈어요.`,
+    url: '/lounge',
+    tag: `friend-request-${me}`,
+  });
   return ok('requested');
 }
 
@@ -101,7 +115,68 @@ export async function acceptFriend(me: string, requesterId: string): Promise<Res
     `UPDATE lounge_friends SET status = 'accepted', responded_at = now() WHERE requester_id = ? AND addressee_id = ?`,
     [Number(requesterId), Number(me)],
   );
+  await notifyAccepted(me, requesterId);
   return ok(true);
+}
+
+/** 친구가 됐다고 상대에게 알린다 (친구끼리는 실명) */
+async function notifyAccepted(me: string, otherId: string): Promise<void> {
+  const accepter = await findUser(me);
+  await notify(otherId, {
+    title: '친구가 됐어요',
+    body: `${accepter?.name || accepter?.nickname || '친구'} 님과 친구가 됐어요.`,
+    url: '/lounge',
+    tag: `friend-accepted-${me}`,
+  });
+}
+
+/** 두 사람이 지금 친구(서로 수락)인가 */
+export async function areFriends(a: string, b: string): Promise<boolean> {
+  const row = await rowBetween(a, b);
+  return row?.status === 'accepted' && !(await hiddenFor(a)).has(b);
+}
+
+/** "밥 먹자" — 친구의 폰에 알림을 보낸다 */
+export async function askMeal(me: string, friendId: string): Promise<Result<true>> {
+  if (!(await areFriends(me, friendId))) return fail('NOT_FOUND', '친구만 밥 먹자고 할 수 있어요.');
+  const sender = await findUser(me);
+  await notify(friendId, {
+    title: '밥 먹자!',
+    body: `${sender?.name || sender?.nickname || '친구'} 님이 같이 밥 먹자고 해요.`,
+    url: '/lounge',
+    tag: `meal-${me}`,
+  });
+  return ok(true);
+}
+
+export type FriendTimetableEntry = {
+  id: number;
+  day: number;
+  startMin: number;
+  endMin: number;
+  title: string;
+  place: string | null;
+  repeatKind: string;
+  date: string | null;
+};
+
+/** 친구의 그 주 시간표(수업·일정). 예약은 넣지 않는다 */
+export async function friendTimetable(
+  me: string,
+  friendId: string,
+  week: unknown,
+): Promise<Result<{ weekStart: string; entries: FriendTimetableEntry[] }>> {
+  if (!(await areFriends(me, friendId))) return fail('NOT_FOUND', '친구의 시간표만 볼 수 있어요.');
+  const weekStart = resolveWeekStart(week);
+  const entries = await all<FriendTimetableEntry>(
+    `SELECT id, day, start_min AS "startMin", end_min AS "endMin", title, place,
+            repeat_kind AS "repeatKind", date
+       FROM timetable_entries
+      WHERE user_id = ? AND (repeat_kind = 'weekly' OR (date >= ? AND date <= ?))
+      ORDER BY day, start_min`,
+    [Number(friendId), weekStart, weekEndOf(weekStart)],
+  );
+  return ok({ weekStart, entries });
 }
 
 /** 관계 끊기 — 받은 요청 거절 · 보낸 요청 취소 · 친구 삭제 모두 같은 일이다 (상대에게 알리지 않는다) */

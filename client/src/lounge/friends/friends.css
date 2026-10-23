@@ -123,3 +123,129 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* 친구 이름 옆 라운지 닉네임 */
+.lounge-friend-row__nick {
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+/* 친구마다 ⋯ 메뉴: 밥 먹자 · 시간표 보기 · 회의에 초대 · 삭제 */
+.lounge-friend-menu {
+  position: relative;
+  flex: none;
+}
+.lounge-friend-menu__toggle {
+  color: var(--c-text-sub);
+}
+.lounge-friend-menu__list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--sp-1));
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 15rem;
+  padding: var(--sp-2);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+  background: var(--c-bg);
+  box-shadow: 0 0.6rem 2rem rgba(0, 0, 0, 0.14);
+}
+.lounge-friend-menu__list button {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--touch);
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: calc(var(--r) - 0.2rem);
+  background: none;
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.lounge-friend-menu__list button:hover,
+.lounge-friend-menu__list button:focus-visible {
+  background: var(--c-surface);
+}
+.lounge-friend-menu__list svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--c-action-text);
+}
+.lounge-friend-menu__list .lounge-friend-menu__danger,
+.lounge-friend-menu__list .lounge-friend-menu__danger svg {
+  color: var(--c-danger-text);
+}
+
+/* 알림 켜기 안내 */
+.lounge-friends__push {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r);
+  background: var(--c-panel);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-friends__push svg {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+  color: var(--c-action-text);
+}
+.lounge-friends__push span {
+  flex: 1;
+  min-width: 0;
+}
+.lounge-friends__push .btn {
+  flex: none;
+  color: var(--c-action-text);
+}
+
+/* 회의에 초대 시트 */
+.lounge-invite__lead {
+  margin: 0 0 var(--sp-4);
+}
+.lounge-invite__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lounge-invite__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  width: 100%;
+  min-height: 5.2rem;
+  padding: 0 var(--sp-2);
+  border: 0;
+  border-bottom: 1px solid var(--c-divider);
+  background: none;
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lounge-invite__name {
+  flex: 1;
+  min-width: 0;
+  font-weight: var(--fw-bold);
+}
+.lounge-invite__go {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--c-action-text);
+  font-size: var(--fs-sm);
+}
+.lounge-invite__go svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}

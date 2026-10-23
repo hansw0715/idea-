@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { fail } from '../../../shared/lounge/types.js';
 import { createRateLimiter } from '../../rateLimit.js';
 import { handler, me, sendError } from '../http.js';
-import { acceptFriend, myFriends, removeFriend, requestFriend } from '../services/friends.js';
+import { acceptFriend, askMeal, friendTimetable, myFriends, removeFriend, requestFriend } from '../services/friends.js';
 import { parseUserId } from './gatherings.js';
 
 /**
@@ -68,5 +68,35 @@ friendsRouter.delete(
     const viewer = me(res);
     await removeFriend(viewer.id, target);
     res.json(await myFriends(viewer.id));
+  }),
+);
+
+/** "밥 먹자"는 친구 한 명에게 10분에 한 번까지 — 알림이 쏟아지지 않게 */
+const mealLimiter = createRateLimiter(1, 10 * 60_000);
+
+friendsRouter.post(
+  '/friends/meal',
+  handler(async (req, res) => {
+    const target = parseUserId(isObj(req.body) ? req.body.userId : undefined);
+    if (!target) return sendError(res, fail('INVALID', '친구를 골라 주세요.').error);
+    const viewer = me(res);
+    if (!mealLimiter.hit(`${viewer.id}>${target}`)) {
+      res.status(429).json({ error: '방금 밥 먹자고 했어요. 잠시 뒤에 다시 보내 주세요.', code: 'RATE_LIMITED' });
+      return;
+    }
+    const result = await askMeal(viewer.id, target);
+    if (!result.ok) return sendError(res, result.error);
+    res.json({ ok: true });
+  }),
+);
+
+friendsRouter.get(
+  '/friends/:id/timetable',
+  handler(async (req, res) => {
+    const target = parseUserId(req.params.id);
+    if (!target) return sendError(res, fail('INVALID', '친구를 골라 주세요.').error);
+    const result = await friendTimetable(me(res).id, target, req.query.week);
+    if (!result.ok) return sendError(res, result.error);
+    res.json(result.value);
   }),
 );

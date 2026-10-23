@@ -201,7 +201,8 @@ export type QuickRequestView = {
 
 /** 라운지 친구 목록: 친구 · 나에게 온 요청 · 내가 보낸 요청 */
 export type FriendsView = {
-  friends: PublicUser[];
+  /** 친구끼리는 실명도 보인다 */
+  friends: QuickMember[];
   incoming: PublicUser[];
   outgoing: PublicUser[];
 };

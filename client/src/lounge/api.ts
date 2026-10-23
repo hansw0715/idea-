@@ -28,6 +28,18 @@ import type {
 
 const L = '/lounge';
 
+/** 친구 시간표 한 칸 (수업·일정. 예약은 없다) */
+export type FriendTimetableEntry = {
+  id: number;
+  day: number;
+  startMin: number;
+  endMin: number;
+  title: string;
+  place: string | null;
+  repeatKind: string;
+  date: string | null;
+};
+
 export const loungeApi = {
   // 프로필
   me: () => api.get<MeResponse>(`${L}/me`),
@@ -72,6 +84,11 @@ export const loungeApi = {
     api.post<FriendsView & { result: 'requested' | 'accepted' }>(`${L}/friends`, { username }),
   acceptFriend: (userId: string) => api.post<FriendsView>(`${L}/friends/accept`, { userId }),
   removeFriend: (userId: string) => api.del<FriendsView>(`${L}/friends`, { userId }),
+  askMeal: (userId: string) => api.post<{ ok: true }>(`${L}/friends/meal`, { userId }),
+  friendTimetable: (userId: string, week: string) =>
+    api.get<{ weekStart: string; entries: FriendTimetableEntry[] }>(`${L}/friends/${userId}/timetable?week=${week}`),
+  inviteToMeeting: (meetingId: number, userId: string) =>
+    api.post<{ ok: true; alreadyMember: boolean; name: string }>(`/meetings/${meetingId}/invite`, { userId }),
   block: (userId: string) => api.post<{ ok: true }>(`${L}/blocks`, { userId }),
   unblock: (userId: string) => api.del<{ ok: true }>(`${L}/blocks`, { userId }),
   report: (input: ReportInput) => api.post<{ ok: true }>(`${L}/reports`, input),

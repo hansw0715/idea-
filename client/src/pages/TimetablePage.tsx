@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AppHeader } from '../shell/Shell';
@@ -162,6 +162,83 @@ export default function TimetablePage() {
   const latestEnd = useMemo(() => gridEntries.reduce((max, e) => Math.max(max, e.endMin), 0), [gridEntries]);
   const naturalClose = Math.min(CLOSE_MIN, Math.max(GRID_DEFAULT_CLOSE_MIN, Math.ceil(latestEnd / 60) * 60));
   const gridClose = showEvening ? CLOSE_MIN : naturalClose;
+
+  // 펼치기·접기를 스르륵 움직이게: 격자를 감싼 상자의 높이를 옛 높이 → 새 높이로 바꾸고,
+  // 펼칠 때는 늘어난 만큼 화면도 함께 내려 새로 보이는 저녁 시간이 눈앞에 오게 한다.
+  const gridClipRef = useRef<HTMLDivElement>(null);
+  const eveningAnim = useRef<number | null>(null);
+  const expandFrom = useRef<number | null>(null);
+
+  const animateGrid = useCallback((from: number, to: number, scroll: boolean, done?: () => void) => {
+    const el = gridClipRef.current;
+    if (eveningAnim.current !== null) cancelAnimationFrame(eveningAnim.current);
+    const finish = () => {
+      if (el) {
+        el.style.height = '';
+        el.style.overflow = '';
+      }
+      eveningAnim.current = null;
+      done?.();
+    };
+    if (!el || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      if (scroll) window.scrollBy(0, to - from);
+      finish();
+      return;
+    }
+    const DURATION = 280;
+    const start = performance.now();
+    let scrolled = 0;
+    el.style.overflow = 'hidden';
+    el.style.height = `${from}px`;
+    const frame = (now: number) => {
+      const t = Math.min(1, (now - start) / DURATION);
+      const eased = 1 - (1 - t) ** 3;
+      el.style.height = `${from + (to - from) * eased}px`;
+      if (scroll) {
+        const want = Math.round((to - from) * eased);
+        window.scrollBy(0, want - scrolled);
+        scrolled = want;
+      }
+      if (t < 1) eveningAnim.current = requestAnimationFrame(frame);
+      else finish();
+    };
+    eveningAnim.current = requestAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => () => {
+    if (eveningAnim.current !== null) cancelAnimationFrame(eveningAnim.current);
+  }, []);
+
+  // 펼친 뒤 새 격자가 그려지기 직전(화면에 보이기 전)에 옛 높이로 묶어 두고 새 높이까지 늘린다
+  useLayoutEffect(() => {
+    const el = gridClipRef.current;
+    const from = expandFrom.current;
+    if (!showEvening || from === null || !el) return;
+    expandFrom.current = null;
+    el.style.overflow = 'hidden';
+    el.style.height = `${from}px`;
+    animateGrid(from, el.scrollHeight, true);
+  }, [showEvening, animateGrid]);
+
+  function toggleEvening() {
+    const el = gridClipRef.current;
+    if (!el) {
+      setShowEvening((v) => !v);
+      return;
+    }
+    const from = el.offsetHeight;
+    if (!showEvening) {
+      expandFrom.current = from;
+      setShowEvening(true);
+      return;
+    }
+    // 접기: 펼친 격자를 그대로 둔 채 줄어들 높이(접히는 시간 × 한 시간 높이)만큼 줄인 뒤 실제로 접는다
+    const body = el.querySelector<HTMLElement>('.tt-body');
+    const hours = (CLOSE_MIN - OPEN_MIN) / 60;
+    const hourPx = body ? body.offsetHeight / hours : 0;
+    const to = from - ((CLOSE_MIN - naturalClose) / 60) * hourPx;
+    animateGrid(from, to, false, () => setShowEvening(false));
+  }
 
   // 고른 요일이 보고 있는 주에서 실제로 며칠인지.
   const rangeDate = weekDates(weekStart)[range.day] ?? null;
@@ -390,6 +467,7 @@ export default function TimetablePage() {
                 </div>
               )}
               <div className="tt-page__gridwrap">
+                <div ref={gridClipRef}>
                 <TimetableGrid
                   entries={gridEntries}
                   onEntryClick={openInfo}
@@ -400,6 +478,7 @@ export default function TimetablePage() {
                   slide={slide}
                   closeMin={gridClose}
                 />
+                </div>
                 {naturalClose < CLOSE_MIN && (
                   <div className="tt-page__evening">
                     <button
@@ -407,7 +486,7 @@ export default function TimetablePage() {
                       className="tag tag--sm"
                       aria-pressed={showEvening}
                       aria-label={showEvening ? `${fmtMin(naturalClose)} 이후 시간 접기` : `${fmtMin(naturalClose)} 이후 시간 펼치기`}
-                      onClick={() => setShowEvening((v) => !v)}
+                      onClick={toggleEvening}
                     >
                       {showEvening ? '접기' : '펼치기'}
                     </button>

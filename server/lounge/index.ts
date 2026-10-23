@@ -16,6 +16,7 @@ import { gatheringsRouter } from './routes/gatherings.js';
 import { quickRouter } from './routes/quick.js';
 import { safetyRouter } from './routes/safety.js';
 import { friendsRouter } from './routes/friends.js';
+import { pushRouter } from './routes/push.js';
 import { devRouter } from './routes/dev.js';
 
 export const loungeRouter = Router();
@@ -27,6 +28,7 @@ loungeRouter.use('/dev', devRouter);
 
 loungeRouter.use(requireAuth, withUser);
 loungeRouter.use(meRouter);
+loungeRouter.use(pushRouter);
 loungeRouter.use('/admin', requireAdmin, adminRouter);
 loungeRouter.use(requireProfile);
 loungeRouter.use(presenceRouter);

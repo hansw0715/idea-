@@ -30,21 +30,32 @@ const PASSWORD_FIELD = 'withdraw-password';
 const PHRASE_FIELD = 'withdraw-phrase';
 
 /** 내 정보: 가입 정보 · 로그아웃 · 회원 탈퇴 */
+/** 이번에 앱을 연 동안 풀어 본 학번 (기기 저장소에는 남기지 않는다 — 메모리에만) */
+let shownStudentId: { userId: number; value: string } | null = null;
+
 export default function Account() {
   const { user, setUser } = useAuth();
   const school = useSchool();
   // 학번 전체는 이 기기에 암호화해 둔 학교 계정 정보를 기기 안에서만 잠깐 풀어 보여 준다 (서버에는 학번 원문이 없다).
   // 풀 수 없는 기기(다른 기기에서 연동 등)에서는 가린 학번(hint)만 보인다.
-  const [studentId, setStudentId] = useState<string | null>(null);
+  // 한 번 푼 학번은 앱이 열려 있는 동안 기억해 두어, 내 정보로 다시 올 때 가린 학번(****)이 잠깐 보이지 않게 한다
+  const [studentId, setStudentId] = useState<string | null>(() =>
+    shownStudentId && shownStudentId.userId === user?.id ? shownStudentId.value : null,
+  );
   useEffect(() => {
     if (!school.linked || !school.canUse) {
       setStudentId(null);
+      shownStudentId = null;
       return;
     }
     let cancelled = false;
     school
       .withCredentials(async (c) => c.studentId)
-      .then((id) => !cancelled && setStudentId(id))
+      .then((id) => {
+        if (cancelled) return;
+        setStudentId(id);
+        shownStudentId = id && user ? { userId: user.id, value: id } : null;
+      })
       .catch(() => !cancelled && setStudentId(null));
     return () => {
       cancelled = true;

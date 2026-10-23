@@ -8,6 +8,7 @@ import { freeWithin } from './freeTime.js';
 import type { Interval } from './freeTime.js';
 import { OPEN_MIN, CLOSE_MIN, RESERVE_CLOSE_MIN, STEP_MIN, DAY_COUNT } from './constants.js';
 import { resolveWeekStart, weekEndOf } from './dates.js';
+import { notify } from './lounge/services/push.js';
 
 export const meetingsRouter = Router();
 
@@ -137,6 +138,51 @@ meetingsRouter.post(
       ]);
     }
     res.json({ ...meeting, alreadyMember: already, isOwner: meeting.ownerId === userId(res) });
+  }),
+);
+
+/**
+ * 라운지 친구를 내 회의에 초대 — 회의 멤버가 친구(서로 수락한 사이)만 바로 넣을 수 있다.
+ * 코드를 따로 알려 주지 않아도 친구의 회의 목록에 바로 생긴다.
+ */
+meetingsRouter.post(
+  '/:id/invite',
+  wrap(async (req, res) => {
+    const meetingId = Number(req.params.id);
+    const target = Number((req.body ?? {}).userId);
+    if (!Number.isInteger(meetingId) || !Number.isInteger(target)) {
+      res.status(400).json({ error: '초대할 회의와 친구를 골라 주세요.' });
+      return;
+    }
+    const me = userId(res);
+    const meeting = await getMeeting(meetingId);
+    if (!meeting || !(await isMember(meetingId, me))) {
+      res.status(404).json({ error: '회의를 찾을 수 없습니다.' });
+      return;
+    }
+    const friend = await get(
+      `SELECT 1 AS x FROM lounge_friends
+        WHERE status = 'accepted'
+          AND ((requester_id = ? AND addressee_id = ?) OR (requester_id = ? AND addressee_id = ?))`,
+      [me, target, target, me],
+    );
+    if (!friend) {
+      res.status(403).json({ error: '라운지 친구만 회의에 초대할 수 있어요.' });
+      return;
+    }
+    const already = await isMember(meetingId, target);
+    if (!already) {
+      await run('INSERT INTO meeting_members (meeting_id, user_id) VALUES (?, ?)', [meetingId, target]);
+      // 초대받은 친구의 폰에 알린다 (친구끼리는 실명)
+      const inviter = await get<{ name: string }>('SELECT name FROM users WHERE id = ?', [me]);
+      await notify(String(target), {
+        title: '회의 초대',
+        body: `${inviter?.name ?? '친구'} 님이 '${meeting.name}' 회의에 초대했어요.`,
+        url: `/meetings/${meetingId}`,
+        tag: `meeting-${meetingId}`,
+      });
+    }
+    res.json({ ok: true, alreadyMember: already, name: meeting.name });
   }),
 );
 

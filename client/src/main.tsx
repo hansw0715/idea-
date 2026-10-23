@@ -14,6 +14,15 @@ import { isStandalone } from './shell/InstallBanner';
  */
 const DOWNLOAD_SITE = /^ss-booke[.-]download/.test(location.hostname);
 
+// 폰 알림(웹 푸시)을 받는 서비스 워커. 화면·데이터를 캐시하지는 않는다 (public/sw.js)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* 알림만 못 받을 뿐 앱은 그대로 쓴다 */
+    });
+  });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>{DOWNLOAD_SITE && !isStandalone() ? <DownloadPage /> : <App />}</StrictMode>,
 );

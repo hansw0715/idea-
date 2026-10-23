@@ -21,6 +21,7 @@ export const LOUNGE_TABLES = [
   'lounge_quick_rooms',
   'lounge_presence',
   'lounge_friends',
+  'lounge_push_subscriptions',
 ] as const;
 
 export const LOUNGE_MIGRATIONS = `
@@ -135,6 +136,16 @@ export const LOUNGE_MIGRATIONS = `
     PRIMARY KEY (requester_id, addressee_id)
   );
   CREATE INDEX IF NOT EXISTS idx_lounge_friends_addressee ON lounge_friends(addressee_id);
+
+  -- 폰 알림(웹 푸시) 구독: 기기(endpoint)마다 한 줄. services/push.ts
+  CREATE TABLE IF NOT EXISTS lounge_push_subscriptions (
+    endpoint TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_lounge_push_user ON lounge_push_subscriptions(user_id);
 
   -- RLS: 공개 Data API 로는 접근할 수 없게 (서버는 소유자 역할이라 영향 없음)
   ${LOUNGE_TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY;`).join('\n  ')}

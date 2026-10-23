@@ -115,6 +115,42 @@ describe('친구 요청 · 수락', () => {
   });
 });
 
+describe('친구 이름 · 밥 먹자 · 친구 시간표', () => {
+  it('친구 목록에는 실명이 있고, 요청 단계에서는 실명이 없다', async () => {
+    const [a, b] = [await makeUser(), await makeUser()];
+    must(await friends.requestFriend(a.id, b.username));
+    expect((await friends.myFriends(b.id)).incoming[0]).not.toHaveProperty('name');
+    must(await friends.acceptFriend(b.id, a.id));
+    expect((await friends.myFriends(b.id)).friends[0].name).toBe(a.name);
+  });
+
+  it('친구가 아니면 밥 먹자·시간표 보기가 안 된다', async () => {
+    const [a, b] = [await makeUser(), await makeUser()];
+    expect(codeOf(await friends.askMeal(a.id, b.id))).toBe('NOT_FOUND');
+    expect(codeOf(await friends.friendTimetable(a.id, b.id, undefined))).toBe('NOT_FOUND');
+  });
+
+  it('친구의 그 주 시간표(매주 수업 + 그 주 하루 일정)만 보인다', async () => {
+    const [a, b] = [await makeUser(), await makeUser()];
+    must(await friends.requestFriend(a.id, b.username));
+    must(await friends.acceptFriend(b.id, a.id));
+    await db.run(
+      `INSERT INTO timetable_entries (user_id, day, start_min, end_min, title, place, repeat_kind)
+       VALUES (?, 0, 540, 660, '자료구조', '공학관', 'weekly')`,
+      [Number(b.id)],
+    );
+    await db.run(
+      `INSERT INTO timetable_entries (user_id, day, start_min, end_min, title, place, repeat_kind, date)
+       VALUES (?, 2, 600, 660, '다른 주 일정', '', 'once', '2020-01-08')`,
+      [Number(b.id)],
+    );
+    const r = must(await friends.friendTimetable(a.id, b.id, '2026-10-19'));
+    expect(r.weekStart).toBe('2026-10-19');
+    expect(r.entries.map((e) => e.title)).toEqual(['자료구조']);
+    expect(must(await friends.askMeal(a.id, b.id))).toBe(true); // 알림 열쇠가 없으면 조용히 넘어간다
+  });
+});
+
 describe('밥약 친구끼리만 찾기', () => {
   const HERE = { lat: 37.5826, lng: 127.0107 };
   const near = { lat: 37.5826 + 200 / 111_195, lng: 127.0107 };
