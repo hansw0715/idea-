@@ -99,7 +99,7 @@ function LoungeHome({ profile }: { profile: Profile }) {
           <Icon name="utensils" className="lounge-hub-btn__icon" />
           <span>
             <span className="lounge-hub-btn__title">밥약</span>
-            <span className="lounge-hub-btn__sub">지금 가까이 있는 학우와 바로 연결돼요</span>
+            <span className="lounge-hub-btn__sub">지금 가까이 있는 학우와 바로 연결돼요.</span>
           </span>
           <span className="lounge-hub-btn__go">
             <span className="bold">밥 같이 먹기</span>

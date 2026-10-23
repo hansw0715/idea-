@@ -31,7 +31,11 @@ interface DashboardData {
 
 export default function Dashboard() {
   const { weekStart } = useWeek();
-  const [data, setData] = useState<DashboardData | null>(null);
+  // 지난번에 받은 내용이 있으면 먼저 보여 주고, 최신 내용은 아래에서 받아와 바꿔 넣는다
+  const [data, setData] = useState<DashboardData | null>(() => {
+    const last = api.cached<DashboardData>(`/dashboard?week=${weekStart}`);
+    return last ? { meetings: last.meetings ?? [], reservations: last.reservations ?? [] } : null;
+  });
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 

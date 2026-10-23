@@ -16,7 +16,8 @@ const shortDate = (d: string) => `${d.slice(5, 7)}.${d.slice(8, 10)}`;
  * 홈의 다른 구역과 따로 불러온다(학교 홈페이지가 느려도 위 구역은 먼저 보인다).
  */
 export default function HomeNotices() {
-  const [data, setData] = useState<NoticesResponse | null>(null);
+  // 지난번에 받은 공지가 있으면 먼저 보여 준다
+  const [data, setData] = useState<NoticesResponse | null>(() => api.cached<NoticesResponse>('/notices') ?? null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {

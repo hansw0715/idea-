@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { api, ApiError, setOnUnauthorized } from './api';
+import { api, ApiError, clearCachedResponses, setOnUnauthorized } from './api';
 import { AuthContext, useAuth } from './auth';
 import type { User } from './types';
 import { ConfirmProvider, DisplayProvider, Spinner, ToastProvider, useToast } from './ui';
@@ -87,6 +87,8 @@ export default function App() {
   const [booting, setBooting] = useState(cached === null);
 
   const setUser = (next: User | null) => {
+    // 로그아웃하거나 다른 계정으로 바뀌면 지난 화면 내용을 지운다 (다른 사람 정보가 보이지 않게)
+    if (!next || readCachedUser()?.id !== next.id) clearCachedResponses();
     writeCachedUser(next);
     setUserState(next);
   };

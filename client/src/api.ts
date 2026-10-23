@@ -20,6 +20,48 @@ export function setOnUnauthorized(callback: () => void): void {
   onUnauthorized = callback;
 }
 
+/*
+ * 마지막으로 받은 화면 내용(GET 응답)을 이 기기에 기억해 둔다.
+ * 휴대폰 화면 모드를 바꾸는 등으로 페이지가 새로 열려도 "불러오는 중" 대신 지난 내용을 바로 보여 주고,
+ * 최신 내용은 뒤에서 받아와 바꿔 넣는다 (api.cached 로 꺼내 쓴다). 로그아웃하면 지운다.
+ */
+const CACHE_KEY = 'sangsang-booke:last-responses';
+const CACHE_MAX = 40;
+let memo: Record<string, unknown> | null = null;
+
+function readCache(): Record<string, unknown> {
+  if (memo) return memo;
+  try {
+    memo = JSON.parse(localStorage.getItem(CACHE_KEY) ?? '{}') ?? {};
+  } catch {
+    memo = {};
+  }
+  return memo!;
+}
+
+function remember(path: string, data: unknown) {
+  const cache = readCache();
+  delete cache[path];
+  cache[path] = data;
+  const keys = Object.keys(cache);
+  for (const k of keys.slice(0, Math.max(0, keys.length - CACHE_MAX))) delete cache[k];
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    /* 저장 공간이 모자라거나 막힌 환경 — 이번에는 기억하지 않는다 */
+  }
+}
+
+/** 로그아웃·계정 전환 때 지난 화면 내용을 지운다 */
+export function clearCachedResponses(): void {
+  memo = {};
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch {
+    /* 막힌 환경 — 무시 */
+  }
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
@@ -52,11 +94,14 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     const extra = data && typeof data === 'object' ? (data as Record<string, unknown>) : undefined;
     throw new ApiError(res.status, message, code, extra);
   }
+  if (method === 'GET') remember(path, data);
   return data as T;
 }
 
 export const api = {
   get: <T>(path: string) => request<T>('GET', path),
+  /** 이 주소로 마지막에 받은 내용 (없으면 undefined). 첫 화면을 바로 그릴 때 쓴다 */
+  cached: <T>(path: string): T | undefined => readCache()[path] as T | undefined,
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),

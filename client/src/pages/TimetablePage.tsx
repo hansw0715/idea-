@@ -68,10 +68,14 @@ export default function TimetablePage() {
   // 과목 검색은 처음 열 때 불러오고, 이후에는 조건을 남겨 둔 채 숨기기만 한다.
   const [searchOpened, setSearchOpened] = useState(tab === 'search');
 
-  const [entries, setEntries] = useState<TimetableEntry[]>([]);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  // 지난번에 받은 이번 주 시간표가 있으면 먼저 보여 주고, 최신 내용은 아래에서 받아와 바꿔 넣는다
+  const [last] = useState(() =>
+    api.cached<{ timetable: TimetableEntry[]; weekReservations?: Reservation[] }>(`/dashboard?week=${weekStart}`),
+  );
+  const [entries, setEntries] = useState<TimetableEntry[]>(() => last?.timetable ?? []);
+  const [reservations, setReservations] = useState<Reservation[]>(() => last?.weekReservations ?? []);
   /** entries 가 어느 주 기준으로 받은 것인지 (주가 바뀌면 다시 받는 동안 이전 주 일정이 섞여 보이지 않게 한다) */
-  const [loadedWeek, setLoadedWeek] = useState<string | null>(null);
+  const [loadedWeek, setLoadedWeek] = useState<string | null>(() => (last?.timetable ? weekStart : null));
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
   const reload = useCallback(() => setReloadTick((n) => n + 1), []);

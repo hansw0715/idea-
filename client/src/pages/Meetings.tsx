@@ -48,7 +48,8 @@ export default function Meetings() {
   const toast = useToast();
   const { user } = useAuth();
 
-  const [meetings, setMeetings] = useState<Meeting[] | null>(null);
+  // 지난번에 받은 목록이 있으면 먼저 보여 준다
+  const [meetings, setMeetings] = useState<Meeting[] | null>(() => api.cached<Meeting[]>('/meetings') ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 

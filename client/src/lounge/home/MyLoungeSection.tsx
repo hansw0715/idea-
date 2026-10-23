@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { formatMeetAt } from '../../../../shared/lounge';
 import type { GatheringView } from '../../../../shared/lounge';
-import { ApiError } from '../../api';
+import { api, ApiError } from '../../api';
 import { HomeTableRow } from '../../pages/HomeTableRow';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
@@ -27,7 +27,11 @@ function needsReview(g: GatheringView): boolean {
 
 export default function MyLoungeSection() {
   const { needsProfile, loading: profileLoading, refresh } = useLounge();
-  const [state, setState] = useState<State>({ kind: 'loading' });
+  // 지난번에 받은 내 약속이 있으면 먼저 보여 주고, 최신 내용은 아래에서 받아와 바꿔 넣는다
+  const [state, setState] = useState<State>(() => {
+    const last = api.cached<{ gatherings: GatheringView[] }>('/lounge/mine');
+    return last ? { kind: 'ready', items: last.gatherings } : { kind: 'loading' };
+  });
 
   useEffect(() => {
     // 프로필이 없는 사람에게 /mine 을 보내면 428 이 나오므로, 내 라운지 정보가 정해진 뒤에 판단한다
@@ -37,7 +41,7 @@ export default function MyLoungeSection() {
       return;
     }
     let cancelled = false;
-    setState({ kind: 'loading' });
+    setState((s) => (s.kind === 'ready' ? s : { kind: 'loading' }));
     loungeApi
       .mine()
       .then((items) => {
