@@ -34,13 +34,13 @@ const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isMobile = () => /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 
 /**
- * big: 설치 전용 사이트의 큰 버튼. PC 에서도 보이고, 안내를 처음부터 펼쳐 두며,
+ * big: 설치 전용 사이트의 큰 버튼. PC 에서도 보이고, 설명 문구 없이 버튼만 둔다.
  * 브라우저가 설치 창을 띄울 수 있으면 화면 어디를 눌러도 바로 설치 창이 뜬다.
  */
 export default function InstallButton({ big = false }: { big?: boolean }) {
   const [, rerender] = useState(0);
   const [hidden, setHidden] = useState(() => isStandalone() || (!big && !isMobile()));
-  const [showHelp, setShowHelp] = useState(big);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     const update = () => rerender((n) => n + 1);
