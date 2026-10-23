@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from '../ui';
 import type { IconName } from '../ui';
@@ -82,10 +82,34 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/account', label: '내 정보', icon: 'user' },
 ];
 
+/** 지금 주소에 해당하는 탭 번호. 탭에 없는 화면(관리자 등)이면 -1 */
+function activeTabIndex(pathname: string): number {
+  return TABS.findIndex((t) => (t.end ? pathname === t.to : pathname === t.to || pathname.startsWith(`${t.to}/`)));
+}
+
+/**
+ * 지난 화면의 탭 번호. 탭바는 화면마다 새로 그려지므로(라우트마다 AppFrame), 여기 기억해 둔 자리에서
+ * 새 자리로 둥근 네모(선택 표시)를 미끄러뜨린다.
+ */
+let lastTabIndex = -1;
+
 export function TabBar() {
+  const { pathname } = useLocation();
+  const target = activeTabIndex(pathname);
+  // 처음에는 지난 자리에 그렸다가, 그려진 직후 새 자리로 옮겨 움직임이 보이게 한다
+  const [shown, setShown] = useState(lastTabIndex >= 0 ? lastTabIndex : target);
+  useEffect(() => {
+    lastTabIndex = target;
+    const timer = window.setTimeout(() => setShown(target), 16);
+    return () => window.clearTimeout(timer);
+  }, [target]);
+
   return (
     <nav className="tabbar" aria-label="주요 메뉴">
-      <ul className="tabbar__list">
+      <ul className="tabbar__list" style={{ '--tab-count': TABS.length } as CSSProperties}>
+        {shown >= 0 && (
+          <li className="tabbar__pill" role="presentation" aria-hidden="true" style={{ '--tab-index': shown } as CSSProperties} />
+        )}
         {TABS.map((t) => (
           <li key={t.to} style={{ display: 'contents' }}>
             <NavLink to={t.to} end={t.end} className="tabbar__item">

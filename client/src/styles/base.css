@@ -338,10 +338,35 @@ hr {
 }
 
 .tabbar__list {
+  position: relative;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   height: var(--tabbar-h);
+}
+
+/* 선택한 탭 뒤의 둥근 네모: 누르면 그 탭 자리로 미끄러져 간다 */
+.tabbar__pill {
+  position: absolute;
+  top: var(--sp-2);
+  bottom: var(--sp-2);
+  left: 0;
+  width: calc(100% / var(--tab-count));
+  transform: translateX(calc(100% * var(--tab-index)));
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+.tabbar__pill::before {
+  content: '';
+  position: absolute;
+  inset: 0 var(--sp-3);
+  border-radius: 1.2rem;
+  background: var(--c-action-bg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tabbar__pill {
+    transition: none;
+  }
 }
 
 .tabbar__item {
@@ -357,11 +382,21 @@ hr {
   font-weight: var(--fw-regular);
   line-height: 1.3;
   text-decoration: none;
-  background: var(--c-bg);
+  /* 뒤의 둥근 네모가 보이도록 투명하게, 네모보다 위에 */
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.tabbar__item:active {
-  background: var(--c-surface);
+/* 누르는 순간 살짝 눌리는 느낌 */
+.tabbar__icon,
+.tabbar__item > span {
+  transition: transform 0.15s ease;
+}
+.tabbar__item:active .tabbar__icon,
+.tabbar__item:active > span {
+  transform: scale(0.92);
 }
 
 /* 지금 화면: 배경 칠 없이 아이콘·글자만 강조색 + 굵게 */
