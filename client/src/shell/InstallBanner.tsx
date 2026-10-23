@@ -14,7 +14,7 @@ type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{
 
 /** 첫 화면이 그려지기 전에 온 설치 이벤트도 놓치지 않게 모듈이 읽힐 때부터 받아 둔다 */
 let deferred: InstallEvent | null = null;
-/** 이번에 설치를 마쳤는지 (설치 사이트 버튼에 "완료"를 띄운다) */
+/** 홈 화면에 앱이 다 깔렸는지 — 브라우저의 appinstalled 알림으로 안다 (설치 사이트 버튼에 "완료"를 띄운다) */
 let installed = false;
 const listeners = new Set<() => void>();
 if (typeof window !== 'undefined') {
@@ -46,13 +46,20 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
   const [showHelp, setShowHelp] = useState(false);
   /** 설치 사이트: 버튼을 누른 뒤에는 버튼 안에 로딩을 띄우고, 차단 화면 넘기는 방법을 아래에 작게 적는다 */
   const [pressed, setPressed] = useState(false);
-  /** 설치를 마친 뒤 5초 동안은 로딩을 그대로 두었다가 "완료"를 띄운다 (홈 화면에 아이콘이 생기는 데 시간이 걸린다) */
-  const [done, setDone] = useState(false);
+  /**
+   * 설치 창에서 "설치"를 누른 뒤에는 실제로 다 깔릴 때(appinstalled)까지 로딩을 돌리고, 그때 "완료"를 띄운다.
+   * 브라우저가 알림을 주지 않는 경우에 대비해 1분이 지나면 완료로 본다.
+   */
+  const [accepted, setAccepted] = useState(false);
   useEffect(() => {
-    if (!installed || done) return;
-    const t = window.setTimeout(() => setDone(true), 5000);
+    if (!accepted || installed) return;
+    const t = window.setTimeout(() => {
+      installed = true;
+      rerender((n) => n + 1);
+    }, 60_000);
     return () => window.clearTimeout(t);
-  }, [installed, done]);
+  }, [accepted]);
+  const done = installed;
 
   useEffect(() => {
     const update = () => rerender((n) => n + 1);
@@ -86,9 +93,8 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
     const choice = await deferred.userChoice.catch(() => ({ outcome: 'dismissed' }));
     deferred = null;
     if (choice.outcome === 'accepted') {
-      installed = true;
       if (!big) setHidden(true);
-      else rerender((n) => n + 1);
+      else setAccepted(true);
     } else {
       setPressed(false);
       rerender((n) => n + 1);
@@ -103,11 +109,11 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
         size={big ? 'xl' : 'lg'}
         block
         onClick={() => void install()}
-        loading={(pressed || installed) && !done}
-        aria-label={(pressed || installed) && !done ? '설치하는 중' : undefined}
+        loading={pressed && !done}
+        aria-label={pressed && !done ? '설치하는 중' : undefined}
         aria-expanded={big ? undefined : showHelp}
       >
-        {done ? '완료' : !pressed && !installed && '앱 설치하기'}
+        {done ? '완료' : !pressed && '앱 설치하기'}
       </Button>
       {big && (
         <p className="install-cta__note">안전하지 않은 앱 차단됨 시 &gt; 세부 정보 더 보기 &gt; 무시하고 설치하기</p>
