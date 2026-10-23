@@ -251,7 +251,6 @@ hr {
   width: 4.8rem;
   height: 4.8rem;
   flex: none;
-  mix-blend-mode: multiply;
 }
 
 .app-header--bare {

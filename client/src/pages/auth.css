@@ -24,8 +24,6 @@
   display: block;
   width: min(100%, 28rem);
   height: auto;
-  /* 로고 이미지의 흰 배경이 페이지 흰색과 섞여 사각 테두리가 보이지 않게 한다 */
-  mix-blend-mode: multiply;
 }
 
 /* 회원가입 상단의 작은 로고 */
