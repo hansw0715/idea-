@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BAN_NOTICE_GENERIC, GENDER_LABEL } from '../../../../shared/lounge';
+import { BAN_NOTICE_GENERIC } from '../../../../shared/lounge';
 import type { Gender } from '../../../../shared/lounge';
 import { Alert, Button, EmptyState, LoadingBlock, Segmented, useToast } from '../../ui';
 import { useAuth } from '../../auth';
@@ -68,12 +68,8 @@ export default function LoungeProfileCard() {
         </div>
 
         <div className="lounge-acct-gender">
-          {/* 성별은 가입 때 정하면 바꿀 수 없어 글자로만 보여 준다. 성별이 없는 옛 계정만 한 번 고른다 */}
-          {profile.gender ? (
-            <p className="lounge-acct-help">
-              성별: <strong>{GENDER_LABEL[profile.gender]}</strong>
-            </p>
-          ) : (
+          {/* 성별은 위 소개 줄("남 · 학과 · 학번")에 보인다. 성별이 없는 옛 계정만 여기서 한 번 고른다 */}
+          {profile.gender ? null : (
             <Segmented
               label="성별"
               value={'' as Gender}
@@ -92,9 +88,6 @@ export default function LoungeProfileCard() {
           )}
         </div>
 
-        <p className="lounge-acct-help">
-          이름·학과·학번은 학교 계정에서 가져와요. 라운지에서 다른 사람에게는 이름이 {profile.nickname}(으)로 보여요.
-        </p>
         <Button variant="secondary" size="sm" onClick={openProfileSheet}>
           프로필 이미지 바꾸기
         </Button>

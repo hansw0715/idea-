@@ -434,3 +434,16 @@
   font-size: var(--fs-sm);
   color: var(--c-text-sub);
 }
+
+/* "시설 없이 예약하기" — 시설 목록 위에 따로 놓는 선택지 */
+.mtg-fac--none {
+  border-style: dashed;
+}
+
+/* 날짜가 학교 시설 신청 기간(7일)보다 멀 때의 안내 — 약간 굵게 */
+.mtg-date-limit {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--c-warning);
+}

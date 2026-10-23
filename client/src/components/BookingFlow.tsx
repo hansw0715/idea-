@@ -38,6 +38,8 @@ const STEPS = ['시간', '날짜', '시설', '확인'];
 const STEP_MIN = 30;
 /** 학교 규정: 하루 최대 3시간 */
 const MAX_RESERVATION_MIN = 180;
+/** 날짜 고르기에서 보여 줄 기간(일). 7일보다 먼 날짜는 시설 없이만 잡을 수 있다 */
+const DATE_WINDOW_DAYS = 28;
 
 export interface WeekControls {
   weekStart: string;
@@ -58,7 +60,8 @@ interface BookingFlowProps {
   gridEntries: GridEntry[];
   week: WeekControls;
   /** 예약 계획이 만들어졌을 때. 흐름을 닫고 학교 신청 화면을 여는 일은 부모가 맡는다. */
-  onBooked: (created: Reservation, facility: Facility) => void;
+  /** 시설 없이 잡았으면 facility 는 null */
+  onBooked: (created: Reservation, facility: Facility | null) => void;
 }
 
 function sameRange(a: SelectedRange | null, b: SelectedRange | null): boolean {
@@ -136,6 +139,8 @@ export default function BookingFlow({
   const [campusStatus, setCampusStatus] = useState<'ok' | 'unavailable' | 'skipped'>('skipped');
   const [hiddenByCapacity, setHiddenByCapacity] = useState(0);
   const [selectedFacility, setSelectedFacility] = useState<number | null>(null);
+  /** "시설 없이 예약하기"를 골랐다 (장소가 필요 없는 회의) */
+  const [noFacility, setNoFacility] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -159,11 +164,17 @@ export default function BookingFlow({
     [alignedSlots, range],
   );
 
+  /**
+   * 고를 수 있는 날짜: 앞으로 4주 안의 같은 요일. 학교 시설은 이용일 MAX_DAYS_AHEAD 일 전부터 신청할 수 있어
+   * 그보다 먼 날짜는 "시설 없이"로만 잡을 수 있다 (고르면 굵은 안내가 나온다).
+   */
   const bookableDates = useMemo(() => {
     if (!range) return [];
     const today = todayStr();
-    return nextDatesForDay(range.day).filter((d) => d !== today || range.startMin > nowMinutes());
+    return nextDatesForDay(range.day, DATE_WINDOW_DAYS).filter((d) => d !== today || range.startMin > nowMinutes());
   }, [range]);
+  /** 고른 날짜가 학교 시설 신청 기간(7일)보다 멀다 → 시설 없이만 잡을 수 있다 */
+  const beyondFacilityWindow = selectedDate !== null && selectedDate > addDaysStr(todayStr(), MAX_DAYS_AHEAD);
 
   const selectedFacilityInfo = facilities?.find((f) => f.id === selectedFacility) ?? null;
   const split = useMemo(() => {
@@ -218,8 +229,11 @@ export default function BookingFlow({
 
   /* ── 날짜와 시간이 정해지면 이용할 수 있는 시설을 조회 ── */
   useEffect(() => {
-    if (!selectedDate || !range) {
-      setFacilities(null);
+    // 날짜가 바뀌면 시설 선택은 처음부터. 7일보다 먼 날짜는 시설을 쓸 수 없어 "시설 없이"를 미리 골라 둔다
+    const beyond = selectedDate !== null && selectedDate > addDaysStr(todayStr(), MAX_DAYS_AHEAD);
+    setNoFacility(beyond);
+    if (!selectedDate || !range || beyond) {
+      setFacilities(selectedDate ? [] : null);
       setSelectedFacility(null);
       return;
     }
@@ -247,8 +261,8 @@ export default function BookingFlow({
 
   // 시설 선택이 사라졌는데(목록을 다시 불러옴) 확인 단계에 있으면 시설 단계로 돌린다.
   useEffect(() => {
-    if (step === 4 && !selectedFacilityInfo) setStep(3);
-  }, [step, selectedFacilityInfo]);
+    if (step === 4 && !selectedFacilityInfo && !noFacility) setStep(3);
+  }, [step, selectedFacilityInfo, noFacility]);
 
   // 단계가 바뀌면 새 단계의 제목으로 포커스를 옮기고 맨 위로 보낸다.
   const stepMounted = useRef(false);
@@ -322,16 +336,16 @@ export default function BookingFlow({
 
   /* ── 예약하기 ── */
   async function submit() {
-    if (pendingRef.current || !range || !selectedDate || selectedFacility === null) return;
-    const facility = selectedFacilityInfo;
-    if (!facility) return;
+    if (pendingRef.current || !range || !selectedDate) return;
+    const facility = noFacility ? null : selectedFacilityInfo;
+    if (!noFacility && !facility) return;
     pendingRef.current = true;
     setPending(true);
     setSubmitError(null);
     try {
       const created = await api.post<Reservation>('/reservations', {
         meetingId,
-        facilityId: selectedFacility,
+        facilityId: noFacility ? null : selectedFacility,
         date: selectedDate,
         startMin: range.startMin,
         endMin: range.endMin,
@@ -351,7 +365,13 @@ export default function BookingFlow({
 
   /* ── 하단 버튼 ── */
   const canNext =
-    step === 1 ? range !== null : step === 2 ? selectedDate !== null : step === 3 ? selectedFacilityInfo !== null : !pending;
+    step === 1
+      ? range !== null
+      : step === 2
+        ? selectedDate !== null
+        : step === 3
+          ? noFacility || selectedFacilityInfo !== null
+          : !pending;
 
   function goStep(next: number) {
     setSubmitError(null);
@@ -388,15 +408,18 @@ export default function BookingFlow({
         ? `선택한 날짜: ${fmtDate(selectedDate)} ${fmtRange(range.startMin, range.endMin)}`
         : '날짜를 골라 주세요.';
   } else if (step === 3) {
-    hint = selectedFacilityInfo
+    hint = noFacility
+      ? '시설 없이 회의 시간만 잡아요.'
+      : selectedFacilityInfo
       ? `선택한 시설: ${selectedFacilityInfo.name}`
       : facilities === null && !facilitiesError
         ? '이용 가능한 시설을 확인하는 중입니다.'
         : '시설을 골라 주세요.';
   } else {
+    const where = noFacility || !selectedFacilityInfo ? '시설 없이' : `${selectedFacilityInfo.name} (${selectedFacilityInfo.building})`;
     hint =
-      selectedFacilityInfo && selectedDate && range
-        ? `${selectedFacilityInfo.name} (${selectedFacilityInfo.building}) · ${fmtDate(selectedDate)} ${fmtRange(range.startMin, range.endMin)} · ${durationText}`
+      selectedDate && range && (noFacility || selectedFacilityInfo)
+        ? `${where} · ${fmtDate(selectedDate)} ${fmtRange(range.startMin, range.endMin)} · ${durationText}`
         : '';
   }
 
@@ -426,7 +449,7 @@ export default function BookingFlow({
               aria-describedby={hintId}
               loading={pending}
             >
-              {step === 4 ? (pending ? '준비 중…' : '학교에 신청하기') : '다음'}
+              {step === 4 ? (pending ? '준비 중…' : noFacility ? '예약하기' : '학교에 신청하기') : '다음'}
             </Button>
           </div>
         </div>
@@ -581,8 +604,7 @@ export default function BookingFlow({
                 </Button>
               }
             >
-              이 요일은 앞으로 {MAX_DAYS_AHEAD}일 안에 신청할 수 있는 날이 없습니다. 다른 요일을 골라
-              주세요. 학교 규정상 이용일 {MAX_DAYS_AHEAD}일 전부터 신청할 수 있습니다.
+              이 요일은 앞으로 고를 수 있는 날이 없습니다. 다른 요일을 골라 주세요.
             </Alert>
           ) : (
             <section>
@@ -607,10 +629,15 @@ export default function BookingFlow({
                   );
                 })}
               </div>
-              <p className="field__help mtg-slots__help">
-                학교 규정상 이용일 {MAX_DAYS_AHEAD}일 전부터 신청할 수 있어 그 안의 날짜만
-                보여집니다.
-              </p>
+              {beyondFacilityWindow ? (
+                <p className="mtg-date-limit" role="status">
+                  학교 규정상 시설은 이용일 {MAX_DAYS_AHEAD}일 전부터 예약할 수 있어요. 이 날짜는 시설 없이만 잡을 수 있어요.
+                </p>
+              ) : (
+                <p className="field__help mtg-slots__help">
+                  학교 시설은 이용일 {MAX_DAYS_AHEAD}일 전부터 예약할 수 있어요.
+                </p>
+              )}
             </section>
           )}
         </div>
@@ -629,7 +656,29 @@ export default function BookingFlow({
             </p>
           </div>
 
-          {facilitiesError ? (
+          {/* 장소가 필요 없는 회의: 시설 없이 시간만 잡는다 */}
+          <button
+            type="button"
+            className="mtg-fac mtg-fac--none"
+            aria-pressed={noFacility}
+            onClick={() => {
+              setSubmitError(null);
+              setSelectedFacility(null);
+              setNoFacility(true);
+            }}
+          >
+            <span className="mtg-fac__head">
+              <span className="mtg-fac__name">시설 없이 예약하기</span>
+              {noFacility && <Badge tone="primary">선택함</Badge>}
+            </span>
+            <span className="mtg-fac__meta">장소가 필요 없는 회의예요. 학교에 신청하지 않고 회의 시간만 잡아요.</span>
+          </button>
+
+          {beyondFacilityWindow ? (
+            <p className="mtg-date-limit">
+              학교 규정상 시설은 이용일 {MAX_DAYS_AHEAD}일 전부터 예약할 수 있어요. 이 날짜는 시설 없이만 잡을 수 있어요.
+            </p>
+          ) : facilitiesError ? (
             <Alert
               tone="danger"
               title="시설 목록을 불러오지 못했습니다."
@@ -682,6 +731,7 @@ export default function BookingFlow({
                           selected={selectedFacility === f.id}
                           onSelect={() => {
                             setSubmitError(null);
+                            setNoFacility(false);
                             setSelectedFacility(f.id);
                           }}
                         />
@@ -712,13 +762,15 @@ export default function BookingFlow({
       )}
 
       {/* ─────────── 4단계 확인 ─────────── */}
-      {step === 4 && range && selectedDate && selectedFacilityInfo && (
+      {step === 4 && range && selectedDate && (noFacility || selectedFacilityInfo) && (
         <div className="stack-lg">
           <div>
             <h3 className="section__title mtg-step-title" tabIndex={-1} ref={headingRef}>
               예약 내용 확인
             </h3>
-            <p className="section__sub">내용이 맞으면 학교에 신청하기를 눌러 주세요.</p>
+            <p className="section__sub">
+              {noFacility ? '내용이 맞으면 예약하기를 눌러 주세요.' : '내용이 맞으면 학교에 신청하기를 눌러 주세요.'}
+            </p>
           </div>
 
           {submitError && (
@@ -732,12 +784,14 @@ export default function BookingFlow({
             <dl>
               <div className="kv">
                 <dt className="kv__key">시설</dt>
-                <dd className="kv__val bold">{selectedFacilityInfo.name}</dd>
+                <dd className="kv__val bold">{noFacility || !selectedFacilityInfo ? '시설 없이' : selectedFacilityInfo.name}</dd>
               </div>
-              <div className="kv">
-                <dt className="kv__key">건물</dt>
-                <dd className="kv__val">{selectedFacilityInfo.building}</dd>
-              </div>
+              {!noFacility && selectedFacilityInfo && (
+                <div className="kv">
+                  <dt className="kv__key">건물</dt>
+                  <dd className="kv__val">{selectedFacilityInfo.building}</dd>
+                </div>
+              )}
               <div className="kv">
                 <dt className="kv__key">날짜</dt>
                 <dd className="kv__val">{fmtDate(selectedDate)}</dd>
@@ -765,11 +819,6 @@ export default function BookingFlow({
             </dl>
           </div>
 
-          <Alert tone="info" title="다음 화면에서 학교에 바로 신청해요.">
-            학교에 신청하기를 누르면 {selectedFacilityInfo.systemLabel ?? '학교'} 예약 시스템에 보낼
-            내용을 한 번 더 보여 드려요. 거기서 확인하고 보내기 전에는 아무것도 신청되지 않고,
-            신청하지 않고 닫으면 예약도 만들어지지 않아요.
-          </Alert>
         </div>
       )}
     </Sheet>

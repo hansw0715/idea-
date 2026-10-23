@@ -89,11 +89,11 @@
   z-index: 7;
   transform: translate(-50%, 50%);
 }
-/* 펼치기·접기 모두 같은 색 (강조색 옅은 면) */
+/* 펼치기·접기: 글자는 강조색, 버튼 면은 옅은 회색 (두 상태 같은 모양) */
 .tt-page__evening .tag,
 .tt-page__evening .tag[aria-pressed='true'] {
-  background: var(--c-action-bg);
-  border-color: var(--c-action);
+  background: var(--c-panel-strong);
+  border-color: var(--c-panel-strong);
   color: var(--c-action-text);
 }
 

@@ -300,6 +300,12 @@ export default function MeetingDetail() {
   function handleBooked(created: Reservation) {
     setCheckNote(null);
     setBookingOpen(false);
+    // 시설 없이 잡은 회의는 학교에 신청할 것이 없어 바로 끝난다
+    if (created.facilityId === null) {
+      toast('시설 없이 회의 시간을 잡았어요.');
+      loadAll();
+      return;
+    }
     freshBooking.current = created.id;
     bookSent.current = false;
     openSchoolBook(created);
@@ -321,7 +327,7 @@ export default function MeetingDetail() {
       cancelLabel: '돌아가기',
       run: async () => {
         try {
-          if (school.linked && school.canUse) {
+          if (r.facilityId !== null && school.linked && school.canUse) {
             // 확인창에서 직접 누른 한 번만 학교에 취소를 보낸다. 실패해도 자동으로 다시 보내지 않는다.
             await school.withCredentials((creds) => schoolApi.bookCancel(creds, r.id));
           }
@@ -741,12 +747,13 @@ export default function MeetingDetail() {
             <ul className="card card--list mtg-res-list">
               {reservations.map((r) => {
                 const status = reservationStatus(r);
-                const confirmed = r.schoolStatus === 'confirmed';
+                // 시설 없이 잡은 회의는 학교 신청·확인 버튼이 필요 없다 (confirmed 처럼 다룬다)
+                const confirmed = r.schoolStatus === 'confirmed' || r.facilityId === null;
                 return (
                   <li key={r.id} className="mtg-res">
                     <div className="mtg-res__head">
                       <p className="mtg-res__title">
-                        {r.facilityName} · {r.building}
+                        {r.building ? `${r.facilityName} · ${r.building}` : r.facilityName}
                       </p>
                       <span className={`badge ${status.className}`}>
                         <Icon name={confirmed ? 'check-circle' : 'clock'} className="mtg-res__icon" />

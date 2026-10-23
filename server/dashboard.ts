@@ -54,12 +54,12 @@ dashboardRouter.get(
 
          (SELECT coalesce(jsonb_agg(r ORDER BY r.date, r."startMin"), '[]'::jsonb) FROM (
             SELECT rv.id, rv.date, rv.start_min AS "startMin", rv.end_min AS "endMin",
-                   rv.facility_id AS "facilityId", f.name AS "facilityName", f.building,
+                   rv.facility_id AS "facilityId", COALESCE(f.name, '장소 없이') AS "facilityName", COALESCE(f.building, '') AS building,
                    rv.meeting_id AS "meetingId", mt.name AS "meetingName",
                    rv.user_id AS "userId", u2.name AS "userName",
                    rv.school_status AS "schoolStatus"
             FROM reservations rv
-            JOIN facilities f ON f.id = rv.facility_id
+            LEFT JOIN facilities f ON f.id = rv.facility_id
             JOIN meetings mt ON mt.id = rv.meeting_id
             JOIN users u2 ON u2.id = rv.user_id
             JOIN meeting_members mm ON mm.meeting_id = rv.meeting_id
@@ -68,12 +68,12 @@ dashboardRouter.get(
 
          (SELECT coalesce(jsonb_agg(w ORDER BY w.date, w."startMin"), '[]'::jsonb) FROM (
             SELECT rv.id, rv.date, rv.start_min AS "startMin", rv.end_min AS "endMin",
-                   rv.facility_id AS "facilityId", f.name AS "facilityName", f.building,
+                   rv.facility_id AS "facilityId", COALESCE(f.name, '장소 없이') AS "facilityName", COALESCE(f.building, '') AS building,
                    rv.meeting_id AS "meetingId", mt.name AS "meetingName",
                    rv.user_id AS "userId", u2.name AS "userName",
                    rv.school_status AS "schoolStatus"
             FROM reservations rv
-            JOIN facilities f ON f.id = rv.facility_id
+            LEFT JOIN facilities f ON f.id = rv.facility_id
             JOIN meetings mt ON mt.id = rv.meeting_id
             JOIN users u2 ON u2.id = rv.user_id
             JOIN meeting_members mm ON mm.meeting_id = rv.meeting_id

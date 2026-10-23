@@ -339,6 +339,8 @@ const LATE_MIGRATIONS = `
   -- 예약은 앱에 잡아 둔 '계획'이고, 학교 현황에서 확인되면 'confirmed'로 표시한다.
   ALTER TABLE reservations ADD COLUMN IF NOT EXISTS school_status TEXT NOT NULL DEFAULT 'planned';
   ALTER TABLE reservations ALTER COLUMN school_status SET DEFAULT 'planned';
+  -- 시설 없이 잡는 회의 예약(장소가 필요 없는 회의)도 있다: 이때 facility_id 는 NULL
+  ALTER TABLE reservations ALTER COLUMN facility_id DROP NOT NULL;
   UPDATE reservations SET school_status = 'planned' WHERE school_status <> 'confirmed';
   -- 학교 자동 신청을 시도하던 시절의 테이블·컬럼은 더 이상 쓰지 않으므로 정리한다.
   DROP TABLE IF EXISTS reservation_slots;

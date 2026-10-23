@@ -20,13 +20,13 @@ const MAX_ACTIVE_PER_MEETING = 10;
 
 const RESERVATION_SELECT = `
   SELECT r.id, r.date, r.start_min AS "startMin", r.end_min AS "endMin",
-         r.facility_id AS "facilityId", f.name AS "facilityName", f.building,
+         r.facility_id AS "facilityId", COALESCE(f.name, '장소 없이') AS "facilityName", COALESCE(f.building, '') AS building,
          r.meeting_id AS "meetingId", m.name AS "meetingName",
          r.user_id AS "userId", u.name AS "userName",
          r.school_status AS "schoolStatus",
          f.system_key AS "systemKey", f.campus_name AS "campusName"
   FROM reservations r
-  JOIN facilities f ON f.id = r.facility_id
+  LEFT JOIN facilities f ON f.id = r.facility_id
   JOIN meetings m ON m.id = r.meeting_id
   JOIN users u ON u.id = r.user_id
 `;
@@ -83,7 +83,8 @@ reservationsRouter.post(
       unknown
     >;
 
-    if (typeof meetingId !== 'number' || typeof facilityId !== 'number') {
+    // facilityId 가 null 이면 "시설 없이" 잡는 회의 예약이다 (장소가 필요 없는 회의)
+    if (typeof meetingId !== 'number' || (typeof facilityId !== 'number' && facilityId !== null)) {
       res.status(400).json({ error: '요청 형식이 올바르지 않습니다.' });
       return;
     }
@@ -95,7 +96,7 @@ reservationsRouter.post(
       res.status(403).json({ error: '이 회의의 멤버만 예약할 수 있습니다.' });
       return;
     }
-    const facility = await get<{
+    const facility = facilityId === null ? null : await get<{
       id: number;
       name: string;
       systemKey: string | null;
@@ -108,7 +109,7 @@ reservationsRouter.post(
        FROM facilities WHERE id = ?`,
       [facilityId],
     );
-    if (!facility) {
+    if (facilityId !== null && !facility) {
       res.status(404).json({ error: '시설을 찾을 수 없습니다.' });
       return;
     }
@@ -128,13 +129,13 @@ reservationsRouter.post(
 
     // 학교 규정의 최소·최대 이용 인원을 참여 인원 수로 검증한다.
     const people = participants.length;
-    if (facility.minCapacity !== null && people < facility.minCapacity) {
+    if (facility && facility.minCapacity !== null && people < facility.minCapacity) {
       res.status(400).json({
         error: `${facility.name}은(는) ${facility.minCapacity}명 이상부터 이용할 수 있습니다. 현재 팀원은 ${people}명입니다.`,
       });
       return;
     }
-    if (facility.capacity !== null && people > facility.capacity) {
+    if (facility && facility.capacity !== null && people > facility.capacity) {
       res.status(400).json({
         error: `${facility.name}의 최대 인원은 ${facility.capacity}명입니다. 현재 팀원은 ${people}명입니다.`,
       });
@@ -150,7 +151,8 @@ reservationsRouter.post(
       res.status(400).json({ error: '지난 날짜에는 예약할 수 없습니다.' });
       return;
     }
-    if (date > addDaysStr(today, MAX_DAYS_AHEAD)) {
+    // 학교 시설 규정(이용일 7일 전부터 신청)은 시설을 쓸 때만. 시설 없는 회의는 더 앞의 날짜도 잡을 수 있다
+    if (facility && date > addDaysStr(today, MAX_DAYS_AHEAD)) {
       res.status(400).json({
         error: `학교 규정상 이용일 ${MAX_DAYS_AHEAD}일 전부터 신청할 수 있습니다.`,
       });
@@ -214,11 +216,13 @@ reservationsRouter.post(
       return;
     }
 
-    const conflict = await get(
-      `SELECT 1 AS x FROM reservations
-       WHERE facility_id = ? AND date = ? AND NOT (end_min <= ? OR start_min >= ?)`,
-      [facilityId, date, startMin, endMin],
-    );
+    const conflict = facility
+      ? await get(
+          `SELECT 1 AS x FROM reservations
+           WHERE facility_id = ? AND date = ? AND NOT (end_min <= ? OR start_min >= ?)`,
+          [facilityId, date, startMin, endMin],
+        )
+      : null;
     if (conflict) {
       res
         .status(409)
@@ -228,7 +232,7 @@ reservationsRouter.post(
 
     // 학교 시스템에서 이미 찼거나 휴무인 시간대면 헛걸음이 되므로 미리 막는다.
     // 학교가 느리면 이 확인만 건너뛴다. (계획 저장은 그대로 진행)
-    if (facility.systemKey && facility.campusName) {
+    if (facility?.systemKey && facility.campusName) {
       const campus = await Promise.race([
         getCampusBusy(parsedDate.getFullYear(), parsedDate.getMonth() + 1, [facility.systemKey]),
         new Promise<null>((resolve) => setTimeout(() => resolve(null), BUSY_CHECK_BUDGET_MS)),

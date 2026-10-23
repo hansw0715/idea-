@@ -83,7 +83,8 @@ export interface Reservation {
   date: string;
   startMin: number;
   endMin: number;
-  facilityId: number;
+  /** 시설 없이 잡은 회의 예약이면 null (이때 facilityName = '장소 없이', building = '') */
+  facilityId: number | null;
   facilityName: string;
   building: string;
   meetingId: number;
