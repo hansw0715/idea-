@@ -9,10 +9,10 @@
     <meta name="color-scheme" content="only light" />
     <script>
       // 화면 모드를 첫 화면이 그려지기 전에 적용한다 (Display.tsx 와 같은 규칙):
-      // 저장된 값이 없으면 휴대폰의 다크/라이트 모드를 따른다
+      // 설정에서 직접 고른 값이 없으면 휴대폰의 다크/라이트 모드를 따른다
       (function () {
         try {
-          var saved = localStorage.getItem('sangsang-booke-theme');
+          var saved = localStorage.getItem('sangsang-booke-theme-choice');
           var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
           if (!dark) return;
           document.documentElement.setAttribute('data-theme', 'dark');

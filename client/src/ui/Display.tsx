@@ -15,23 +15,29 @@ interface DisplayApi {
 }
 
 const STORAGE_KEY = 'sangsang-booke-display';
-const THEME_KEY = 'sangsang-booke-theme';
+/** 설정에서 직접 고른 화면 모드 ('dark' | 'light'). 예전 키(-theme)는 처음 실행 때 자동 저장된 값이라 쓰지 않는다 */
+const THEME_KEY = 'sangsang-booke-theme-choice';
+const OLD_THEME_KEY = 'sangsang-booke-theme';
+
+const phoneDark = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+
+function readChoice(): 'dark' | 'light' | null {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    return saved === 'dark' || saved === 'light' ? saved : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
- * 화면 모드. 저장된 값이 없으면(처음 실행) 휴대폰의 화면 모드(다크/라이트)를 따르고, 그 값을 저장해 둔다.
- * 이후에는 내 정보 → 설정의 화이트 모드/다크 모드 버튼으로만 바뀐다.
+ * 화면 모드. 설정에서 직접 고르기 전에는 휴대폰의 화면 모드(다크/라이트)를 그때그때 따른다.
+ * 내 정보 → 설정의 화이트 모드/다크 모드 버튼으로 고르면 그 값을 저장해 그대로 쓴다.
  * (index.html 의 첫 스크립트도 같은 규칙으로 첫 화면이 그려지기 전에 적용한다)
  */
 function readDark(): boolean {
-  try {
-    const saved = localStorage.getItem(THEME_KEY);
-    if (saved === 'dark' || saved === 'light') return saved === 'dark';
-    const dark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-    localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
-    return dark;
-  } catch {
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-  }
+  const choice = readChoice();
+  return choice ? choice === 'dark' : phoneDark();
 }
 
 function applyTheme(dark: boolean) {
@@ -72,11 +78,24 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
       /* 저장이 막혀도 이번에는 바뀐다 */
     }
   }, []);
+  // 직접 고르기 전에는 휴대폰 화면 모드가 바뀌면 바로 따라간다
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!mq) return;
+    const onChange = () => {
+      if (readChoice()) return;
+      setDarkState(mq.matches);
+      applyTheme(mq.matches);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
   useEffect(() => {
     apply();
     // 예전 설정(글자 크기·화면 모드) 저장값은 더 쓰지 않으니 지운다
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(OLD_THEME_KEY);
     } catch {
       /* 저장소가 막힌 환경 — 무시 */
     }
