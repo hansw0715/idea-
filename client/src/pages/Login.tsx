@@ -6,6 +6,7 @@ import { useAuth } from '../auth';
 import type { User } from '../types';
 import { AppHeader } from '../shell/Shell';
 import { cacheKey, startKeyDerivation } from '../school/loginKey';
+import InstallButton from '../shell/InstallBanner';
 import { Alert, Button, PasswordField, TextField, btnClass } from '../ui';
 import './auth.css';
 
@@ -141,6 +142,8 @@ export default function Login() {
               {pending ? pendingLabel : '로그인'}
             </Button>
           </form>
+          {/* 휴대폰 브라우저로 들어왔으면 홈 화면에 추가(앱처럼 쓰기)할 수 있게 한다 */}
+          <InstallButton />
         </section>
 
         <div className="auth-foot">
