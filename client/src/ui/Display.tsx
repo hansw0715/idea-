@@ -12,11 +12,8 @@ export const ZOOM_OPTIONS = [
   { value: 1.1, label: '110%', desc: '조금 크게' },
 ] as const;
 
-export type Contrast = 'normal' | 'high';
-
 interface DisplayState {
   zoom: number;
-  contrast: Contrast;
 }
 
 interface DisplayApi extends DisplayState {
@@ -24,7 +21,7 @@ interface DisplayApi extends DisplayState {
 }
 
 const STORAGE_KEY = 'sangsang-booke-display';
-const DEFAULTS: DisplayState = { zoom: 1, contrast: 'normal' };
+const DEFAULTS: DisplayState = { zoom: 1 };
 
 function read(): DisplayState {
   try {
@@ -32,23 +29,19 @@ function read(): DisplayState {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<DisplayState>;
       const zoom = ZOOM_OPTIONS.some((o) => o.value === parsed.zoom) ? (parsed.zoom as number) : 1;
-      const contrast: Contrast = parsed.contrast === 'high' ? 'high' : 'normal';
-      return { zoom, contrast };
+      return { zoom };
     }
   } catch {
     /* 저장소가 막힌 환경에서는 기본값으로 시작 */
   }
-  // 저장된 선택이 없으면 OS 의 "대비 높이기" 설정을 따른다.
-  const prefersMore =
-    typeof window !== 'undefined' && window.matchMedia?.('(prefers-contrast: more)').matches;
-  return { ...DEFAULTS, contrast: prefersMore ? 'high' : 'normal' };
+  return DEFAULTS;
 }
 
 function apply(state: DisplayState) {
   const root = document.documentElement;
   root.style.setProperty('--zoom', String(state.zoom));
-  if (state.contrast === 'high') root.setAttribute('data-contrast', 'high');
-  else root.removeAttribute('data-contrast');
+  // "선명한 화면" 모드는 없앴다. 예전에 켜 두었던 사람도 일반 화면으로 보이게 표시를 지운다
+  root.removeAttribute('data-contrast');
 }
 
 // 첫 화면이 그려지기 전에 적용해 크기가 튀지 않게 한다.
@@ -63,7 +56,7 @@ export function useDisplay(): DisplayApi {
   return useContext(DisplayContext);
 }
 
-/** "글자·화면 설정": KRDS 가 모든 화면 헤더에 상시 노출하도록 한 1차 접근성 컨트롤 */
+/** "글자 크기 설정": 모든 화면 헤더의 AA 버튼으로 연다 */
 export function DisplayProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DisplayState>(read);
   const [open, setOpen] = useState(false);
@@ -86,7 +79,7 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
       <Sheet
         open={open}
         onClose={() => setOpen(false)}
-        title="글자·화면 설정"
+        title="글자 크기 설정"
         footer={
           <>
             <Button variant="tertiary" onClick={() => setState(DEFAULTS)}>
@@ -108,24 +101,6 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
               onChange={() => setState((s) => ({ ...s, zoom: o.value }))}
             />
           ))}
-        </fieldset>
-        <fieldset className="field" style={{ border: 0, padding: 0, margin: 0, marginTop: 'var(--sp-8)' }}>
-          <legend className="field__label">화면 모드</legend>
-          <Choice
-            type="radio"
-            name="display-contrast"
-            label="일반"
-            checked={state.contrast === 'normal'}
-            onChange={() => setState((s) => ({ ...s, contrast: 'normal' }))}
-          />
-          <Choice
-            type="radio"
-            name="display-contrast"
-            label="선명한 화면"
-            description="글자와 경계선의 대비를 높여 보여 줍니다."
-            checked={state.contrast === 'high'}
-            onChange={() => setState((s) => ({ ...s, contrast: 'high' }))}
-          />
         </fieldset>
       </Sheet>
     </DisplayContext.Provider>

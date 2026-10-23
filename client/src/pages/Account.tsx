@@ -30,7 +30,7 @@ const OPEN_BUTTON = 'withdraw-open';
 const PASSWORD_FIELD = 'withdraw-password';
 const PHRASE_FIELD = 'withdraw-phrase';
 
-/** 내 정보: 가입 정보 · 글자·화면 설정 · 로그아웃 · 회원 탈퇴 */
+/** 내 정보: 가입 정보 · 글자 크기 설정 · 로그아웃 · 회원 탈퇴 */
 export default function Account() {
   const { user, setUser } = useAuth();
   const school = useSchool();
@@ -56,7 +56,7 @@ export default function Account() {
   const navigate = useNavigate();
   const confirm = useConfirm();
   const toast = useToast();
-  const { zoom, contrast, openSettings } = useDisplay();
+  const { zoom, openSettings } = useDisplay();
 
   const [loggingOut, setLoggingOut] = useState(false);
   const [open, setOpen] = useState(false);
@@ -138,7 +138,6 @@ export default function Account() {
     }
   }
 
-  const contrastLabel = contrast === 'high' ? '선명한 화면' : '일반 화면';
 
   return (
     <>
@@ -187,10 +186,10 @@ export default function Account() {
             type="button"
             className={btnClass({ variant: 'secondary', size: 'sm' })}
             onClick={openSettings}
-            title={`글자 크기 ${Math.round(zoom * 100)}% · ${contrastLabel}`}
+            title={`글자 크기 ${Math.round(zoom * 100)}%`}
           >
             <Icon name="text-size" className="btn__icon" />
-            글자·화면 설정
+            글자 크기 설정
           </button>
           {LOUNGE_ENABLED && <LoungeAccountRows />}
         </section>

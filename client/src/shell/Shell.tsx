@@ -175,7 +175,7 @@ export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppH
           type="button"
           className="btn btn--icon"
           onClick={openSettings}
-          aria-label="글자·화면 설정"
+          aria-label="글자 크기 설정"
         >
           <Icon name="text-size" className="btn__icon" />
         </button>
