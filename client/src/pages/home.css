@@ -94,7 +94,7 @@
 /* 세 번째 요약 카드: 미수강 강의 알림 — 연두색 상자 */
 .home-card--green {
   border-color: transparent;
-  background: #e5f3d6;
+  background: var(--c-green-bg);
 }
 .home-card--green .home-card__more {
   border: 0;

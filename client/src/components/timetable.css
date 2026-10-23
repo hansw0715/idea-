@@ -23,11 +23,11 @@
   --tt-class-bar: transparent;
   --tt-class-line: transparent;
   /* 회의 예약과 계획: 수업 블록과 같은 테두리 없는 박스, 색만 옅은 연두색 + "예약" 글자 */
-  --tt-res-bg: #e5f3d6;
+  --tt-res-bg: var(--c-green-bg);
   --tt-res-bar: transparent;
   --tt-res-line: transparent;
   --tt-res-text: var(--success-70);
-  --tt-res-hatch: #e5f3d6; /* 빗금 없음 (바탕과 같은 색) */
+  --tt-res-hatch: var(--c-green-bg); /* 빗금 없음 (바탕과 같은 색) */
   /* 팀원 모두 비는 시간 */
   --tt-free-bg: var(--primary-10);
   /* 선택한 범위 */
@@ -313,7 +313,7 @@
     background: var(--primary-20);
   }
   .tt .tt-entry--res:hover {
-    background-color: #d6ebc2;
+    background-color: var(--c-green-bg-strong);
     background-image: none;
   }
 }
@@ -568,7 +568,7 @@
   /* 회의 예약과 계획 견본: 격자의 연두색 박스와 같은 모양 */
   border-left: 0;
   box-shadow: none;
-  background: #e5f3d6;
+  background: var(--c-green-bg);
 }
 .tt-swatch--free {
   border-left-width: 0;

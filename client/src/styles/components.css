@@ -286,7 +286,7 @@
 .btn--danger-solid {
   background: var(--danger-60);
   border-color: var(--danger-60);
-  color: var(--gray-0);
+  color: var(--white);
 }
 .btn--danger-solid:active {
   background: var(--danger-70);
@@ -614,7 +614,7 @@
 }
 .badge--fill {
   border-color: transparent;
-  color: var(--gray-0);
+  color: var(--white);
   background: var(--gray-50);
 }
 .badge--fill.badge--primary {
@@ -843,7 +843,7 @@
 }
 .stepper__step.is-done .stepper__dot {
   background: var(--c-success);
-  color: var(--gray-0);
+  color: var(--white);
 }
 
 /* ── 로딩 / 빈 상태 ─────────────────────────────────────────── */
@@ -1117,7 +1117,7 @@ body:has(.app-frame.has-tabbar) .toast-region {
   padding: var(--sp-5) var(--sp-6);
   border-radius: var(--r);
   background: var(--gray-90);
-  color: var(--gray-0);
+  color: var(--white);
   font-size: var(--fs-sm);
   box-shadow: var(--shadow-drop);
   animation: toast-in var(--t-fade);

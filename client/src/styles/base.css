@@ -150,7 +150,7 @@ hr {
   z-index: 100;
   padding: var(--sp-3) var(--sp-5);
   background: var(--gray-90);
-  color: var(--gray-0);
+  color: var(--white);
   border-radius: var(--r);
 }
 

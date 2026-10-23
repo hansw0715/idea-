@@ -26,6 +26,7 @@
     BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
 
   /* ── Gray ─────────────────────────────────────────────── */
+  --white: #ffffff; /* 색 면 위 흰 글자 (다크 모드에서도 흰색) */
   --gray-0: #ffffff;
   --gray-5: #f4f5f6;
   --gray-10: #e6e8ea;
@@ -94,6 +95,8 @@
   /* 흰 페이지 위의 옅은 회색 면 — 선 대신 이 면으로 구역을 나눈다 (홈 공지·일정 상자, 시간표 주 이동·탭) */
   --c-panel: #f2f4f8;
   --c-panel-strong: #e6e9f0;
+  --c-green-bg: #e5f3d6; /* 예약 블록·미수강 카드 연두색 */
+  --c-green-bg-strong: #d6ebc2;
   --r-panel: 1.2rem;
   --c-text: var(--gray-90);
   --c-text-sub: var(--gray-70);
@@ -110,7 +113,7 @@
   --c-action-text: var(--primary-60); /* 링크·활성 탭 글자 */
   --c-action-bg: var(--primary-5);
   --c-action-bg-strong: var(--primary-10);
-  --c-on-action: var(--gray-0);
+  --c-on-action: var(--white);
 
   --c-disabled-bg: var(--gray-20);
   --c-disabled-text: var(--gray-50);
@@ -256,4 +259,38 @@
 
 body {
   color-scheme: light;
+}
+
+/* ── 다크 모드 (내 정보 → 설정 → 다크 모드). 회색 단계를 뒤집고 옅은 색 면을 어둡게 바꾼다 ── */
+:root[data-theme='dark'] {
+  --gray-0: #16181b;
+  --gray-5: #1e2125;
+  --gray-10: #2a2e33;
+  --gray-20: #3a3f45;
+  --gray-30: #4e555c;
+  --gray-40: #6d7680;
+  --gray-50: #8a949e;
+  --gray-60: #a3acb5;
+  --gray-70: #bfc6cc;
+  --gray-80: #d5dadf;
+  --gray-90: #e8ebee;
+  --gray-95: #f2f4f6;
+  --gray-100: #ffffff;
+  --primary-5: #23244a;
+  --primary-10: #2d2f5e;
+  --secondary-5: #22272f;
+  --danger-5: #3a2220;
+  --warning-5: #3a3020;
+  --success-5: #1f3324;
+  --info-5: #1d2e3d;
+  --point-5: #3a2226;
+  --c-bg-outer: #0e0f11;
+  --c-panel: #1f2226;
+  --c-panel-strong: #2a2e33;
+  --c-green-bg: #24361c;
+  --c-green-bg-strong: #2f4625;
+  --c-action-text: var(--primary-30);
+}
+:root[data-theme='dark'] body {
+  color-scheme: dark;
 }

@@ -193,7 +193,7 @@ export default function Meetings() {
         <div className="page-head meet-page__head">
           <div className="grow">
             <h1 className="page-title">회의</h1>
-            <p className="page-lead">회의를 만들어 코드를 공유하거나, 받은 코드로 참가해 보세요.</p>
+            <p className="page-lead">회의를 만들거나, 받은 코드로 참가해 보세요.</p>
           </div>
           {/* 제목 오른쪽의 작은 "학교 예약 보기" (학교 계정이 연동돼 있을 때만) */}
           <SchoolReservationsAction />

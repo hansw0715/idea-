@@ -55,7 +55,8 @@
 /* 회의 제목 오른쪽에 작은 "학교 예약 보기" */
 .meet-page__head {
   display: flex;
-  flex-wrap: wrap;
+  /* "학교 예약 보기"가 아래 줄로 떨어지지 않고 설명 문장 줄 높이에 붙어 있게 한다 */
+  flex-wrap: nowrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--sp-4);

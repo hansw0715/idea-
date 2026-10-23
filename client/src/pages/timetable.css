@@ -4,7 +4,7 @@
 /* 제목 + 일정 추가 버튼 */
 .tt-page .tt-page__head {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--sp-4);
