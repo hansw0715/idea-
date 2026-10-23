@@ -511,6 +511,13 @@ hr {
 .install-cta {
   margin-top: var(--sp-4);
 }
+.install-cta--big {
+  margin-top: 0;
+}
+.install-cta--big .install-cta__help {
+  margin-top: var(--sp-5);
+  font-size: var(--fs-md);
+}
 .install-cta__help {
   margin: var(--sp-3) 0 0;
   font-size: var(--fs-sm);

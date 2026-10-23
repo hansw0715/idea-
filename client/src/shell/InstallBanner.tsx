@@ -27,16 +27,20 @@ if (typeof window !== 'undefined') {
   });
 }
 
-const isStandalone = () =>
+export const isStandalone = () =>
   window.matchMedia?.('(display-mode: standalone)').matches ||
   (navigator as Navigator & { standalone?: boolean }).standalone === true;
 const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isMobile = () => /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 
-export default function InstallButton() {
+/**
+ * big: 설치 전용 사이트의 큰 버튼. PC 에서도 보이고, 안내를 처음부터 펼쳐 두며,
+ * 브라우저가 설치 창을 띄울 수 있으면 화면 어디를 눌러도 바로 설치 창이 뜬다.
+ */
+export default function InstallButton({ big = false }: { big?: boolean }) {
   const [, rerender] = useState(0);
-  const [hidden, setHidden] = useState(() => isStandalone() || !isMobile());
-  const [showHelp, setShowHelp] = useState(false);
+  const [hidden, setHidden] = useState(() => isStandalone() || (!big && !isMobile()));
+  const [showHelp, setShowHelp] = useState(big);
 
   useEffect(() => {
     const update = () => rerender((n) => n + 1);
@@ -46,12 +50,23 @@ export default function InstallButton() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!big) return;
+    // 설치 창은 사용자가 화면을 누른 순간에만 띄울 수 있어, 어디를 누르든 그 한 번으로 띄운다
+    const onTap = (e: MouseEvent) => {
+      if (!deferred || (e.target as HTMLElement).closest('.install-cta')) return;
+      void install();
+    };
+    document.addEventListener('click', onTap);
+    return () => document.removeEventListener('click', onTap);
+  });
+
   if (hidden) return null;
   const ios = isIos();
 
   async function install() {
     if (!deferred) {
-      setShowHelp((v) => !v);
+      if (!big) setShowHelp((v) => !v);
       return;
     }
     await deferred.prompt();
@@ -62,13 +77,24 @@ export default function InstallButton() {
   }
 
   return (
-    <div className="install-cta">
-      <Button type="button" variant="secondary" size="lg" block onClick={() => void install()} aria-expanded={showHelp}>
-        앱으로 설치하기
+    <div className={`install-cta${big ? ' install-cta--big' : ''}`}>
+      <Button
+        type="button"
+        variant={big ? 'primary' : 'secondary'}
+        size={big ? 'xl' : 'lg'}
+        block
+        onClick={() => void install()}
+        aria-expanded={big ? undefined : showHelp}
+      >
+        앱 설치하기
       </Button>
       {showHelp && (
         <p className="install-cta__help">
-          {ios ? (
+          {!isMobile() ? (
+            <>
+              주소창 오른쪽의 <strong>설치</strong> 아이콘을 누르거나, 휴대폰으로 이 주소에 들어와 주세요.
+            </>
+          ) : ios ? (
             <>
               아래 <strong>공유 버튼</strong> → <strong>홈 화면에 추가</strong>를 누르면 주소창 없이 앱처럼 열려요.
             </>
