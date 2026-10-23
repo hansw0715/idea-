@@ -6,6 +6,7 @@ import { api } from '../api';
 import type {
   AdminStats,
   CreateGatheringBody,
+  FriendsView,
   GatheringAction,
   GatheringActionBody,
   GatheringKind,
@@ -65,6 +66,12 @@ export const loungeApi = {
 
   // 안전
   blocks: () => api.get<{ blocked: PublicUser[] }>(`${L}/blocks`).then((r) => r.blocked),
+  // 친구 (아이디로 요청 → 상대가 수락)
+  friends: () => api.get<FriendsView>(`${L}/friends`),
+  requestFriend: (username: string) =>
+    api.post<FriendsView & { result: 'requested' | 'accepted' }>(`${L}/friends`, { username }),
+  acceptFriend: (userId: string) => api.post<FriendsView>(`${L}/friends/accept`, { userId }),
+  removeFriend: (userId: string) => api.del<FriendsView>(`${L}/friends`, { userId }),
   block: (userId: string) => api.post<{ ok: true }>(`${L}/blocks`, { userId }),
   unblock: (userId: string) => api.del<{ ok: true }>(`${L}/blocks`, { userId }),
   report: (input: ReportInput) => api.post<{ ok: true }>(`${L}/reports`, input),

@@ -168,7 +168,8 @@ export type RoomView = {
  * 위치는 매칭에만 쓰고, 매칭·취소·만료가 되면 서버가 지운다. 다른 사람에게는 거리(50m 단위)만 보인다.
  */
 /** 즉시 매칭 입력. size 는 본인 포함 인원(2~4, 없으면 2) — 같은 인원을 고른 사람끼리만 모인다 */
-export type QuickInstantInput = { lat: number; lng: number; size?: number };
+/** friendsOnly: 라운지 친구끼리만 짝지어진다 */
+export type QuickInstantInput = { lat: number; lng: number; size?: number; friendsOnly?: boolean };
 
 /** (옛 방식) 날짜·시간대를 직접 고르는 빠른 매칭 입력. 지금 화면은 쓰지 않는다. */
 export type QuickLegacyInput = {
@@ -194,6 +195,15 @@ export type QuickRequestView = {
   status: 'waiting' | 'matched' | 'cancelled' | 'expired';
   roomId: string | null;
   createdAt: ISODateTime;
+  /** 친구끼리만 찾는 대기표인가 (즉시 매칭) */
+  friendsOnly?: boolean;
+};
+
+/** 라운지 친구 목록: 친구 · 나에게 온 요청 · 내가 보낸 요청 */
+export type FriendsView = {
+  friends: PublicUser[];
+  incoming: PublicUser[];
+  outgoing: PublicUser[];
 };
 
 export type QuickRoomView = {

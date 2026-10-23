@@ -15,6 +15,7 @@ import { presenceRouter } from './routes/presence.js';
 import { gatheringsRouter } from './routes/gatherings.js';
 import { quickRouter } from './routes/quick.js';
 import { safetyRouter } from './routes/safety.js';
+import { friendsRouter } from './routes/friends.js';
 import { devRouter } from './routes/dev.js';
 
 export const loungeRouter = Router();
@@ -32,4 +33,5 @@ loungeRouter.use(presenceRouter);
 loungeRouter.use(gatheringsRouter);
 loungeRouter.use(quickRouter);
 loungeRouter.use(safetyRouter);
+loungeRouter.use(friendsRouter);
 

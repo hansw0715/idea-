@@ -44,6 +44,8 @@ export type QuickRoom = QuickRoomView;
 
 /** 학과 비교용 내부 태그의 접두어. 화면에는 내려보내지 않는다. */
 export const DEPT_TAG_PREFIX = 'dept:';
+/** "친구끼리만" 대기표 표시용 내부 태그. 화면에는 태그 대신 friendsOnly 로 내려보낸다 */
+export const FRIENDS_ONLY_TAG = 'opt:friends';
 /** 태그 하나의 최대 길이 / 최대 개수 (모임 만들기 규칙 `meta.tags` 와 같다) */
 export const TAG_MAX_LENGTH = 20;
 export const TAG_MAX_COUNT = 6;
@@ -252,10 +254,11 @@ export const toRequestView = (r: QuickRequest): QuickRequestView => ({ // 위치
   placeType: r.placeType,
   size: r.size,
   bands: r.bands,
-  tags: r.tags.filter((t) => !t.startsWith(DEPT_TAG_PREFIX)),
+  tags: r.tags.filter((t) => !t.startsWith(DEPT_TAG_PREFIX) && t !== FRIENDS_ONLY_TAG),
   status: r.status,
   roomId: r.roomId,
   createdAt: r.createdAt,
+  ...(r.tags.includes(FRIENDS_ONLY_TAG) ? { friendsOnly: true } : {}),
 });
 
 /**
@@ -295,7 +298,7 @@ export function parseQuickInput(raw: unknown): Result<QuickLegacyInput> {
   }
   const trimmed = (rawTags as string[]).map((t) => t.trim());
   if (trimmed.some((t) => hasUnsafeChars(t, false))) return fail('INVALID', '태그에 쓸 수 없는 글자가 들어 있어요.');
-  const tags = [...new Set(trimmed.filter((t) => t && !t.startsWith(DEPT_TAG_PREFIX)))];
+  const tags = [...new Set(trimmed.filter((t) => t && !t.startsWith(DEPT_TAG_PREFIX) && t !== FRIENDS_ONLY_TAG))];
   if (tags.length > TAG_MAX_COUNT || tags.some((t) => [...t].length > TAG_MAX_LENGTH)) {
     return fail('INVALID', `태그는 ${TAG_MAX_COUNT}개까지, 각각 ${TAG_MAX_LENGTH}자 이하로 적어 주세요.`);
   }
@@ -341,7 +344,10 @@ export function parseInstantInput(raw: unknown): Result<Required<QuickInstantInp
   if (typeof size !== 'number' || !Number.isInteger(size) || size < INSTANT_SIZE_MIN || size > INSTANT_SIZE_MAX) {
     return fail('INVALID', `인원은 ${INSTANT_SIZE_MIN}~${INSTANT_SIZE_MAX}명까지예요.`);
   }
-  return ok({ lat, lng, size });
+  if (body.friendsOnly !== undefined && typeof body.friendsOnly !== 'boolean') {
+    return fail('INVALID', '친구끼리만 찾기 값이 올바르지 않아요.');
+  }
+  return ok({ lat, lng, size, friendsOnly: body.friendsOnly === true });
 }
 
 /** 두 지점 사이 거리(m) — 하버사인 */

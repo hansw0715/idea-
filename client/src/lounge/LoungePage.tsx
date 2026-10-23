@@ -7,6 +7,7 @@ import { Alert, Button, Icon, LoadingBlock } from '../ui';
 import { useLounge } from './LoungeContext';
 import GatheringListItem from './parts/GatheringListItem';
 import QuickMatchSheet from './sheets/QuickMatchSheet';
+import FriendsSection from './friends/FriendsSection';
 import TableSheet from './sheets/TableSheet';
 import { isEnded } from './world/tables';
 import { useGatherings } from './world/useGatherings';
@@ -14,6 +15,7 @@ import './hub.css';
 
 /**
  * 라운지 첫 화면 (/lounge): 큰 버튼 두 개 — 위는 밥약(가까운 학우와 바로 연결), 아래는 미팅(자리에 앉아 참여).
+ * 그 아래 내 약속, 친구(추가·요청·목록).
  * 프로필이 없으면 프로필 만들기를 안내한다(게이트).
  */
 export default function LoungePage() {
@@ -136,6 +138,9 @@ function LoungeHome({ profile }: { profile: Profile }) {
           </ul>
         </section>
       )}
+
+      {/* 친구: 추가·요청 수락·삭제는 모두 여기서. 밥약의 "친구끼리만"에 쓰인다 */}
+      <FriendsSection />
 
       <TableSheet
         open={tableOpen}

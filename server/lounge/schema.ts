@@ -20,6 +20,7 @@ export const LOUNGE_TABLES = [
   'lounge_quick_requests',
   'lounge_quick_rooms',
   'lounge_presence',
+  'lounge_friends',
 ] as const;
 
 export const LOUNGE_MIGRATIONS = `
@@ -123,6 +124,17 @@ export const LOUNGE_MIGRATIONS = `
     seen_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_lounge_presence_seen ON lounge_presence(seen_at);
+
+  -- 친구: 아이디로 요청 → 상대가 수락하면 accepted. 한 쌍에 한 줄만 둔다 (요청한 사람 → 받은 사람)
+  CREATE TABLE IF NOT EXISTS lounge_friends (
+    requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    addressee_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    responded_at TIMESTAMPTZ,
+    PRIMARY KEY (requester_id, addressee_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_lounge_friends_addressee ON lounge_friends(addressee_id);
 
   -- RLS: 공개 Data API 로는 접근할 수 없게 (서버는 소유자 역할이라 영향 없음)
   ${LOUNGE_TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY;`).join('\n  ')}

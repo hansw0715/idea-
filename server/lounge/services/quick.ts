@@ -22,6 +22,7 @@ import type { QuickLegacyInput, QuickState } from '../../../shared/lounge/view.j
 import { createGathering, isFull, join } from '../domain/gathering.js';
 import {
   DEPT_TAG_PREFIX,
+  FRIENDS_ONLY_TAG,
   answer,
   confirmedMeetAt,
   countNearby,
@@ -50,6 +51,17 @@ import { banReason, loadUsers, toQuickMember, unknownUser } from '../users.js';
 import type { LoungeUser } from '../users.js';
 import { openRoomIfNeeded } from './chat.js';
 import { blockChecker } from './safety.js';
+import { friendChecker } from './friends.js';
+
+/**
+ * 즉시 매칭에서 두 사람을 한 무리에 넣으면 안 되는가: 서로 차단했거나,
+ * 둘 중 한 명이라도 "친구끼리만"을 골랐는데 둘이 친구가 아니면 안 된다.
+ */
+async function instantChecker(): Promise<(a: string, b: string) => boolean> {
+  const [blocked, friends, waiting] = await Promise.all([blockChecker(), friendChecker(), repo.listWaiting()]);
+  const friendsOnly = new Set(waiting.filter((r) => r.tags.includes(FRIENDS_ONLY_TAG)).map((r) => r.userId));
+  return (a, b) => blocked(a, b) || ((friendsOnly.has(a) || friendsOnly.has(b)) && !friends(a, b));
+}
 
 const nowISO = (): ISODateTime => new Date().toISOString();
 
@@ -203,7 +215,7 @@ async function buildState(userId: string, now: ISODateTime): Promise<QuickState>
 /** 즉시 매칭으로 찾는 중이면 지금 내 무리에 모인 사람들(나 포함, 먼저 온 순). 다른 사람의 위치·거리는 내보내지 않는다 */
 async function formingFor(request: QuickRequest | null, now: ISODateTime): Promise<QuickState['forming']> {
   if (!request?.instant || request.status !== 'waiting' || !request.loc) return [];
-  const groups = formInstantGroups(await repo.listWaiting(), await blockChecker(), now);
+  const groups = formInstantGroups(await repo.listWaiting(), await instantChecker(), now);
   const mine = groups.find((g) => g.some((r) => r.id === request.id)) ?? [request];
   const users = await loadUsers(mine.map((r) => r.userId));
   return mine.map((r) => {
@@ -219,7 +231,7 @@ async function formingFor(request: QuickRequest | null, now: ISODateTime): Promi
 async function waitingCountFor(request: QuickRequest | null, now: ISODateTime): Promise<number> {
   if (!request?.instant) return repo.countWaiting();
   if (request.status !== 'waiting' || !request.loc) return 0;
-  return countNearby(await repo.listWaiting(), request, await blockChecker(), now);
+  return countNearby(await repo.listWaiting(), request, await instantChecker(), now);
 }
 
 // ───────────── 신청 ─────────────
@@ -233,6 +245,8 @@ export type PreparedQuickMatch = {
   bands: string[];
   now: ISODateTime;
   loc?: { lat: number; lng: number };
+  /** 친구끼리만 찾기 (즉시 매칭) */
+  friendsOnly?: boolean;
 };
 
 /**
@@ -250,9 +264,9 @@ export function prepareQuickMatch(
     const loc = parseInstantInput(raw);
     if (!loc.ok) return loc;
     if (user.banned) return fail('BANNED', banReason(user) ?? undefined);
-    const { lat, lng, size } = loc.value;
+    const { lat, lng, size, friendsOnly } = loc.value;
     const input: QuickLegacyInput = { date: kstDate(now), placeType: '학식', size, bands: [...BAND_KEYS], tags: [] };
-    return ok({ input, bands: [...BAND_KEYS], now, loc: { lat, lng } });
+    return ok({ input, bands: [...BAND_KEYS], now, loc: { lat, lng }, friendsOnly });
   }
 
   const parsed = parseQuickInput(raw);
@@ -299,7 +313,11 @@ export async function submitQuickMatch(user: LoungeUser, prepared: PreparedQuick
       placeType: input.placeType,
       size: input.size,
       bands: future,
-      tags: [...input.tags, `${DEPT_TAG_PREFIX}${user.department}`],
+      tags: [
+        ...input.tags,
+        `${DEPT_TAG_PREFIX}${user.department}`,
+        ...(prepared.friendsOnly ? [FRIENDS_ONLY_TAG] : []),
+      ],
       status: 'waiting',
       roomId: null,
       createdAt: now,
@@ -395,7 +413,7 @@ async function tryMatch(requestId: string, now: ISODateTime): Promise<boolean> {
  * 선점(claimWaiting)은 위치를 지우므로, 되돌릴 때는 우리가 들고 있던 위치를 함께 돌려놓는다.
  */
 async function tryMatchInstant(requestId: string, now: ISODateTime, startNow = false): Promise<boolean> {
-  const hidden = await blockChecker();
+  const hidden = await instantChecker();
   for (let attempt = 0; attempt < MATCH_ATTEMPTS; attempt++) {
     const waiting = (await repo.listWaiting()).filter((r) => r.instant);
     const target = waiting.find((r) => r.id === requestId);
@@ -433,7 +451,7 @@ export async function startQuickNow(userId: string, now: ISODateTime = nowISO())
   const ticket = await currentTicket(userId, now);
   const request = ticket?.request;
   if (!request?.instant || request.status !== 'waiting') return fail('NOT_OPEN', '찾는 중인 밥약이 없어요.');
-  const group = formInstantGroups(await repo.listWaiting(), await blockChecker(), now).find((g) =>
+  const group = formInstantGroups(await repo.listWaiting(), await instantChecker(), now).find((g) =>
     g.some((r) => r.id === request.id),
   );
   if (!group || group.length < 2) return fail('INVALID', '아직 모인 사람이 없어요. 한 명 이상 모이면 바로 시작할 수 있어요.');

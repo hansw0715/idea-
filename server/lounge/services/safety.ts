@@ -3,6 +3,7 @@
  * 규칙은 domain/safety · domain/reputation, 저장은 repo/safety · users.ts. 여기서는 둘을 이어 붙인다.
  */
 import { randomUUID } from 'node:crypto';
+import { run } from '../../db.js';
 import { fail, ok } from '../../../shared/lounge/types.js';
 import type { Result } from '../../../shared/lounge/types.js';
 import type { PublicUser, ReportView } from '../../../shared/lounge/view.js';
@@ -74,6 +75,12 @@ export async function blockUser(me: string, targetId: string): Promise<Result<tr
   if (me === targetId) return fail('INVALID', '자기 자신은 차단할 수 없습니다.');
   if (!(await findVisibleUser(targetId))) return fail('NOT_FOUND', '없는 사용자입니다.');
   await insertBlock(me, targetId, nowISO());
+  // 차단하면 친구 관계와 오가던 친구 요청도 함께 지운다 (services/friends.ts)
+  await run(
+    `DELETE FROM lounge_friends
+      WHERE (requester_id = ? AND addressee_id = ?) OR (requester_id = ? AND addressee_id = ?)`,
+    [Number(me), Number(targetId), Number(targetId), Number(me)],
+  );
   return ok(true);
 }
 

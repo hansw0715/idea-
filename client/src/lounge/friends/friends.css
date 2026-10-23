@@ -1,0 +1,85 @@
+/* 라운지 친구 구역 · 친구 추가 시트 (접두사 lounge-friend) */
+.lounge-friends {
+  margin-top: var(--sp-8);
+}
+.lounge-friends .section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lounge-friends__count {
+  color: var(--c-action-text);
+}
+.lounge-friends__add {
+  color: var(--c-action-text);
+}
+.lounge-friends__group {
+  margin-bottom: var(--sp-5);
+}
+.lounge-friends__group:last-of-type {
+  margin-bottom: 0;
+}
+.lounge-friends__group + .card,
+.lounge-friends__group + p,
+.card + .lounge-friends__group {
+  margin-top: var(--sp-5);
+}
+.lounge-friends__label {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--c-text-sub);
+}
+.lounge-friends__empty {
+  padding: var(--sp-5);
+}
+
+.lounge-friend-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4) 0;
+}
+.lounge-friend-row + .lounge-friend-row {
+  border-top: 1px solid var(--c-divider);
+}
+.lounge-friend-row__body {
+  flex: 1;
+  min-width: 0;
+}
+.lounge-friend-row__name {
+  font-weight: var(--fw-bold);
+}
+.lounge-friend-row__sub {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.lounge-friend-row__actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex: none;
+}
+.lounge-friend-row__more {
+  flex: none;
+  color: var(--c-text-sub);
+}
+
+/* 친구 추가 시트: 내 아이디 줄 */
+.lounge-friend-myid {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r);
+  background: var(--c-panel);
+}
+.lounge-friend-myid__value {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.lounge-friend-myid + .field,
+.lounge-friend-myid ~ button[type='submit'] {
+  margin-top: 0;
+}
