@@ -13,6 +13,7 @@ import { coursesRouter } from './coursesRouter.js';
 import { dashboardRouter } from './dashboard.js';
 import { noticesRouter } from './notices.js';
 import { healthRouter } from './health.js';
+import { manifestRouter } from './manifest.js';
 import { loungeRouter } from './lounge/index.js';
 import { schoolRouter } from './school/index.js';
 import { requireAuth } from './auth.js';
@@ -121,6 +122,8 @@ export function createApp() {
 
   app.use(express.json());
   app.use(cookieParser());
+  // 앱 설정 파일은 DB 가 필요 없어 준비를 기다리지 않는다
+  app.use('/api/manifest', manifestRouter);
 
   // 첫 요청에서 스키마 준비가 끝나기를 기다린다. (이후 요청은 캐시된 Promise를 즉시 통과)
   app.use('/api', (_req, res, next) => {

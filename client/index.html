@@ -48,7 +48,21 @@
     </script>
     <link rel="icon" href="/brand/mark-64.png" type="image/png" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // 휴대폰의 화면 모드를 쿠키로 알려 둔다. 앱 설정 파일(/api/manifest)이 이걸 보고
+      // 설치한 앱의 맨 아래 버튼 줄 색을 정한다. 휴대폰 설정이 바뀌면 다시 적는다
+      (function () {
+        try {
+          var mq = window.matchMedia('(prefers-color-scheme: dark)');
+          var save = function () {
+            document.cookie = 'sb-scheme=' + (mq.matches ? 'dark' : 'light') + '; path=/; max-age=31536000; samesite=lax; secure';
+          };
+          save();
+          mq.addEventListener('change', save);
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="manifest" href="/api/manifest" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <!-- KRDS 기본 서체 Pretendard GOV -->
     <link
