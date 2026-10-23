@@ -226,44 +226,58 @@ interface FacilitySeed {
   minCapacity: number | null;
   maxCapacity: number | null;
   description: string;
+  /** 학교 규정 (각 공간의 학교 예약 안내·설정에서 읽은 값). 없으면 기본값 */
+  rules?: FacilityRules;
+}
+
+/** 시설별 학교 규정. 학교 예약 시스템의 공간 설정·안내문(2026-10 확인)에 맞춘다 */
+interface FacilityRules {
+  /** 한 번에 최대 이용 시간(분). 기본 180 */
+  maxMinutes?: number;
+  /** 이용 마감 시각(분, 이 시각까지 끝나야 한다). 기본 21:00 */
+  closeMin?: number;
+  /** 시작 몇 시간 전까지 신청해야 하는가. 기본 0 */
+  leadHours?: number;
+  /** 이용일 며칠 전부터 신청할 수 있는가. 기본 7 */
+  aheadDays?: number;
 }
 
 const STUDY_ROOM_DESC = '테이블·의자·화이트보드와 TV를 갖춘 그룹학습 공간입니다.';
 const IB_DESC = '상상베이스 그룹스터디룸입니다.';
 const IB_FOLDING_DESC =
-  '접이식 가벽이 있어 옆방과 합쳐 쓸 수 있습니다. 합실하면 5~8인이 이용할 수 있고, 두 방 모두 예약해야 합니다.';
+  '접이식 가벽이 있어 옆방과 합쳐 쓸 수 있습니다. 합실하면 5명 이상 이용할 수 있고, 두 방 모두 예약해야 합니다.';
 const SMALL_GROUP_DESC = 'TV 또는 빔프로젝터를 갖춘 소모임실입니다.';
 const LOUNGE_DESC =
   '세미나·회의·강의·팀 프로젝트 등 다양한 목적으로 쓸 수 있고 TV를 시청각 작업에 활용할 수 있습니다. 안내데스크에 들르면 출입문을 열어 줍니다.';
 
-const FACILITY_SEED: FacilitySeed[] = [
+export const FACILITY_SEED: FacilitySeed[] = [
   // 학술정보관 — 3~6층 그룹스터디실 (문의 02-760-5667, 5695)
   { systemKey: 'hsel', campusName: '그룹스터디실(3F-1)', name: '그룹스터디실 3F-1', building: '학술정보관 3층', minCapacity: 3, maxCapacity: 7, description: STUDY_ROOM_DESC },
   { systemKey: 'hsel', campusName: '그룹스터디실(3F-2)', name: '그룹스터디실 3F-2', building: '학술정보관 3층', minCapacity: 3, maxCapacity: 6, description: STUDY_ROOM_DESC },
   { systemKey: 'hsel', campusName: '그룹스터디실(4F)', name: '그룹스터디실 4F', building: '학술정보관 4층', minCapacity: 5, maxCapacity: 11, description: '전자칠판을 갖춘 가장 큰 그룹학습 공간으로, 5명 이상부터 이용할 수 있습니다.' },
   { systemKey: 'hsel', campusName: '그룹스터디실(5F)', name: '그룹스터디실 5F', building: '학술정보관 5층', minCapacity: 3, maxCapacity: 6, description: STUDY_ROOM_DESC },
   { systemKey: 'hsel', campusName: '그룹스터디실(6F)', name: '그룹스터디실 6F', building: '학술정보관 6층', minCapacity: 3, maxCapacity: 6, description: STUDY_ROOM_DESC },
-  { systemKey: 'hsel', campusName: '코워킹룸(3F창의열람실)', name: '코워킹룸', building: '학술정보관 3층 창의열람실', minCapacity: null, maxCapacity: null, description: '창의열람실 안에 있는 코워킹 공간입니다.' },
-  { systemKey: 'hsel', campusName: '회의실(5F상상커먼스)', name: '회의실', building: '학술정보관 5층 상상커먼스', minCapacity: null, maxCapacity: null, description: '상상커먼스 안에 있는 회의실입니다.' },
+  { systemKey: 'hsel', campusName: '코워킹룸(3F창의열람실)', name: '코워킹룸', building: '학술정보관 3층 창의열람실', minCapacity: 15, maxCapacity: null, description: '창의열람실 안에 있는 코워킹 공간으로, 15명 이상 단체(특강·세미나 등)만 예약할 수 있습니다.', rules: { leadHours: 72 } },
+  { systemKey: 'hsel', campusName: '회의실(5F상상커먼스)', name: '회의실', building: '학술정보관 5층 상상커먼스', minCapacity: 10, maxCapacity: 14, description: '상상커먼스 안에 있는 회의실로, 10명 이상부터 이용할 수 있습니다.', rules: { leadHours: 24, aheadDays: 3 } },
 
   // 상상베이스 — 상상관 B2층 (문의 02-760-8000)
-  { systemKey: 'onestop', campusName: '세미나실(IB111)', name: '세미나실 IB111', building: '상상관 B2층', minCapacity: 6, maxCapacity: 16, description: '86인치 TV를 갖춘 세미나실로, 발표나 인원이 많은 모임에 적합합니다.' },
-  { systemKey: 'onestop', campusName: 'IB101', name: '그룹스터디룸 IB101', building: '상상관 B2층', minCapacity: 4, maxCapacity: 8, description: IB_FOLDING_DESC },
-  { systemKey: 'onestop', campusName: 'IB102', name: '그룹스터디룸 IB102', building: '상상관 B2층', minCapacity: 4, maxCapacity: 8, description: IB_FOLDING_DESC },
-  { systemKey: 'onestop', campusName: 'IB103', name: '그룹스터디룸 IB103', building: '상상관 B2층', minCapacity: 4, maxCapacity: 8, description: IB_FOLDING_DESC },
-  { systemKey: 'onestop', campusName: 'IB104', name: '그룹스터디룸 IB104', building: '상상관 B2층', minCapacity: 4, maxCapacity: 8, description: IB_FOLDING_DESC },
-  { systemKey: 'onestop', campusName: 'IB105', name: '그룹스터디룸 IB105', building: '상상관 B2층', minCapacity: 4, maxCapacity: 8, description: IB_DESC },
-  { systemKey: 'onestop', campusName: 'IB106', name: '그룹스터디룸 IB106', building: '상상관 B2층', minCapacity: 4, maxCapacity: 8, description: IB_DESC },
-  { systemKey: 'onestop', campusName: 'IB107', name: '그룹스터디룸 IB107', building: '상상관 B2층', minCapacity: 4, maxCapacity: 8, description: IB_DESC },
-  { systemKey: 'onestop', campusName: 'IB108', name: '그룹스터디룸 IB108', building: '상상관 B2층', minCapacity: 4, maxCapacity: 8, description: IB_DESC },
+  { systemKey: 'onestop', campusName: '세미나실(IB111)', name: '세미나실 IB111', building: '상상관 B2층', minCapacity: 6, maxCapacity: 16, description: '86인치 TV를 갖춘 세미나실로, 발표나 인원이 많은 모임에 적합합니다.', rules: { leadHours: 24 } },
+  { systemKey: 'onestop', campusName: 'IB101', name: '그룹스터디룸 IB101', building: '상상관 B2층', minCapacity: 3, maxCapacity: 8, description: IB_FOLDING_DESC },
+  { systemKey: 'onestop', campusName: 'IB102', name: '그룹스터디룸 IB102', building: '상상관 B2층', minCapacity: 3, maxCapacity: 8, description: IB_FOLDING_DESC },
+  { systemKey: 'onestop', campusName: 'IB103', name: '그룹스터디룸 IB103', building: '상상관 B2층', minCapacity: 3, maxCapacity: 8, description: IB_FOLDING_DESC },
+  { systemKey: 'onestop', campusName: 'IB104', name: '그룹스터디룸 IB104', building: '상상관 B2층', minCapacity: 3, maxCapacity: 8, description: IB_FOLDING_DESC },
+  { systemKey: 'onestop', campusName: 'IB105', name: '그룹스터디룸 IB105', building: '상상관 B2층', minCapacity: 3, maxCapacity: 8, description: IB_DESC },
+  { systemKey: 'onestop', campusName: 'IB106', name: '그룹스터디룸 IB106', building: '상상관 B2층', minCapacity: 3, maxCapacity: 8, description: IB_DESC },
+  { systemKey: 'onestop', campusName: 'IB107', name: '그룹스터디룸 IB107', building: '상상관 B2층', minCapacity: 3, maxCapacity: 8, description: IB_DESC },
+  { systemKey: 'onestop', campusName: 'IB108', name: '그룹스터디룸 IB108', building: '상상관 B2층', minCapacity: 3, maxCapacity: 8, description: IB_DESC },
 
   // 상상파크플러스 — 공학관 B1층
-  { systemKey: 'cncschool', campusName: '소모임실 Challenge', name: '소모임실 Challenge', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC },
-  { systemKey: 'cncschool', campusName: '소모임실 Collaboration', name: '소모임실 Collaboration', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC },
-  { systemKey: 'cncschool', campusName: '소모임실 Communication', name: '소모임실 Communication', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC },
-  { systemKey: 'cncschool', campusName: '소모임실 Convergence', name: '소모임실 Convergence', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC },
-  { systemKey: 'cncschool', campusName: '소모임실 Creativity', name: '소모임실 Creativity', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC },
-  { systemKey: 'cncschool', campusName: '소모임실 Critical Thinking', name: '소모임실 Critical Thinking', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC },
+  { systemKey: 'cncschool', campusName: '소모임실 Challenge', name: '소모임실 Challenge', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC, rules: { closeMin: 1020 } },
+  { systemKey: 'cncschool', campusName: '소모임실 Collaboration', name: '소모임실 Collaboration', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC, rules: { closeMin: 1020 } },
+  { systemKey: 'cncschool', campusName: '소모임실 Communication', name: '소모임실 Communication', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC, rules: { closeMin: 1020 } },
+  { systemKey: 'cncschool', campusName: '소모임실 Convergence', name: '소모임실 Convergence', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC, rules: { closeMin: 1020 } },
+  { systemKey: 'cncschool', campusName: '소모임실 Creativity', name: '소모임실 Creativity', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC, rules: { closeMin: 1020 } },
+  { systemKey: 'cncschool', campusName: '소모임실 Critical Thinking', name: '소모임실 Critical Thinking', building: '공학관 B1층', minCapacity: null, maxCapacity: 8, description: SMALL_GROUP_DESC, rules: { closeMin: 1020 } },
 
   // 코딩라운지 (연구관 B2~1층) — 101~105호는 12인실, 106~113호는 8인실
   ...Array.from({ length: 13 }, (_, i) => {
@@ -276,6 +290,7 @@ const FACILITY_SEED: FacilitySeed[] = [
       minCapacity: null,
       maxCapacity: roomNo <= 105 ? 12 : 8,
       description: LOUNGE_DESC,
+      rules: { maxMinutes: 360 },
     };
   }),
 ];
@@ -323,6 +338,11 @@ const FACILITY_COLUMNS = `
  * 빠른 경로에서도 매번 실행되므로 한 번의 왕복으로 끝나도록 한 덩어리로 둔다.
  */
 const LATE_MIGRATIONS = `
+  -- 시설별 학교 규정: 한 번 최대 이용 시간(분) · 마감 시각(분) · 신청 리드타임(시간) · 며칠 전부터 신청
+  ALTER TABLE facilities ADD COLUMN IF NOT EXISTS max_minutes INTEGER;
+  ALTER TABLE facilities ADD COLUMN IF NOT EXISTS close_min INTEGER;
+  ALTER TABLE facilities ADD COLUMN IF NOT EXISTS lead_hours INTEGER;
+  ALTER TABLE facilities ADD COLUMN IF NOT EXISTS ahead_days INTEGER;
   CREATE TABLE IF NOT EXISTS email_verifications (
     email TEXT PRIMARY KEY,
     code_hash TEXT NOT NULL,
@@ -418,6 +438,28 @@ async function seedAdmins(): Promise<void> {
   }
 }
 
+/**
+ * 이미 들어 있는 시설 행의 인원·규정을 FACILITY_SEED 와 맞춘다 (시설 수가 같으면 다시 넣지 않으므로 값만 고친다).
+ * 한 문장(UPDATE … FROM VALUES)이라 왕복 한 번이다.
+ */
+async function syncFacilityRules(): Promise<void> {
+  const params: unknown[] = [];
+  const rows = FACILITY_SEED.map((f) => {
+    const r = f.rules ?? {};
+    params.push(f.systemKey, f.campusName, f.minCapacity, f.maxCapacity, f.description,
+      r.maxMinutes ?? 180, r.closeMin ?? 1260, r.leadHours ?? 0, r.aheadDays ?? 7);
+    return '(?, ?, ?::int, ?::int, ?, ?::int, ?::int, ?::int, ?::int)';
+  });
+  await run(
+    `UPDATE facilities f
+        SET min_capacity = v.min_c, capacity = v.max_c, description = v.descr,
+            max_minutes = v.max_m, close_min = v.close_m, lead_hours = v.lead_h, ahead_days = v.ahead_d
+       FROM (VALUES ${rows.join(', ')}) AS v(sys, campus, min_c, max_c, descr, max_m, close_m, lead_h, ahead_d)
+      WHERE f.system_key = v.sys AND f.campus_name = v.campus`,
+    params,
+  );
+}
+
 async function migrate(): Promise<void> {
   const d = await driver();
 
@@ -434,6 +476,7 @@ async function migrate(): Promise<void> {
       await d.exec(LOUNGE_MIGRATIONS);
       await d.exec(SCHOOL_MIGRATIONS);
       await d.exec(USERNAME_MIGRATIONS);
+      await syncFacilityRules();
       return;
     }
   } catch {
@@ -453,7 +496,10 @@ async function migrate(): Promise<void> {
   const seeded = await get<{ c: number }>(
     'SELECT COUNT(*)::int AS c FROM facilities WHERE campus_name IS NOT NULL',
   );
-  if (seeded && Number(seeded.c) === FACILITY_SEED.length) return;
+  if (seeded && Number(seeded.c) === FACILITY_SEED.length) {
+    await syncFacilityRules();
+    return;
+  }
 
   await run('DELETE FROM facilities', []);
   for (const f of FACILITY_SEED) {
@@ -464,6 +510,7 @@ async function migrate(): Promise<void> {
       [f.systemKey, f.campusName, f.name, f.building, f.minCapacity, f.maxCapacity, f.description],
     );
   }
+  await syncFacilityRules();
 }
 
 let readyPromise: Promise<void> | null = null;

@@ -7,6 +7,7 @@ import { useWeek } from '../useWeek';
 import { Alert, Button, Icon } from '../ui';
 import { LOUNGE_ENABLED } from '../features';
 import EclassHome from '../school/EclassHome';
+import EclassHomeCard from '../school/EclassHomeCard';
 import MyLoungeSection from '../lounge/home/MyLoungeSection';
 import { HomeTableRow } from './HomeTableRow';
 import HomeNotices from './HomeNotices';
@@ -119,6 +120,9 @@ export default function Dashboard() {
                     </Link>
                   </div>
                 </article>
+
+                {/* 세 번째: 미수강 강의 알림 (연두색 상자) */}
+                <EclassHomeCard />
               </div>
             </section>
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Icon } from '../ui';
+import { Button } from '../ui';
 import SchoolReservationsSheet from './SchoolReservationsSheet';
 import { useSchool } from './SchoolContext';
 import './school.css';
@@ -17,7 +17,6 @@ export default function SchoolReservationsAction() {
   return (
     <>
       <Button variant="text" size="sm" className="school-inline-action" onClick={() => setOpen(true)}>
-        <Icon name="pin" className="btn__icon" />
         학교 예약 보기
       </Button>
       <SchoolReservationsSheet

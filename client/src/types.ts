@@ -68,6 +68,8 @@ export interface Facility {
   plannedHere?: boolean;
   /** 학교 시스템 기준 상태 */
   campusState?: 'reserved' | 'closed' | null;
+  /** 학교 규정(1시간 단위·최대 이용 시간·마감 시각·신청 기간)에 맞지 않으면 그 이유 */
+  ruleReason?: string | null;
 }
 
 export interface FacilityResponse {

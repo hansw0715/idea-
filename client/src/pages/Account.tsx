@@ -208,12 +208,9 @@ export default function Account() {
           ) : (
             <>
               <p className="account-danger__text">
-                탈퇴하면 <strong>시간표, 회의 참여 기록, 예약이 모두 삭제</strong>되고 되돌릴 수
-                없습니다.
-              </p>
-              <p className="account-danger__text">
-                또한 탈퇴한 학번으로는 <strong>다시 가입할 수 없습니다.</strong> 다시 이용하려면 관리자에게
-                문의해 주세요.
+                탈퇴하면 <strong>시간표, 회의 참여 기록, 예약이 모두 삭제</strong>되고 되돌릴 수 없습니다. 또한
+                탈퇴한 학번으로는 <strong>다시 가입할 수 없습니다.</strong> 다시 이용하려면 관리자에게 문의해
+                주세요.
               </p>
 
               {!open ? (

@@ -4,7 +4,7 @@ import SchoolLinkSheet from './SchoolLinkSheet';
 import SchoolTimetableSheet from './SchoolTimetableSheet';
 import { useSchool } from './SchoolContext';
 import './school.css';
-import { Button, Icon } from '../ui';
+import { Button } from '../ui';
 
 /**
  * 시간표 화면 제목 오른쪽의 작은 "학교 시간표 가져오기" 글자 버튼과 그 시트 묶음. 학교 계정이 연동돼 있을 때만 버튼이 보인다.
@@ -44,7 +44,6 @@ export default function SchoolTimetableAction({ onImported }: { onImported: () =
     <>
       {canImport && (
         <Button variant="text" size="sm" className="school-inline-action" onClick={() => setTimetableOpen(true)}>
-          <Icon name="calendar" className="btn__icon" />
           학교 시간표 가져오기
         </Button>
       )}

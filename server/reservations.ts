@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { facilityRuleReason } from './facilities.js';
 import { all, get, run, insert } from './db.js';
 import { requireAuth, userId, wrap } from './auth.js';
 import { parseMemberIds } from './meetings.js';
@@ -99,13 +100,18 @@ reservationsRouter.post(
     const facility = facilityId === null ? null : await get<{
       id: number;
       name: string;
+      maxMinutes: number | null;
+      closeMin: number | null;
+      leadHours: number | null;
+      aheadDays: number | null;
       systemKey: string | null;
       campusName: string | null;
       minCapacity: number | null;
       capacity: number | null;
     }>(
       `SELECT id, name, system_key AS "systemKey", campus_name AS "campusName",
-              min_capacity AS "minCapacity", capacity
+              min_capacity AS "minCapacity", capacity, description,
+              max_minutes AS "maxMinutes", close_min AS "closeMin", lead_hours AS "leadHours", ahead_days AS "aheadDays"
        FROM facilities WHERE id = ?`,
       [facilityId],
     );
@@ -152,7 +158,7 @@ reservationsRouter.post(
       return;
     }
     // 학교 시설 규정(이용일 7일 전부터 신청)은 시설을 쓸 때만. 시설 없는 회의는 더 앞의 날짜도 잡을 수 있다
-    if (facility && date > addDaysStr(today, MAX_DAYS_AHEAD)) {
+    if (facility && facility.aheadDays === null && date > addDaysStr(today, MAX_DAYS_AHEAD)) {
       res.status(400).json({
         error: `학교 규정상 이용일 ${MAX_DAYS_AHEAD}일 전부터 신청할 수 있습니다.`,
       });
@@ -182,6 +188,19 @@ reservationsRouter.post(
         error: `학교 규정상 하루 최대 ${MAX_RESERVATION_MIN / 60}시간까지 이용할 수 있습니다.`,
       });
       return;
+    }
+    // 시설별 학교 규정 (1시간 단위·최대 이용 시간·마감 시각·신청 기간·리드타임)
+    if (facility) {
+      const reason = facilityRuleReason(
+        { ...facility, building: '', description: null, minCapacity: facility.minCapacity, capacity: facility.capacity },
+        date,
+        startMin,
+        endMin,
+      );
+      if (reason) {
+        res.status(400).json({ error: `${facility.name}: ${reason}.` });
+        return;
+      }
     }
     if (date === today && startMin <= nowMinutes()) {
       res.status(400).json({ error: '이미 지난 시간에는 예약할 수 없습니다.' });

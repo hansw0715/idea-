@@ -91,6 +91,52 @@
   }
 }
 
+/* 세 번째 요약 카드: 미수강 강의 알림 — 연두색 상자 */
+.home-card--green {
+  border-color: transparent;
+  background: #e5f3d6;
+}
+.home-card--green .home-card__more {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--success-70);
+  cursor: pointer;
+}
+.home-card__list {
+  display: grid;
+  gap: var(--sp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.home-card__line {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+  font-size: var(--fs-md);
+  color: var(--c-text);
+}
+.home-card__line svg {
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--success-70);
+}
+.home-card__line span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-card__more-count {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
 /* ── 배너 ───────────────────────────────────────────────────── */
 .home-banner {
   display: flex;
@@ -270,7 +316,7 @@
   }
   .home-cards__track {
     grid-auto-flow: row;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     padding: 0;
     overflow: visible;
   }

@@ -35,9 +35,11 @@ import type { Facility, FacilityResponse, FreeSlot, Member, Reservation } from '
 import '../pages/meeting-detail.css';
 
 const STEPS = ['시간', '날짜', '시설', '확인'];
-const STEP_MIN = 30;
+/** 학교 시설은 모두 1시간 단위(정각 시작)로 신청한다 — 회의 예약도 1시간 단위로 고른다 */
+const STEP_MIN = 60;
 /** 학교 규정: 하루 최대 3시간 */
-const MAX_RESERVATION_MIN = 180;
+/** 한 번에 잡을 수 있는 최대 시간. 시설마다 더 짧을 수 있다(대부분 3시간, 코딩라운지 6시간) — 시설 단계에서 안내한다 */
+const MAX_RESERVATION_MIN = 360;
 /** 날짜 고르기에서 보여 줄 기간(일). 7일보다 먼 날짜는 시설 없이만 잡을 수 있다 */
 const DATE_WINDOW_DAYS = 28;
 
@@ -95,6 +97,8 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 function FacilityStatus({ f }: { f: Facility }) {
+  // 학교 규정(인원 외: 이용 시간·마감·신청 기간)에 맞지 않으면 그 이유를 그대로 보여 준다
+  if (f.ruleReason) return <Badge tone="gray">{f.ruleReason}</Badge>;
   if (f.campusState === 'closed') return <Badge tone="danger">학교 신청불가</Badge>;
   if (f.campusState === 'reserved') return <Badge tone="danger">학교에서 예약됨</Badge>;
   if (f.plannedHere) return <Badge tone="gray">우리 팀이 잡아 둠</Badge>;
@@ -295,9 +299,15 @@ export default function BookingFlow({
     );
   }
 
-  /** 시간표를 끌어서 고른 구간 */
-  function pickFromGrid(next: SelectedRange) {
+  /** 시간표를 끌어서 고른 구간 — 1시간 단위(정각)로 맞춘다. 한 번 누르면 그 시각부터 1시간 */
+  function pickFromGrid(picked: SelectedRange) {
     setPickError(null);
+    const startMin = Math.floor(picked.startMin / STEP_MIN) * STEP_MIN;
+    const next: SelectedRange = {
+      day: picked.day,
+      startMin,
+      endMin: Math.max(startMin + STEP_MIN, Math.ceil(picked.endMin / STEP_MIN) * STEP_MIN),
+    };
     if (!isWithinFree(next)) {
       setPickError(
         '참여자 중 수업이 있거나 예약할 수 없는 시간입니다. 시간표에서 배경이 칠해진 “모두 비는 시간” 구간 안에서 선택해 주세요.',
@@ -305,7 +315,7 @@ export default function BookingFlow({
       return;
     }
     if (next.endMin - next.startMin > MAX_RESERVATION_MIN) {
-      setPickError(`학교 규정상 하루 최대 ${MAX_RESERVATION_MIN / 60}시간까지 이용할 수 있습니다.`);
+      setPickError(`한 번에 최대 ${MAX_RESERVATION_MIN / 60}시간까지 잡을 수 있습니다.`);
       return;
     }
     applyRange(next);
@@ -550,7 +560,7 @@ export default function BookingFlow({
               </h4>
               <p className="field__help mtg-grid__help">
                 {alignedSlots.length > 0
-                  ? '“모두 비는 시간”으로 칠해진 구간 안을 눌러 고를 수 있습니다. 한 번 누르면 30분이 선택되고, 길게 눌러 끌면 범위를 고를 수 있습니다.'
+                  ? '“모두 비는 시간”으로 칠해진 구간 안을 눌러 고를 수 있습니다. 학교 시설은 1시간 단위라 한 번 누르면 1시간이 선택되고, 길게 눌러 끌면 범위를 고를 수 있습니다.'
                   : '팀원 수업이 겹치는 시간표입니다.'}
               </p>
               {alignedSlots.length > 0 && <GridLegend items={['free', 'pending']} />}

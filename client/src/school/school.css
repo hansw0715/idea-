@@ -464,11 +464,17 @@
   border-top: 1px solid var(--c-divider);
 }
 
-/* 시간표·회의 제목 오른쪽의 작은 학교 바로가기 글자 버튼 (거슬리지 않게 보조 글자색) */
-.school-inline-action {
+/* 시간표·회의 제목 오른쪽의 작은 학교 바로가기 글자 버튼 (사이트 강조 보라색) */
+.btn.school-inline-action {
   flex: none;
-  color: var(--c-text-sub);
-}
-.school-inline-action:hover {
+  /* 제목 아래 설명 문장과 같은 줄(머리 영역의 맨 아래)에 맞춘다 */
+  align-self: flex-end;
+  min-height: auto;
+  padding: 0;
+  font-size: var(--fs-sm);
+  line-height: var(--lh);
   color: var(--c-action-text);
+}
+.btn.school-inline-action:hover {
+  color: var(--c-action-pressed);
 }

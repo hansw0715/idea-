@@ -3,7 +3,8 @@ import { all, get } from './db.js';
 import { requireAuth, wrap } from './auth.js';
 import { parseDateStrict } from './dates.js';
 import { getCampusBusy, CAMPUS_SYSTEMS } from './campusSchedule.js';
-import { OPEN_MIN, RESERVE_CLOSE_MIN, STEP_MIN } from './constants.js';
+import { BOOKING_STEP_MIN, OPEN_MIN, RESERVE_CLOSE_MIN, STEP_MIN } from './constants.js';
+import { addDaysStr, todayStr } from './dates.js';
 
 export const facilitiesRouter = Router();
 
@@ -18,11 +19,36 @@ export interface FacilityRow {
   minCapacity: number | null;
   capacity: number | null;
   description: string | null;
+  /** 학교 규정: 한 번 최대 이용 시간(분) · 마감 시각(분) · 신청 리드타임(시간) · 며칠 전부터 */
+  maxMinutes: number | null;
+  closeMin: number | null;
+  leadHours: number | null;
+  aheadDays: number | null;
+}
+
+/** 이 시설의 학교 규정으로 [date, startMin~endMin] 을 신청할 수 없으면 그 이유. 되면 null */
+export function facilityRuleReason(f: FacilityRow, date: string, startMin: number, endMin: number, now = new Date()): string | null {
+  if (startMin % BOOKING_STEP_MIN !== 0 || endMin % BOOKING_STEP_MIN !== 0) return '1시간 단위(정각)로만 신청할 수 있어요';
+  const maxMin = f.maxMinutes ?? 180;
+  if (endMin - startMin > maxMin) return `한 번에 최대 ${maxMin / 60}시간까지예요`;
+  const close = f.closeMin ?? 1260;
+  if (endMin > close) return `${String(Math.floor(close / 60)).padStart(2, '0')}:00까지만 이용할 수 있어요`;
+  const ahead = f.aheadDays ?? 7;
+  if (date > addDaysStr(todayStr(), ahead)) return `이용일 ${ahead}일 전부터 신청할 수 있어요`;
+  const lead = f.leadHours ?? 0;
+  if (lead > 0) {
+    const [y, m, d] = date.split('-').map(Number);
+    // 한국 시간 시작 시각 → UTC
+    const startAt = Date.UTC(y, m - 1, d, 0, startMin) - 9 * 3600_000;
+    if (startAt - now.getTime() < lead * 3600_000) return `이용 ${lead >= 24 && lead % 24 === 0 ? `${lead / 24}일` : `${lead}시간`} 전까지 신청해야 해요`;
+  }
+  return null;
 }
 
 export const FACILITY_SELECT = `
   SELECT id, system_key AS "systemKey", campus_name AS "campusName", name, building,
-         min_capacity AS "minCapacity", capacity, description
+         min_capacity AS "minCapacity", capacity, description,
+         max_minutes AS "maxMinutes", close_min AS "closeMin", lead_hours AS "leadHours", ahead_days AS "aheadDays"
   FROM facilities
 `;
 
@@ -110,11 +136,13 @@ facilitiesRouter.get(
           f.systemKey && f.campusName
             ? campusBusy.get(`${f.systemKey}|${f.campusName}`)
             : undefined;
+        const ruleReason = facilityRuleReason(f, date, startMin, endMin);
         return {
           ...decorate(f),
           plannedHere: plannedHere.has(f.id),
           campusState: campusState ?? null,
-          available: !plannedHere.has(f.id) && campusState === undefined,
+          ruleReason,
+          available: !plannedHere.has(f.id) && campusState === undefined && ruleReason === null,
         };
       }),
     });

@@ -63,6 +63,8 @@ function readCache(userId: number): EclassSnapshot | null {
 function writeCache(userId: number, snapshot: EclassSnapshot): void {
   try {
     localStorage.setItem(cacheKey(userId), JSON.stringify(snapshot));
+    // 홈 요약 카드(EclassHomeCard)가 새 결과를 다시 읽게 알린다
+    window.dispatchEvent(new Event('sangsang-booke:eclass-updated'));
   } catch {
     /* 저장하지 못해도 이번 화면에서는 그대로 보인다 */
   }
