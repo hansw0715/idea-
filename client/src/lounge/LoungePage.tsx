@@ -111,7 +111,7 @@ function LoungeHome({ profile }: { profile: Profile }) {
           <Icon name="smile" className="lounge-hub-btn__icon" />
           <span>
             <span className="lounge-hub-btn__title">미팅</span>
-            <span className="lounge-hub-btn__sub">자리에 앉아 2:2 ~ 4:4 미팅에 참여해요</span>
+            <span className="lounge-hub-btn__sub">자리에 앉아 여러 가지 만남에 참여해요.</span>
           </span>
           <span className="lounge-hub-btn__go">
             <span className="bold">미팅 보러 가기</span>
