@@ -85,7 +85,7 @@ export default function Dashboard() {
           </Alert>
         ) : (
           <>
-            {/* 1. 옆으로 넘기는 요약 카드: 다음 예약(강조) · 내 회의 */}
+            {/* 1. 옆으로 넘기는 요약 카드: 다음 예약(강조) · 미수강 강의 알림 · 내 회의 */}
             <section className="home-cards" aria-label="오늘 요약">
               <div className="home-cards__track">
                 <article className="home-card home-card--accent">
@@ -104,6 +104,9 @@ export default function Dashboard() {
                   </Link>
                 </article>
 
+                {/* 두 번째: 미수강 강의 알림 (연두색 상자) */}
+                <EclassHomeCard />
+
                 <article className="home-card">
                   <h2 className="home-card__title">내 회의</h2>
                   <p className="home-card__sub">
@@ -121,8 +124,6 @@ export default function Dashboard() {
                   </div>
                 </article>
 
-                {/* 세 번째: 미수강 강의 알림 (연두색 상자) */}
-                <EclassHomeCard />
               </div>
             </section>
 

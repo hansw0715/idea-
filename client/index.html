@@ -33,6 +33,13 @@
                 : url + (url.indexOf('?') < 0 ? '?' : '&') + 'stay=1',
             ) +
             ';end';
+        } else if (/iphone|ipad|ipod/i.test(ua)) {
+          // 아이폰은 크롬이 기본 브라우저여도 사파리로 연다 (iOS 17 이상). 안 열리면 카카오톡은 기본 브라우저로
+          location.href = 'x-safari-' + url;
+          if (/KAKAOTALK/i.test(ua))
+            setTimeout(function () {
+              location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
+            }, 1500);
         } else if (/KAKAOTALK/i.test(ua)) {
           location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
         } else if (/Line\//i.test(ua) && url.indexOf('openExternalBrowser=1') < 0) {
