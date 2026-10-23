@@ -88,13 +88,9 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
       >
         앱 설치하기
       </Button>
-      {showHelp && (
+      {showHelp && isMobile() && (
         <p className="install-cta__help">
-          {!isMobile() ? (
-            <>
-              주소창 오른쪽의 <strong>설치</strong> 아이콘을 누르거나, 휴대폰으로 이 주소에 들어와 주세요.
-            </>
-          ) : ios ? (
+          {ios ? (
             <>
               아래 <strong>공유 버튼</strong> → <strong>홈 화면에 추가</strong>를 누르면 주소창 없이 앱처럼 열려요.
             </>
