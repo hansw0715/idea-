@@ -14,7 +14,7 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QUICK_WAIT_MIN } from '../../../../shared/lounge';
 import type { QuickMember, QuickState } from '../../../../shared/lounge';
-import { Alert, Button, Icon, LoadingBlock, Segmented, Sheet, useConfirm } from '../../ui';
+import { Alert, Button, Choice, Icon, LoadingBlock, Segmented, Sheet, useConfirm } from '../../ui';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
 import Avatar from '../parts/Avatar';
@@ -31,12 +31,6 @@ const POLL_MS = 2000;
 
 /** 고를 수 있는 인원(본인 포함) */
 type PartySize = '2' | '3' | '4';
-/** 누구와: 아무나(가까운 학우) · 친구끼리만(라운지 친구 중 가까운 사람) */
-type Who = 'anyone' | 'friends';
-const WHO_OPTIONS: { value: Who; label: string }[] = [
-  { value: 'anyone', label: '아무나' },
-  { value: 'friends', label: '친구끼리만' },
-];
 const SIZE_OPTIONS: { value: PartySize; label: string }[] = [
   { value: '2', label: '2명' },
   { value: '3', label: '3명' },
@@ -90,7 +84,8 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
   const [error, setError] = useState<string | null>(null);
   const [ended, setEnded] = useState<Ended>(null);
   const [size, setSize] = useState<PartySize>('2');
-  const [who, setWho] = useState<Who>('anyone');
+  /** 친구끼리만 찾기 (라운지 친구 중 가까운 사람과만) */
+  const [friendsOnly, setFriendsOnly] = useState(false);
   const lastRoom = useRef<string | null>(null);
   const confirmedSent = useRef<string | null>(null);
   const onConfirmedRef = useRef(onConfirmed);
@@ -154,7 +149,7 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
     }
     setBusy('start');
     try {
-      apply(await loungeApi.requestQuick({ ...pos, size: Number(size), friendsOnly: who === 'friends' }));
+      apply(await loungeApi.requestQuick({ ...pos, size: Number(size), friendsOnly }));
     } catch (err) {
       if (!handleError(err)) setError(err instanceof Error ? err.message : '매칭을 시작하지 못했어요.');
     } finally {
@@ -317,12 +312,12 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
             />
           )}
           {(phase === 'idle' || phase === 'ended') && (
-            <Segmented
-              label="누구와 먹을까요?"
-              value={who}
-              onChange={setWho}
-              options={WHO_OPTIONS}
-              help={who === 'friends' ? '라운지 친구 중 가까이 있는 사람과만 모여요. 친구는 라운지 첫 화면에서 추가해요.' : undefined}
+            <Choice
+              type="checkbox"
+              label="친구끼리만"
+              description="라운지 친구 중 가까이 있는 사람과만 모여요."
+              checked={friendsOnly}
+              onChange={(e) => setFriendsOnly(e.target.checked)}
             />
           )}
 

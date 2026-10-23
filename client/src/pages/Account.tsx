@@ -182,9 +182,7 @@ export default function Account() {
           </div>
         )}
 
-        <section className="section account-tools" aria-label="설정">
-          {LOUNGE_ENABLED && <LoungeAccountRows />}
-        </section>
+        {LOUNGE_ENABLED && <LoungeAccountRows />}
 
         <section className="section account-logout">
           <Button variant="tertiary" block loading={loggingOut} onClick={logout}>

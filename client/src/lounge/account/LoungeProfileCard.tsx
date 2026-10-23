@@ -7,6 +7,7 @@ import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
 import Avatar, { TemperatureBadge } from '../parts/Avatar';
 import { factLine } from '../parts/fact';
+import BlockListSheet from '../sheets/BlockListSheet';
 
 /**
  * 내 정보의 "라운지 프로필" 구역: 아바타·이름(가림)·학과·학번·매너온도(같은 줄), 정지 안내, 고치기/만들기 버튼.
@@ -17,6 +18,7 @@ export default function LoungeProfileCard() {
   const { profile, needsProfile, loading, error, refresh, openProfileSheet, setProfile } = useLounge();
   const { user } = useAuth();
   const [retrying, setRetrying] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
   const [savingGender, setSavingGender] = useState(false);
   const [genderError, setGenderError] = useState<string | null>(null);
   const toast = useToast();
@@ -88,9 +90,16 @@ export default function LoungeProfileCard() {
           )}
         </div>
 
-        <Button variant="secondary" size="sm" onClick={openProfileSheet}>
-          프로필 이미지 바꾸기
-        </Button>
+        {/* 프로필 이미지 바꾸기 · 차단한 사용자 — 같은 크기로 나란히 */}
+        <div className="lounge-profile-actions">
+          <Button variant="secondary" size="sm" onClick={openProfileSheet}>
+            프로필 이미지 바꾸기
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setBlockOpen(true)}>
+            차단한 사용자
+          </Button>
+        </div>
+        <BlockListSheet open={blockOpen} onClose={() => setBlockOpen(false)} />
       </>
     );
   } else if (needsProfile) {

@@ -221,3 +221,15 @@
   gap: var(--sp-3);
   margin-bottom: var(--sp-4);
 }
+
+/* 라운지 프로필 카드: 프로필 이미지 바꾸기 · 차단한 사용자 — 같은 크기로 나란히 */
+.lounge-profile-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+.lounge-profile-actions > .btn {
+  width: 100%;
+  padding-left: var(--sp-2);
+  padding-right: var(--sp-2);
+}

@@ -72,21 +72,27 @@ export default function FriendsSection() {
   const outgoing = view?.outgoing ?? [];
 
   return (
-    <section className="section lounge-friends" aria-labelledby="lounge-friends-title">
-      <div className="section__head">
-        <h2 className="section__title" id="lounge-friends-title">
-          친구{friends.length > 0 && <span className="lounge-friends__count tabular"> {friends.length}</span>}
-        </h2>
-        <button type="button" className="btn btn--text btn--sm lounge-friends__add" onClick={() => setAddOpen(true)}>
+    <section className="lounge-friends" aria-labelledby="lounge-friends-title">
+      <div className="lounge-friends__head">
+        <span className="lounge-friends__icon" aria-hidden="true">
+          <Icon name="users" />
+        </span>
+        <div className="lounge-friends__heading">
+          <h2 className="lounge-friends__title" id="lounge-friends-title">
+            친구{friends.length > 0 && <span className="lounge-friends__count tabular">{friends.length}</span>}
+          </h2>
+          <p className="lounge-friends__lead">친구와는 밥약에서 친구끼리만 모일 수 있어요.</p>
+        </div>
+        <Button variant="secondary" size="sm" className="lounge-friends__add" onClick={() => setAddOpen(true)}>
           <Icon name="user-plus" className="btn__icon" />
           친구 추가
-        </button>
+        </Button>
       </div>
 
       {incoming.length > 0 && (
-        <div className="lounge-friends__group">
+        <div className="lounge-friends__group lounge-friends__group--incoming">
           <h3 className="lounge-friends__label">받은 요청 {incoming.length}</h3>
-          <ul className="card card--list">
+          <ul className="lounge-friends__list">
             {incoming.map((u) => (
               <li key={u.id} className="lounge-friend-row">
                 <Avatar user={u} size="md" />
@@ -118,11 +124,9 @@ export default function FriendsSection() {
           </button>
         </p>
       ) : friends.length === 0 ? (
-        <div className="card lounge-friends__empty">
-          <p className="text-sub text-sm">아직 친구가 없어요. 친구의 아이디로 친구를 추가하면 밥약에서 친구끼리만 찾을 수 있어요.</p>
-        </div>
+        <p className="lounge-friends__empty">아직 친구가 없어요. 친구 추가를 눌러 친구의 아이디로 요청을 보내 보세요.</p>
       ) : (
-        <ul className="card card--list" aria-label="친구 목록">
+        <ul className="lounge-friends__list" aria-label="친구 목록">
           {friends.map((u) => (
             <li key={u.id} className="lounge-friend-row">
               <Avatar user={u} size="md" />
@@ -147,7 +151,7 @@ export default function FriendsSection() {
       {outgoing.length > 0 && (
         <div className="lounge-friends__group">
           <h3 className="lounge-friends__label">보낸 요청 {outgoing.length}</h3>
-          <ul className="card card--list">
+          <ul className="lounge-friends__list">
             {outgoing.map((u) => (
               <li key={u.id} className="lounge-friend-row">
                 <Avatar user={u} size="md" />

@@ -1,44 +1,88 @@
-/* 라운지 친구 구역 · 친구 추가 시트 (접두사 lounge-friend) */
+/* 라운지 친구 구역 · 친구 추가 시트 (접두사 lounge-friend)
+   밥약·미팅 큰 버튼 바로 아래의 테두리 있는 판 — 큰 버튼보다는 작지만 라운지의 주요 기능으로 보이게 */
 .lounge-friends {
-  margin-top: var(--sp-8);
+  margin-top: var(--sp-4);
+  padding: var(--sp-6);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r);
+  background: var(--c-bg);
 }
-.lounge-friends .section__head {
+.lounge-friends__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--sp-4);
+}
+.lounge-friends__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 4.4rem;
+  height: 4.4rem;
+  border-radius: 50%;
+  background: var(--c-action-bg);
+  color: var(--c-action-text);
+}
+.lounge-friends__icon svg {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+.lounge-friends__heading {
+  flex: 1;
+  min-width: 0;
+}
+.lounge-friends__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
 }
 .lounge-friends__count {
+  margin-left: var(--sp-2);
   color: var(--c-action-text);
+}
+.lounge-friends__lead {
+  margin: var(--sp-1) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
 }
 .lounge-friends__add {
-  color: var(--c-action-text);
+  flex: none;
 }
-.lounge-friends__group {
-  margin-bottom: var(--sp-5);
-}
-.lounge-friends__group:last-of-type {
-  margin-bottom: 0;
-}
-.lounge-friends__group + .card,
-.lounge-friends__group + p,
-.card + .lounge-friends__group {
+.lounge-friends__head + * {
   margin-top: var(--sp-5);
 }
+.lounge-friends__group {
+  margin-top: var(--sp-5);
+}
+.lounge-friends__group--incoming {
+  padding: var(--sp-4) var(--sp-5) var(--sp-2);
+  border-radius: var(--r);
+  background: var(--c-action-bg);
+}
 .lounge-friends__label {
-  margin: 0 0 var(--sp-2);
+  margin: 0 0 var(--sp-1);
   font-size: var(--fs-sm);
   font-weight: var(--fw-bold);
   color: var(--c-text-sub);
 }
+.lounge-friends__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 .lounge-friends__empty {
+  margin: var(--sp-5) 0 0;
   padding: var(--sp-5);
+  border-radius: var(--r);
+  background: var(--c-panel);
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
 }
 
 .lounge-friend-row {
   display: flex;
   align-items: center;
   gap: var(--sp-4);
-  padding: var(--sp-4) 0;
+  padding: var(--sp-3) 0;
 }
 .lounge-friend-row + .lounge-friend-row {
   border-top: 1px solid var(--c-divider);
@@ -78,8 +122,4 @@
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
-}
-.lounge-friend-myid + .field,
-.lounge-friend-myid ~ button[type='submit'] {
-  margin-top: 0;
 }

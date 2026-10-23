@@ -15,7 +15,7 @@ import './hub.css';
 
 /**
  * 라운지 첫 화면 (/lounge): 큰 버튼 두 개 — 위는 밥약(가까운 학우와 바로 연결), 아래는 미팅(자리에 앉아 참여).
- * 그 아래 내 약속, 친구(추가·요청·목록).
+ * 그 아래 친구(추가·요청·목록), 내 약속.
  * 프로필이 없으면 프로필 만들기를 안내한다(게이트).
  */
 export default function LoungePage() {
@@ -122,6 +122,9 @@ function LoungeHome({ profile }: { profile: Profile }) {
         </Link>
       </div>
 
+      {/* 친구: 밥약·미팅 바로 아래. 추가·요청 수락·삭제는 모두 여기서 하고, 밥약의 "친구끼리만"에 쓰인다 */}
+      <FriendsSection />
+
       {mine.length > 0 && (
         <section className="section lounge-hub-mine" aria-labelledby="lounge-mine-title">
           <div className="section__head">
@@ -138,9 +141,6 @@ function LoungeHome({ profile }: { profile: Profile }) {
           </ul>
         </section>
       )}
-
-      {/* 친구: 추가·요청 수락·삭제는 모두 여기서. 밥약의 "친구끼리만"에 쓰인다 */}
-      <FriendsSection />
 
       <TableSheet
         open={tableOpen}
