@@ -214,7 +214,7 @@ hr {
 
 /* 로고 머리글(홈 등)은 흰 띠가 로고 높이까지만 남게 낮춘다 — 스크롤할 때 아래 카드를 덜 가린다 */
 .app-header:not(.app-header--back):not(.app-header--bare) {
-  min-height: calc(5.2rem + var(--safe-top));
+  min-height: calc(5.8rem + var(--safe-top));
 }
 
 .app-header__avatar {
