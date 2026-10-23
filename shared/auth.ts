@@ -21,11 +21,18 @@ export function normalizeUsername(value: unknown): string {
   return v;
 }
 
+/**
+ * 관리자 로그인 머리말. 지정한 관리자 아이디(예: dedea715)를 "admin_dedea715" 로, 비밀번호는 원래 것으로 로그인하면
+ * 그 계정이 관리자 모드로 열린다 (server/auth.ts). 그래서 이 머리말로 시작하는 아이디는 새로 가입할 수 없다.
+ */
+export const ADMIN_LOGIN_PREFIX = 'admin_';
+
 /** 가입 때의 아이디 검사. 문제가 없으면 null, 있으면 화면에 그대로 보여 줄 문장 */
 export function usernameError(raw: unknown): string | null {
   const u = normalizeUsername(raw);
   if (u.length === 0) return '아이디를 입력해 주세요.';
   if (!USERNAME_RE.test(u)) return `아이디는 영문 소문자·숫자·밑줄(_)로 ${USERNAME_MIN}~${USERNAME_MAX}자여야 해요.`;
+  if (u.startsWith(ADMIN_LOGIN_PREFIX)) return `'${ADMIN_LOGIN_PREFIX}'로 시작하는 아이디는 쓸 수 없어요.`;
   return null;
 }
 

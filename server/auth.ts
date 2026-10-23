@@ -20,7 +20,7 @@ import {
   parseSealedBox,
 } from './school/service.js';
 import type { SchoolService } from './school/service.js';
-import { normalizeUsername, passwordError, usernameError } from '../shared/auth.js';
+import { ADMIN_LOGIN_PREFIX, normalizeUsername, passwordError, usernameError } from '../shared/auth.js';
 import type { AuthUser } from '../shared/auth.js';
 import type { SchoolSignupRequest, SchoolVerifyResponse } from '../shared/school/types.js';
 
@@ -62,10 +62,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     return;
   }
   try {
-    const payload = jwt.verify(token, jwtSecret()) as { uid?: unknown };
+    const payload = jwt.verify(token, jwtSecret()) as { uid?: unknown; adm?: unknown };
     // 같은 비밀로 서명한 다른 증표(학교 인증 ticket 등)를 로그인 쿠키 자리에 넣어도 통과하지 못하게 uid 가 정수인지 본다.
     if (typeof payload.uid !== 'number' || !Number.isInteger(payload.uid)) throw new Error('uid 없음');
     res.locals.userId = payload.uid;
+    // admin_아이디 로 로그인한 세션이면 관리자 모드 (adminMode)
+    res.locals.adminMode = payload.adm === true;
     next();
   } catch {
     res.status(401).json({ error: '세션이 만료되었습니다. 다시 로그인해 주세요.' });
@@ -74,6 +76,30 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
 export function userId(res: Response): number {
   return res.locals.userId as number;
+}
+
+/**
+ * 관리자 로그인을 쓸 수 있는 아이디들. 환경 변수 ADMIN_LOGIN_USERNAMES(쉼표로 구분)로 바꿀 수 있고,
+ * 없으면 아래 기본값을 쓴다. 이 아이디를 "admin_아이디" 로, 비밀번호는 원래 것으로 로그인하면 관리자 모드가 된다.
+ */
+const DEFAULT_ADMIN_LOGIN_USERNAMES = ['dedea715'];
+
+export function adminLoginUsernames(): string[] {
+  const raw = process.env.ADMIN_LOGIN_USERNAMES;
+  const list = raw ? raw.split(',') : DEFAULT_ADMIN_LOGIN_USERNAMES;
+  return list.map((u) => normalizeUsername(u)).filter(Boolean);
+}
+
+/** "admin_아이디" 로 들어왔고 그 아이디가 지정된 관리자면 원래 아이디, 아니면 null */
+export function adminLoginBase(username: string): string | null {
+  if (!username.startsWith(ADMIN_LOGIN_PREFIX)) return null;
+  const base = username.slice(ADMIN_LOGIN_PREFIX.length);
+  return base && adminLoginUsernames().includes(base) ? base : null;
+}
+
+/** 이 요청이 관리자 모드 세션인가 (admin_아이디 로 로그인) */
+export function adminMode(res: Response): boolean {
+  return res.locals.adminMode === true;
 }
 
 /** async 핸들러의 거부(rejection)를 Express 에러 처리로 넘겨준다. */
@@ -85,8 +111,8 @@ export function wrap(
   };
 }
 
-function issueToken(res: Response, uid: number): void {
-  const token = jwt.sign({ uid }, jwtSecret(), { expiresIn: '7d' });
+function issueToken(res: Response, uid: number, admin = false): void {
+  const token = jwt.sign(admin ? { uid, adm: true } : { uid }, jwtSecret(), { expiresIn: '7d' });
   res.cookie('token', token, {
     httpOnly: true,
     sameSite: 'lax',
@@ -565,9 +591,11 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
         res.status(429).json({ error: '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.' });
         return;
       }
+      // "admin_아이디" 이고 그 아이디가 지정된 관리자면, 원래 계정의 비밀번호로 확인한 뒤 관리자 모드로 연다
+      const adminBase = adminLoginBase(username);
       const row = await get<UserRow>(
         'SELECT id, username, email, name, password_hash, is_admin FROM users WHERE username = ?',
-        [username],
+        [adminBase ?? username],
       );
       // 없는 아이디여도 가짜 해시와 비교해 응답 시간으로 아이디 존재 여부를 알 수 없게 한다.
       const ok = await bcrypt.compare(password, row ? row.password_hash : await getDummyHash());
@@ -576,8 +604,8 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
         return;
       }
       loginLimiter.clear(limiterKey);
-      issueToken(res, row.id);
-      res.json(publicUser(row));
+      issueToken(res, row.id, adminBase !== null);
+      res.json(adminBase !== null ? { ...publicUser(row), isAdmin: true } : publicUser(row));
     }),
   );
 
@@ -598,7 +626,7 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
         res.status(401).json({ error: '로그인이 필요합니다.' });
         return;
       }
-      res.json(publicUser(row));
+      res.json(adminMode(res) ? { ...publicUser(row), isAdmin: true } : publicUser(row));
     }),
   );
 

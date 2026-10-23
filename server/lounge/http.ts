@@ -46,7 +46,8 @@ export const withUser: RequestHandler = (req: Request, res: Response, next: Next
         res.status(401).json({ error: '세션이 만료되었습니다. 다시 로그인해 주세요.', code: 'FORBIDDEN' });
         return;
       }
-      res.locals.loungeUser = u;
+      // admin_아이디 로 로그인한 세션은 관리자로 본다 (server/auth.ts 의 adminMode)
+      res.locals.loungeUser = res.locals.adminMode === true ? { ...u, isAdmin: true } : u;
       next();
     })
     .catch(next);

@@ -280,3 +280,42 @@ describe('접속자 읽기의 쿼리 수 (계약 §2)', () => {
     expect(counted.sql.some((s) => /FROM users WHERE id = \?/.test(s))).toBe(true);
   });
 });
+
+describe('관리자 로그인: admin_아이디 + 원래 비밀번호', () => {
+  async function addLoginUser(username: string, password: string): Promise<number> {
+    const bcrypt = (await import('bcryptjs')).default;
+    return insert(
+      `INSERT INTO users (email, username, name, password_hash) VALUES (NULL, ?, '관리자후보', ?) RETURNING id`,
+      [username, bcrypt.hashSync(password, 4)],
+    );
+  }
+  const login = (username: string, password: string) =>
+    fetch(`${base}/api/auth/login`, {
+      method: 'POST',
+      headers: JSON_TYPE,
+      body: JSON.stringify({ username, password }),
+    }).then(async (r) => ({ status: r.status, json: (await r.json()) as Record<string, unknown>, cookie: (r.headers.get('set-cookie') ?? '').split(';')[0] }));
+
+  it('지정한 아이디(dedea715)를 admin_dedea715 로 로그인하면 관리자 모드, 그냥 로그인하면 일반', async () => {
+    await addLoginUser('dedea715', 'Pw-1234!');
+    const normal = await login('dedea715', 'Pw-1234!');
+    expect(normal.status).toBe(200);
+    expect(normal.json.isAdmin).toBe(false);
+    expect((await call('GET', '/api/lounge/admin/stats', { cookie: normal.cookie })).status).toBe(403);
+
+    const admin = await login('admin_dedea715', 'Pw-1234!');
+    expect(admin.status).toBe(200);
+    expect(admin.json).toMatchObject({ username: 'dedea715', isAdmin: true });
+    expect((await call('GET', '/api/auth/me', { cookie: admin.cookie })).json?.isAdmin).toBe(true);
+    expect((await call('GET', '/api/lounge/admin/stats', { cookie: admin.cookie })).status).toBe(200);
+
+    expect((await login('admin_dedea715', 'wrong-pw')).status).toBe(401);
+  });
+
+  it('지정하지 않은 아이디는 admin_ 로 들어올 수 없고, admin_ 으로 시작하는 아이디는 가입할 수 없다', async () => {
+    await addLoginUser('plainuser1', 'Pw-1234!');
+    expect((await login('admin_plainuser1', 'Pw-1234!')).status).toBe(401);
+    const { usernameError } = await import('../shared/auth.js');
+    expect(usernameError('admin_newbie')).toContain('쓸 수 없어요');
+  });
+});
