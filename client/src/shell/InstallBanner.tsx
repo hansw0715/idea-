@@ -103,8 +103,9 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
 
   async function install() {
     if (!deferred) {
-      // 크롬이 설치 창을 아직 줄 수 없으면(방금 지운 앱·닫은 설치 창 등) 메뉴로 설치하는 방법을 펼친다
-      setShowHelp(true);
+      // 크롬이 설치 창을 아직 줄 수 없으면(방금 지운 앱·닫은 설치 창 등) 메뉴로 설치하는 방법을 펼친다.
+      // 설치 사이트(big)에서는 설명 문구를 띄우지 않는다
+      if (!big) setShowHelp(true);
       return;
     }
     if (big) setPressed(true);
