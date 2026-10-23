@@ -136,7 +136,7 @@ export default function TimetablePage() {
   const fresh = loadedWeek === weekStart;
 
   // 시간표는 기본으로 17:00 까지만 그리고, 더 늦은 일정이 있으면 그 시각(정각으로 올림)까지, 최대 24:00 까지 늘린다.
-  // 일정이 없는 저녁 시간에 일정을 넣으려면 아래 "이후 보기"로 펼친다.
+  // 일정이 없는 저녁 시간에 일정을 넣으려면 아래 "펼치기"로 펼친다.
   const [showEvening, setShowEvening] = useState(false);
   const gridEntries = useMemo<GridEntry[]>(() => {
     const classes: GridEntry[] = entries
@@ -403,9 +403,10 @@ export default function TimetablePage() {
                       type="button"
                       className="tag tag--sm"
                       aria-pressed={showEvening}
+                      aria-label={showEvening ? `${fmtMin(naturalClose)} 이후 시간 접기` : `${fmtMin(naturalClose)} 이후 시간 펼치기`}
                       onClick={() => setShowEvening((v) => !v)}
                     >
-                      {showEvening ? '접기' : `${fmtMin(naturalClose)} 이후 보기`}
+                      {showEvening ? '접기' : '펼치기'}
                     </button>
                   </div>
                 )}
