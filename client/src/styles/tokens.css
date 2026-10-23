@@ -96,6 +96,7 @@
   --c-panel-strong: #e6e9f0;
   --c-green-bg: #e5f3d6; /* 예약 블록·미수강 카드 연두색 */
   --c-green-bg-strong: #d6ebc2;
+  --c-green-text: var(--success-70); /* 연두색 상자 위 링크 글자 */
   --r-panel: 1.2rem;
   --c-text: var(--gray-90);
   --c-text-sub: var(--gray-70);
@@ -291,6 +292,7 @@
   --c-panel-strong: #2a2e33;
   --c-green-bg: #24361c;
   --c-green-bg-strong: #2f4625;
+  --c-green-text: #a8dc8f;
   --c-action-text: var(--primary-30);
 }
 :root[data-theme='dark'],
