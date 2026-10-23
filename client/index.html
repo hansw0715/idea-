@@ -15,18 +15,19 @@
     <title>상상Book-E</title>
     <script>
       // 카카오톡 등 앱 안 브라우저에서는 홈 화면에 추가할 수 없어, 들어오자마자 바깥 브라우저로 다시 연다.
-      // 안드로이드는 크롬 대신 삼성 인터넷으로 연다 (크롬은 자동 다크 모드가 사이트 색을 바꾼다). 없으면 기본 브라우저로.
+      // 안드로이드는 크롬으로 연다: 크롬은 color-scheme: only light 를 지켜 강제 다크 모드를 걸지 않지만,
+      // 삼성 인터넷의 "웹 콘텐츠 강제 다크 모드"는 사이트가 막을 방법이 없다. 크롬이 없으면 기본 브라우저로.
       (function () {
         var ua = navigator.userAgent || '';
         var url = location.href;
         var android = /android/i.test(ua);
         var inApp = /KAKAOTALK|Line\/|NAVER|Instagram|FBAN|FBAV|everytimeApp|DaumApps|wv\)/i.test(ua);
-        // 삼성 인터넷이 없어 되돌아온 경우(stay=1)에는 다시 넘기지 않는다 (무한 반복 방지)
+        // 크롬이 없어 되돌아온 경우(stay=1)에는 다시 넘기지 않는다 (무한 반복 방지)
         if (!inApp || /[?&]stay=1/.test(url)) return;
         if (android) {
           location.href =
             'intent://' + url.replace(/^https?:\/\//, '') +
-            '#Intent;scheme=https;package=com.sec.android.app.sbrowser;S.browser_fallback_url=' +
+            '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' +
             encodeURIComponent(
               /KAKAOTALK/i.test(ua)
                 ? 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url)
