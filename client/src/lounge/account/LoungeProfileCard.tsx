@@ -68,24 +68,21 @@ export default function LoungeProfileCard() {
         </div>
 
         <div className="lounge-acct-gender">
-          {profile.genderFromSchool && profile.gender ? (
+          {/* 성별은 가입 때 정하면 바꿀 수 없어 글자로만 보여 준다. 성별이 없는 옛 계정만 한 번 고른다 */}
+          {profile.gender ? (
             <p className="lounge-acct-help">
-              성별: <strong>{GENDER_LABEL[profile.gender]}</strong> (학교 계정에서 가져왔어요)
+              성별: <strong>{GENDER_LABEL[profile.gender]}</strong>
             </p>
           ) : (
             <Segmented
               label="성별"
-              value={profile.gender ?? ('' as Gender)}
+              value={'' as Gender}
               onChange={(g) => void saveGender(g)}
               options={[
                 { value: 'male', label: '남' },
                 { value: 'female', label: '여' },
               ]}
-              help={
-                profile.gender
-                  ? '미팅에서는 남자는 위, 여자는 아래 자리에 앉아요.'
-                  : '미팅에 참여하려면 성별을 골라 주세요. 남자는 위, 여자는 아래 자리에 앉아요.'
-              }
+              help="미팅에 참여하려면 성별을 골라 주세요. 한 번 고르면 바꿀 수 없어요."
             />
           )}
           {genderError && (

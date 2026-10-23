@@ -105,6 +105,19 @@ describe('프로필 고치기 (PUT /me) — 아바타 색만', () => {
     expect((await findUser(u.id))!.profileDone).toBe(false);
   });
 
+  it('성별이 없는 계정은 한 번 고를 수 있고, 한 번 정한 성별은 바꿀 수 없다', async () => {
+    const u = await addUser({ profile: false });
+    await linkSchool(u.id, '컴퓨터공학부', 2022);
+    const first = await updateProfile(u.id, { avatarColor: 'm1', gender: 'female' });
+    expect(first.ok && first.value.gender).toBe('female');
+    const change = await updateProfile(u.id, { avatarColor: 'm1', gender: 'male' });
+    expect(change.ok).toBe(false);
+    if (!change.ok) expect(change.error.message).toBe('성별은 한 번 정하면 바꿀 수 없어요.');
+    expect((await findUser(u.id))!.gender).toBe('female');
+    // 같은 값을 다시 보내는 것은 괜찮다
+    expect((await updateProfile(u.id, { avatarColor: 'm2', gender: 'female' })).ok).toBe(true);
+  });
+
   it('연동이 있으면 색이 바뀌고 평판·계정 정보는 그대로다 (프로필이 없던 옛 계정은 함께 만들어진다)', async () => {
     const u = await addUser({ profile: false, temperature: 31.2, warnings: 1, banned: true });
     await linkSchool(u.id, '컴퓨터공학부', 2022);

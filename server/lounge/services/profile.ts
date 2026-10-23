@@ -30,7 +30,7 @@ const LOCKED_FIELDS = ['nickname', 'college', 'department', 'admissionYear'] as 
 export const PROFILE_LOCKED_MESSAGE = '이름·학과·학번은 학교 계정 정보로 자동으로 정해져요.';
 export const PROFILE_NEEDS_SCHOOL_MESSAGE = '학교 계정을 연동하면 라운지를 쓸 수 있어요.';
 
-export const GENDER_LOCKED_MESSAGE = '성별은 학교 계정 정보로 정해져서 바꿀 수 없어요.';
+export const GENDER_LOCKED_MESSAGE = '성별은 한 번 정하면 바꿀 수 없어요.';
 
 /** `PUT /me` 본문 검증: 표정(avatar)·색(avatarColor), 그리고 학교에서 못 읽었을 때의 성별(gender)만 받는다. */
 export function validateProfileUpdate(
@@ -83,9 +83,10 @@ export async function updateProfile(userId: string, raw: unknown): Promise<Resul
     if (!existing.profileDone) return fail('INVALID', PROFILE_NEEDS_SCHOOL_MESSAGE);
   }
   if (valid.value.gender) {
-    // 학교 계정에서 읽은 성별이 있으면 그대로 둔다 (거짓 성별로 미팅 자리를 고르지 못하게)
+    // 성별은 한 번 정하면(가입 때 고른 값·학교 계정 값) 바꿀 수 없다 — 미팅 자리를 골라 앉으려고 성별을 바꾸지 못하게.
+    // 성별이 아직 없는 옛 계정만 한 번 고를 수 있다.
     const current = await findUser(uid);
-    if (current?.genderFromSchool && current.gender !== valid.value.gender) return fail('INVALID', GENDER_LOCKED_MESSAGE);
+    if (current?.gender && current.gender !== valid.value.gender) return fail('INVALID', GENDER_LOCKED_MESSAGE);
   }
   await run('UPDATE users SET avatar_color = ?, avatar = COALESCE(?, avatar), gender = COALESCE(?, gender) WHERE id = ?', [
     valid.value.avatarColor,
