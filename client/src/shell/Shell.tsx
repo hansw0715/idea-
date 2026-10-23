@@ -149,11 +149,13 @@ interface AppHeaderProps {
   onBack?: () => void;
   /** 설정 버튼 왼쪽에 붙는 추가 행동 */
   actions?: ReactNode;
+  /** 서비스 이름 바로 아래 작은 줄 (홈의 오늘 날짜) */
+  subtitle?: ReactNode;
   /** 서비스 이름·구분선 없이 설정 버튼만 (화면이 로고를 크게 보여 줄 때) */
   bare?: boolean;
 }
 
-export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppHeaderProps) {
+export function AppHeader({ title, backTo, onBack, actions, subtitle, bare = false }: AppHeaderProps) {
   const { user } = useAuth();
   // 라운지 프로필이 있으면 고른 캐릭터를, 없으면 이름 첫 글자를 보여 준다
   const loungeProfile = useLoungeOptional()?.profile ?? null;
@@ -186,7 +188,10 @@ export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppH
         <>
           <Link to="/" className="app-header__brand" aria-label="상상Book-E 홈">
             <img className="app-header__mark" src="/brand/mark.png" alt="" width="32" height="32" />
-            <span>상상Book-E</span>
+            <span className="app-header__name">
+              <span>상상Book-E</span>
+              {subtitle && <span className="app-header__date">{subtitle}</span>}
+            </span>
           </Link>
           <span className="app-header__spacer" />
         </>

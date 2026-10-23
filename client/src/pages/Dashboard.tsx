@@ -65,7 +65,7 @@ export default function Dashboard() {
   return (
     <>
       {/* 오늘 날짜는 헤더 오른쪽, 글자 설정(AA) 왼쪽에 작게 */}
-      <AppHeader actions={<span className="app-header__date">{TODAY_LABEL()}</span>} />
+      <AppHeader subtitle={TODAY_LABEL()} />
       <main id="main" className="app-main home-page">
         {/* 학교 이름 + 오늘 날짜 */}
         {/* 화면 제목은 화면 읽기용으로만 둔다 (라우트 이동 때 포커스가 h1 로 간다) */}
