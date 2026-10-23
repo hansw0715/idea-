@@ -23,5 +23,15 @@
       "purpose": "any"
     }
   ],
-  "theme_color": "#16181b"
+  "theme_color": "#16181b",
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "/manifest.webmanifest"
+    },
+    {
+      "platform": "webapp",
+      "url": "/manifest-dark.webmanifest"
+    }
+  ]
 }

@@ -14,9 +14,40 @@ type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{
 
 /** 첫 화면이 그려지기 전에 온 설치 이벤트도 놓치지 않게 모듈이 읽힐 때부터 받아 둔다 */
 let deferred: InstallEvent | null = null;
-/** 홈 화면에 앱이 다 깔렸는지 — 브라우저의 appinstalled 알림으로 안다 (설치 사이트 버튼에 "완료"를 띄운다) */
+/**
+ * 크롬이 "설치함"을 알린 뒤(appinstalled) 실제로 홈 화면에 다 깔렸는지.
+ * appinstalled 는 설치를 시작할 때 오므로(아직 "설치 중"), 브라우저에 이 앱이 깔려 있는지 직접 물어 확인한다.
+ */
 let installed = false;
+let installStarted = false;
 const listeners = new Set<() => void>();
+
+type RelatedApp = { platform: string; url?: string };
+const relatedApps = (navigator as Navigator & { getInstalledRelatedApps?: () => Promise<RelatedApp[]> })
+  .getInstalledRelatedApps;
+
+/** 앱이 정말 깔렸는지 1초마다 확인하다가 깔리면 "완료". 확인할 수 없는 브라우저는 appinstalled 를 그대로 믿는다 */
+function watchInstalled() {
+  if (installStarted) return;
+  installStarted = true;
+  if (!relatedApps) {
+    installed = true;
+    listeners.forEach((fn) => fn());
+    return;
+  }
+  const check = () => {
+    relatedApps
+      .call(navigator)
+      .then((apps) => {
+        if (apps.some((a) => a.platform === 'webapp')) {
+          installed = true;
+          listeners.forEach((fn) => fn());
+        } else window.setTimeout(check, 1000);
+      })
+      .catch(() => window.setTimeout(check, 1000));
+  };
+  check();
+}
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -25,8 +56,7 @@ if (typeof window !== 'undefined') {
   });
   window.addEventListener('appinstalled', () => {
     deferred = null;
-    installed = true;
-    listeners.forEach((fn) => fn());
+    watchInstalled();
   });
 }
 
@@ -46,19 +76,7 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
   const [showHelp, setShowHelp] = useState(false);
   /** 설치 사이트: 버튼을 누른 뒤에는 버튼 안에 로딩을 띄우고, 차단 화면 넘기는 방법을 아래에 작게 적는다 */
   const [pressed, setPressed] = useState(false);
-  /**
-   * 설치 창에서 "설치"를 누른 뒤에는 실제로 다 깔릴 때(appinstalled)까지 로딩을 돌리고, 그때 "완료"를 띄운다.
-   * 브라우저가 알림을 주지 않는 경우에 대비해 1분이 지나면 완료로 본다.
-   */
-  const [accepted, setAccepted] = useState(false);
-  useEffect(() => {
-    if (!accepted || installed) return;
-    const t = window.setTimeout(() => {
-      installed = true;
-      rerender((n) => n + 1);
-    }, 60_000);
-    return () => window.clearTimeout(t);
-  }, [accepted]);
+  // 설치 창에서 "설치"를 누른 뒤에는 실제로 홈 화면에 다 깔릴 때까지 로딩을 돌리고, 그때 "완료"를 띄운다
   const done = installed;
 
   useEffect(() => {
@@ -95,7 +113,7 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
     deferred = null;
     if (choice.outcome === 'accepted') {
       if (!big) setHidden(true);
-      else setAccepted(true);
+      else watchInstalled();
     } else {
       setPressed(false);
       rerender((n) => n + 1);
