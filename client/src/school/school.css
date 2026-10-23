@@ -463,3 +463,12 @@
   padding-top: var(--sp-4);
   border-top: 1px solid var(--c-divider);
 }
+
+/* 시간표·회의 제목 오른쪽의 작은 학교 바로가기 글자 버튼 (거슬리지 않게 보조 글자색) */
+.school-inline-action {
+  flex: none;
+  color: var(--c-text-sub);
+}
+.school-inline-action:hover {
+  color: var(--c-action-text);
+}

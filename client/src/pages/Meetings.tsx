@@ -7,6 +7,7 @@ import { useAuth } from '../auth';
 import { Alert, Button, EmptyState, Icon, LoadingBlock, Sheet, TextField, useToast } from '../ui';
 import type { Meeting } from '../types';
 import './meetings.css';
+import SchoolReservationsAction from '../school/SchoolReservationsAction';
 
 type SheetKind = 'create' | 'join';
 
@@ -189,9 +190,13 @@ export default function Meetings() {
     <>
       <AppHeader />
       <main id="main" className="app-main">
-        <div className="page-head">
-          <h1 className="page-title">회의</h1>
-          <p className="page-lead">회의를 만들어 코드를 공유하거나, 받은 코드로 참가해 보세요.</p>
+        <div className="page-head meet-page__head">
+          <div className="grow">
+            <h1 className="page-title">회의</h1>
+            <p className="page-lead">회의를 만들어 코드를 공유하거나, 받은 코드로 참가해 보세요.</p>
+          </div>
+          {/* 제목 오른쪽의 작은 "학교 예약 보기" (학교 계정이 연동돼 있을 때만) */}
+          <SchoolReservationsAction />
         </div>
 
         <div className="meet-actions">

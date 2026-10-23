@@ -311,10 +311,9 @@ export default function TimetablePage() {
             <h1 className="page-title">내 시간표</h1>
             <p className="page-lead">시간표를 확인하고 일정을 추가합니다.</p>
           </div>
+          {/* 제목 오른쪽의 작은 "학교 시간표 가져오기" (연동돼 있을 때만). 가입 직후 ?school=import 로도 열린다 */}
+          <SchoolTimetableAction onImported={reload} />
         </div>
-
-        {/* 화면에 버튼은 없다. 내 정보·가입 직후 "지금 가져오기"(?school=import)로 열리는 가져오기 시트만 담고 있다. */}
-        <SchoolTimetableAction onImported={reload} />
 
         <Tabs
           label="시간표 화면"

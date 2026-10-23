@@ -297,15 +297,6 @@ export default function BookingFlow({
     applyRange(next);
   }
 
-  /** 여유 구간을 눌렀을 때: 구간의 처음부터 최대 3시간 */
-  function pickSlot(s: FreeSlot) {
-    applyRange({
-      day: s.day,
-      startMin: s.start,
-      endMin: Math.min(s.end, s.start + MAX_RESERVATION_MIN),
-    });
-  }
-
   function changeStart(value: number) {
     if (!range || !activeSlot) return;
     const duration = range.endMin - range.startMin;
@@ -409,7 +400,6 @@ export default function BookingFlow({
         : '';
   }
 
-  const dayRows = DAY_NAMES.map((_, day) => alignedSlots.filter((s) => s.day === day));
   const weekEnd = addDaysStr(week.weekStart, 4);
 
   return (
@@ -496,51 +486,7 @@ export default function BookingFlow({
               모든 팀원이 함께 비는 시간이 없습니다. 팀원 시간표를 확인해 보세요. 다른 주로 넘겨
               보거나, 참여하지 않는 팀원을 뺄 수도 있습니다.
             </Alert>
-          ) : (
-            <section aria-labelledby={`${hintId}-slots`}>
-              <h4 className="mtg-sub-title" id={`${hintId}-slots`}>
-                함께 비는 시간
-              </h4>
-              <div className="mtg-slots">
-                {DAY_NAMES.map((_, day) => (
-                  <div className="mtg-slots__day" key={day} role="group" aria-label={dayText(day)}>
-                    <span className="mtg-slots__label">{dayText(day)}</span>
-                    {dayRows[day].length === 0 ? (
-                      <span className="text-muted text-sm">함께 비는 시간이 없습니다.</span>
-                    ) : (
-                      <div className="tag-group">
-                        {dayRows[day].map((s) => {
-                          const chosen =
-                            range !== null &&
-                            range.day === s.day &&
-                            range.startMin >= s.start &&
-                            range.endMin <= s.end;
-                          return (
-                            <button
-                              key={s.start}
-                              type="button"
-                              className="tag mtg-slot"
-                              aria-pressed={chosen}
-                              aria-label={`${dayText(s.day)} ${fmtRange(s.start, s.end)}, ${fmtDuration(s.end - s.start)}`}
-                              onClick={() => pickSlot(s)}
-                            >
-                              {chosen && <Icon name="check" className="tag__check" />}
-                              <span className="tabular">{fmtRange(s.start, s.end)}</span>
-                              <span className="text-sm">({fmtDuration(s.end - s.start)})</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <p className="field__help mtg-slots__help">
-                구간을 누르면 처음 시각부터 최대 {MAX_RESERVATION_MIN / 60}시간이 선택됩니다. 아래에서
-                시작·종료 시각을 바꿀 수 있습니다.
-              </p>
-            </section>
-          )}
+          ) : null}
 
           {range && activeSlot && (
             <section aria-labelledby={`${hintId}-adjust`}>
@@ -577,7 +523,7 @@ export default function BookingFlow({
           {peopleCount > 0 && !slotsError && (
             <section aria-labelledby={`${hintId}-grid`}>
               <h4 className="mtg-sub-title" id={`${hintId}-grid`}>
-                시간표에서 직접 고르기
+                시간표에서 고르기
               </h4>
               <p className="field__help mtg-grid__help">
                 {alignedSlots.length > 0

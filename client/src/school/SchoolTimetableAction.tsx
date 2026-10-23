@@ -3,9 +3,11 @@ import { useSearchParams } from 'react-router-dom';
 import SchoolLinkSheet from './SchoolLinkSheet';
 import SchoolTimetableSheet from './SchoolTimetableSheet';
 import { useSchool } from './SchoolContext';
+import './school.css';
+import { Button, Icon } from '../ui';
 
 /**
- * 시간표 화면에 끼우는 "학교 시간표 가져오기" 시트 묶음. 화면에 보이는 버튼은 없다(시간표 탭에서는 뺐다).
+ * 시간표 화면 제목 오른쪽의 작은 "학교 시간표 가져오기" 글자 버튼과 그 시트 묶음. 학교 계정이 연동돼 있을 때만 버튼이 보인다.
  * 주소에 `?school=import` 가 있으면(내 정보·가입 직후 "지금 가져오기") 한 번 자동으로 시트를 연다.
  * 가져오기가 끝나면 onImported 로 시간표 목록을 새로고침하게 한다.
  */
@@ -31,6 +33,7 @@ export default function SchoolTimetableAction({ onImported }: { onImported: () =
   }, [wantsImport, school.loading, school.linked, school.canUse, setParams]);
 
   if (school.loading || !school.linked) return null;
+  const canImport = school.canUse;
 
   function relink() {
     setTimetableOpen(false);
@@ -39,6 +42,12 @@ export default function SchoolTimetableAction({ onImported }: { onImported: () =
 
   return (
     <>
+      {canImport && (
+        <Button variant="text" size="sm" className="school-inline-action" onClick={() => setTimetableOpen(true)}>
+          <Icon name="calendar" className="btn__icon" />
+          학교 시간표 가져오기
+        </Button>
+      )}
       <SchoolTimetableSheet
         open={timetableOpen}
         onClose={() => setTimetableOpen(false)}
