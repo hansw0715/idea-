@@ -177,9 +177,12 @@ export default function Account() {
 
         {/* 라운지 프로필 → 학교 계정 연동 (C4/C5). 학교 카드는 자기 안에서 제목·여백을 맡는다. */}
         {LOUNGE_ENABLED && <LoungeProfileCard />}
-        <div className="section lounge-acct-school">
-          <SchoolLinkCard />
-        </div>
+        {/* 학교 계정 카드는 연동이 필요할 때만 (연동 전·다시 연동). 연동이 끝났으면 보이지 않는다 */}
+        {!(school.linked && school.canUse) && (
+          <div className="section lounge-acct-school">
+            <SchoolLinkCard />
+          </div>
+        )}
 
         <section className="section account-tools" aria-label="설정">
           <button

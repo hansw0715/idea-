@@ -22,13 +22,12 @@
   --tt-class-bg: var(--c-panel-strong);
   --tt-class-bar: transparent;
   --tt-class-line: transparent;
-  /* 회의 예약: 흰 바탕 + 진한 윤곽선 + 초록 막대 + 빗금 + "예약" 글자 */
-  --tt-res-bg: var(--gray-0);
-  --tt-res-bar: var(--success-70);
-  --tt-res-line: var(--gray-100);
+  /* 회의 예약과 계획: 수업 블록과 같은 테두리 없는 박스, 색만 옅은 연두색 + "예약" 글자 */
+  --tt-res-bg: #e5f3d6;
+  --tt-res-bar: transparent;
+  --tt-res-line: transparent;
   --tt-res-text: var(--success-70);
-  --tt-res-hatch: var(--success-5);
-  --tt-res-hatch: color-mix(in srgb, var(--success-50) 20%, var(--c-bg));
+  --tt-res-hatch: #e5f3d6; /* 빗금 없음 (바탕과 같은 색) */
   /* 팀원 모두 비는 시간 */
   --tt-free-bg: var(--primary-10);
   /* 선택한 범위 */
@@ -314,7 +313,8 @@
     background: var(--primary-20);
   }
   .tt .tt-entry--res:hover {
-    background-color: var(--success-5);
+    background-color: #d6ebc2;
+    background-image: none;
   }
 }
 
@@ -565,19 +565,10 @@
   box-shadow: inset 0 0 0 1px var(--gray-100);
 }
 .tt-swatch--res {
-  border-left: 0.3rem solid var(--success-70);
-  --tt-res-hatch: var(--success-5);
-  --tt-res-hatch: color-mix(in srgb, var(--success-50) 20%, var(--c-bg));
-  border-left-color: var(--success-70);
-  box-shadow: inset 0 0 0 1px var(--gray-100);
-  background-color: var(--gray-0);
-  background-image: repeating-linear-gradient(
-    135deg,
-    var(--gray-0) 0,
-    var(--gray-0) 0.3rem,
-    var(--tt-res-hatch, var(--success-5)) 0.3rem,
-    var(--tt-res-hatch, var(--success-5)) 0.5rem
-  );
+  /* 회의 예약과 계획 견본: 격자의 연두색 박스와 같은 모양 */
+  border-left: 0;
+  box-shadow: none;
+  background: #e5f3d6;
 }
 .tt-swatch--free {
   border-left-width: 0;
