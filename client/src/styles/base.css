@@ -500,3 +500,46 @@ hr {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* ── 휴대폰: 홈 화면 추가(앱처럼 쓰기) 권유 띠 ─────────────────── */
+.install-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-5);
+  border-radius: 1.2rem;
+  background: var(--c-action-bg);
+}
+.install-banner__icon {
+  flex: none;
+  width: 3.6rem;
+  height: 3.6rem;
+}
+.install-banner__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  color: var(--c-text);
+}
+.install-banner__text strong:first-child {
+  display: block;
+  color: var(--c-action-text);
+}
+.install-banner__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--touch);
+  height: var(--touch);
+  border: 0;
+  background: none;
+  color: var(--c-text-sub);
+  cursor: pointer;
+}
+.install-banner__close svg {
+  width: 2rem;
+  height: 2rem;
+}

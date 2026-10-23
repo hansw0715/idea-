@@ -8,6 +8,7 @@ import { Alert, Button, Icon } from '../ui';
 import { LOUNGE_ENABLED } from '../features';
 import EclassHome from '../school/EclassHome';
 import EclassHomeCard from '../school/EclassHomeCard';
+import InstallBanner from '../shell/InstallBanner';
 import MyLoungeSection from '../lounge/home/MyLoungeSection';
 import { HomeTableRow } from './HomeTableRow';
 import HomeNotices from './HomeNotices';
@@ -70,6 +71,8 @@ export default function Dashboard() {
         {/* 학교 이름 + 오늘 날짜 */}
         {/* 화면 제목은 화면 읽기용으로만 둔다 (라우트 이동 때 포커스가 h1 로 간다) */}
         <h1 className="sr-only">홈</h1>
+        {/* 휴대폰 브라우저로 들어왔으면 홈 화면 추가(앱처럼 쓰기)를 권한다 */}
+        <InstallBanner />
 
         {error && !data ? (
           <Alert
