@@ -4,8 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#ffffff" />
-    <!-- 휴대폰 다크 모드(크롬의 강제 어둡게)가 사이트 색을 바꾸지 않게 밝은 화면만 쓴다고 알린다 -->
-    <meta name="color-scheme" content="only light" />
     <meta name="description" content="같이 밥 먹고, 같이 만나고, 같이 이용하는 한성 캠퍼스 연결 플랫폼 상상Book-E" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -14,8 +12,7 @@
     <title>상상Book-E</title>
     <script>
       // 카카오톡 등 앱 안 브라우저에서는 홈 화면에 추가할 수 없어, 들어오자마자 바깥 브라우저로 다시 연다.
-      // 안드로이드는 크롬으로 연다: 크롬은 color-scheme: only light 를 지켜 강제 다크 모드를 걸지 않지만,
-      // 삼성 인터넷의 "웹 콘텐츠 강제 다크 모드"는 사이트가 막을 방법이 없다. 크롬이 없으면 기본 브라우저로.
+      // 안드로이드는 크롬으로, 크롬이 없으면 기본 브라우저로 연다.
       (function () {
         var ua = navigator.userAgent || '';
         var url = location.href;

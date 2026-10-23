@@ -14,8 +14,6 @@
    ─────────────────────────────────────────────────────────────── */
 
 :root {
-  /* 휴대폰 다크 모드(크롬 자동 어둡게 등)가 색을 바꾸지 않게 밝은 화면만 쓴다고 알린다 */
-  color-scheme: only light;
   background: var(--c-bg-outer);
   /* 글자·화면 설정에서 바뀌는 값: 0.8 / 0.9 / 1 / 1.1 */
   --zoom: 0.8; /* 기본 크기 (예전 글자 크기 설정의 80%) */
@@ -255,10 +253,4 @@
     transition-duration: 0s !important;
     scroll-behavior: auto !important;
   }
-}
-
-/* 문서 전체(각 요소)에도 걸어 두어, 크롬이 요소 단위로 어둡게 바꾸는 것도 막는다 */
-body,
-body * {
-  color-scheme: only light;
 }
