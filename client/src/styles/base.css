@@ -541,3 +541,122 @@ hr {
   color: var(--c-text-sub);
   text-align: center;
 }
+
+/* ── 큰 화면(태블릿·PC, 768px 이상): 위쪽 가로 메뉴 + 넓은 틀 ───────────
+   작은 화면의 하단 탭바·로고 머리글 대신 위쪽 가로 메뉴(TopNav)를 쓰고, 틀을 1200px 까지 넓힌다. */
+.topnav {
+  display: none;
+}
+@media (min-width: 768px) {
+  body:has(.app-frame--app) {
+    background: var(--c-bg);
+  }
+  .topnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 35;
+    padding-top: var(--safe-top);
+    background: var(--c-bg);
+    border-bottom: 1px solid var(--c-border-soft);
+  }
+  .topnav__inner {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-6);
+    max-width: 1200px;
+    height: var(--topnav-h);
+    margin: 0 auto;
+    padding: 0 var(--sp-8);
+  }
+  .topnav__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-3);
+    font-size: var(--fs-h3);
+    font-weight: var(--fw-bold);
+    color: var(--c-text);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .topnav__mark {
+    width: 4.4rem;
+    height: 4.4rem;
+  }
+  .topnav__menu {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    gap: var(--sp-2);
+  }
+  .topnav__item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: var(--topnav-h);
+    padding: 0 var(--sp-5);
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-bold);
+    color: var(--c-text-sub);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .topnav__item:hover {
+    color: var(--c-text);
+  }
+  .topnav__item[aria-current='page'] {
+    color: var(--c-action-text);
+  }
+  /* 지금 화면: 메뉴 아래 굵은 밑줄 */
+  .topnav__item[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: var(--sp-5);
+    right: var(--sp-5);
+    bottom: 0;
+    height: 0.3rem;
+    border-radius: 0.3rem 0.3rem 0 0;
+    background: var(--c-action);
+  }
+
+  .app-frame--app {
+    max-width: 1200px;
+    border-left: 0;
+    border-right: 0;
+  }
+  .app-frame--app .tabbar,
+  .app-frame--app .app-header:not(.app-header--back) {
+    display: none;
+  }
+  /* 뒤로 가기 머리글(상세 화면)은 가로 메뉴 바로 아래에 붙고, 내용과 같은 폭으로 */
+  .app-frame--app .app-header--back {
+    top: calc(var(--topnav-h) + var(--safe-top));
+    width: 100%;
+    max-width: 96rem;
+    margin: 0 auto;
+    padding-top: 0;
+    min-height: var(--header-h);
+  }
+  .app-frame--app .app-main,
+  .app-frame--app.has-tabbar .app-main {
+    padding: var(--sp-8) var(--sp-8) var(--sp-10);
+  }
+  /* 홈 말고는 글이 너무 길게 늘어지지 않게 가운데 96rem 폭으로 */
+  .app-frame--app .app-main:not(.home-page) {
+    width: 100%;
+    max-width: 96rem;
+    margin: 0 auto;
+  }
+  body:has(.app-frame--app) .toast-region {
+    bottom: calc(var(--safe-bottom) + var(--sp-6));
+  }
+}
+@media (min-width: 768px) and (max-width: 899px) {
+  .topnav__item {
+    padding: 0 var(--sp-3);
+  }
+  .topnav__item[aria-current='page']::after {
+    left: var(--sp-3);
+    right: var(--sp-3);
+  }
+}

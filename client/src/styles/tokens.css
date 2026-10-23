@@ -185,6 +185,7 @@
   --frame-max: 480px; /* 모바일 프레임 폭. 이보다 넓은 화면에서도 가운데 정렬 */
   --header-h: 6.4rem; /* 상단 헤더 — 로고·프로필을 키워 56px → 64px */
   --tabbar-h: 5.6rem;
+  --topnav-h: 7.2rem; /* 큰 화면 위쪽 가로 메뉴 높이 */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 

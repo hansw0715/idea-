@@ -122,7 +122,46 @@ export function TabBar() {
   );
 }
 
-/** 로그인 후 화면의 공통 틀: 건너뛰기 링크 + 컬럼 프레임 + 하단 탭바 */
+/**
+ * 큰 화면(태블릿·PC, 768px 이상)의 위쪽 가로 메뉴: 로고 · 메뉴 · 프로필.
+ * 큰 화면에서는 하단 탭바와 화면마다의 로고 머리글 대신 이것이 보인다 (작은 화면에서는 숨는다).
+ */
+function TopNav() {
+  const { user } = useAuth();
+  const loungeProfile = useLoungeOptional()?.profile ?? null;
+  return (
+    <header className="topnav">
+      <div className="topnav__inner">
+        <Link to="/" className="topnav__brand" aria-label="상상Book-E 홈">
+          <img className="topnav__mark" src="/brand/mark.png" alt="" width="40" height="40" />
+          <span>상상Book-E</span>
+        </Link>
+        <nav className="topnav__menu" aria-label="주요 메뉴">
+          {TABS.map((t) => (
+            <NavLink key={t.to} to={t.to} end={t.end} className="topnav__item">
+              {t.label}
+            </NavLink>
+          ))}
+        </nav>
+        {user && (
+          <Link
+            to="/account"
+            className={`app-header__avatar${loungeProfile ? ' app-header__avatar--lounge' : ''}`}
+            aria-label={`내 정보 (${loungeProfile?.nickname ?? user.name})`}
+          >
+            {loungeProfile ? (
+              <Avatar user={loungeProfile} size="md" />
+            ) : (
+              <span aria-hidden="true">{user.name.trim().charAt(0) || '나'}</span>
+            )}
+          </Link>
+        )}
+      </div>
+    </header>
+  );
+}
+
+/** 로그인 후 화면의 공통 틀: 건너뛰기 링크 + 컬럼 프레임 + 하단 탭바 (큰 화면에서는 위쪽 가로 메뉴) */
 export function AppFrame({ children, tabs = true }: { children: ReactNode; tabs?: boolean }) {
   const [hidden, setHidden] = useState(false);
   const showTabs = tabs && !hidden;
@@ -132,7 +171,8 @@ export function AppFrame({ children, tabs = true }: { children: ReactNode; tabs?
         본문 바로가기
       </a>
       <ScrollToTop />
-      <div className={`app-frame${showTabs ? ' has-tabbar' : ''}`}>
+      {tabs && <TopNav />}
+      <div className={`app-frame${tabs ? ' app-frame--app' : ''}${showTabs ? ' has-tabbar' : ''}`}>
         {children}
         {showTabs && <TabBar />}
       </div>
