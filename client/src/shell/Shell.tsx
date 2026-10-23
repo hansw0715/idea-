@@ -3,7 +3,6 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Icon } from '../ui';
 import type { IconName } from '../ui';
-import { useDisplay } from '../ui/Display';
 import { LOUNGE_ENABLED } from '../features';
 import { useAuth } from '../auth';
 import { useLoungeOptional } from '../lounge/LoungeContext';
@@ -155,7 +154,6 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppHeaderProps) {
-  const { openSettings } = useDisplay();
   const { user } = useAuth();
   // 라운지 프로필이 있으면 고른 캐릭터를, 없으면 이름 첫 글자를 보여 준다
   const loungeProfile = useLoungeOptional()?.profile ?? null;
@@ -195,14 +193,6 @@ export function AppHeader({ title, backTo, onBack, actions, bare = false }: AppH
       )}
       <div className="app-header__actions">
         {actions}
-        <button
-          type="button"
-          className="btn btn--icon"
-          onClick={openSettings}
-          aria-label="글자 크기 설정"
-        >
-          <Icon name="text-size" className="btn__icon" />
-        </button>
         {showAvatar && (
           <Link
             to="/account"

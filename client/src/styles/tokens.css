@@ -15,7 +15,7 @@
 
 :root {
   /* 글자·화면 설정에서 바뀌는 값: 0.8 / 0.9 / 1 / 1.1 */
-  --zoom: 1;
+  --zoom: 0.8; /* 기본 크기 (예전 글자 크기 설정의 80%) */
 
   --font:
     'Pretendard GOV Variable', 'Pretendard GOV', 'Pretendard Variable', Pretendard, -apple-system,
