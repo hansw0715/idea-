@@ -31,6 +31,12 @@ export default function Login() {
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
   const alertRef = useRef<HTMLDivElement>(null);
 
+  // 로그인 화면은 한 화면에 다 들어가므로 아래로 내려가지(스크롤되지) 않게 막는다
+  useEffect(() => {
+    document.documentElement.classList.add('no-scroll');
+    return () => document.documentElement.classList.remove('no-scroll');
+  }, []);
+
   // 제출 실패 안내가 화면 밖에 있지 않도록 안으로 가져온다 (키보드가 올라와 있어도 보이게).
   useEffect(() => {
     if (error) alertRef.current?.scrollIntoView({ block: 'nearest' });

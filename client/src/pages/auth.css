@@ -134,3 +134,16 @@
   gap: var(--sp-4);
   margin-top: var(--sp-8);
 }
+
+/* 로그인·설치 화면: 아래로 내려가지 않게 화면 높이에 고정한다 */
+html.no-scroll,
+html.no-scroll body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+html.no-scroll .auth-main {
+  height: calc(100dvh - var(--header-h) - var(--safe-top));
+  min-height: 0;
+  box-sizing: border-box;
+}
