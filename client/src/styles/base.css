@@ -513,7 +513,24 @@ hr {
 .install-cta--big {
   margin-top: 0;
 }
-.install-cta--big .install-cta__help {
+.install-cta--big .install-cta--big .btn[aria-busy='true'] {
+  /* 누른 뒤에도 파란 버튼은 그대로 두고 안에 로딩만 돈다 */
+  background: var(--c-action);
+  border-color: var(--c-action);
+  color: var(--c-on-action);
+}
+.install-cta--big .btn[aria-busy='true'] .spinner {
+  border-color: rgb(255 255 255 / 0.35);
+  border-top-color: #fff;
+}
+.install-cta__note {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--c-text-sub);
+  text-align: center;
+}
+.install-cta__help {
   margin-top: var(--sp-5);
   font-size: var(--fs-md);
 }

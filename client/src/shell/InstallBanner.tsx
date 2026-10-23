@@ -41,6 +41,8 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
   const [, rerender] = useState(0);
   const [hidden, setHidden] = useState(() => isStandalone() || (!big && !isMobile()));
   const [showHelp, setShowHelp] = useState(false);
+  /** 설치 사이트: 버튼을 누른 뒤에는 버튼 안에 로딩을 띄우고, 차단 화면 넘기는 방법을 아래에 작게 적는다 */
+  const [pressed, setPressed] = useState(false);
 
   useEffect(() => {
     const update = () => rerender((n) => n + 1);
@@ -65,6 +67,7 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
   const ios = isIos();
 
   async function install() {
+    if (big) setPressed(true);
     if (!deferred) {
       if (!big) setShowHelp((v) => !v);
       return;
@@ -72,8 +75,12 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
     await deferred.prompt();
     const choice = await deferred.userChoice.catch(() => ({ outcome: 'dismissed' }));
     deferred = null;
-    if (choice.outcome === 'accepted') setHidden(true);
-    else rerender((n) => n + 1);
+    if (choice.outcome === 'accepted') {
+      if (!big) setHidden(true);
+    } else {
+      setPressed(false);
+      rerender((n) => n + 1);
+    }
   }
 
   return (
@@ -84,10 +91,15 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
         size={big ? 'xl' : 'lg'}
         block
         onClick={() => void install()}
+        loading={pressed}
+        aria-label={pressed ? '설치하는 중' : undefined}
         aria-expanded={big ? undefined : showHelp}
       >
-        앱 설치하기
+        {!pressed && '앱 설치하기'}
       </Button>
+      {pressed && (
+        <p className="install-cta__note">안전하지 않은 앱 차단됨 시 › 세부정보 더보기 › 무시하고 설치하기</p>
+      )}
       {showHelp && isMobile() && (
         <p className="install-cta__help">
           {ios ? (
