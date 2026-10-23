@@ -46,6 +46,13 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
   const [showHelp, setShowHelp] = useState(false);
   /** 설치 사이트: 버튼을 누른 뒤에는 버튼 안에 로딩을 띄우고, 차단 화면 넘기는 방법을 아래에 작게 적는다 */
   const [pressed, setPressed] = useState(false);
+  /** 설치를 마친 뒤 5초 동안은 로딩을 그대로 두었다가 "완료"를 띄운다 (홈 화면에 아이콘이 생기는 데 시간이 걸린다) */
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (!installed || done) return;
+    const t = window.setTimeout(() => setDone(true), 5000);
+    return () => window.clearTimeout(t);
+  }, [installed, done]);
 
   useEffect(() => {
     const update = () => rerender((n) => n + 1);
@@ -80,8 +87,8 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
     deferred = null;
     if (choice.outcome === 'accepted') {
       installed = true;
-      setPressed(false);
       if (!big) setHidden(true);
+      else rerender((n) => n + 1);
     } else {
       setPressed(false);
       rerender((n) => n + 1);
@@ -96,11 +103,11 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
         size={big ? 'xl' : 'lg'}
         block
         onClick={() => void install()}
-        loading={pressed && !installed}
-        aria-label={pressed && !installed ? '설치하는 중' : undefined}
+        loading={(pressed || installed) && !done}
+        aria-label={(pressed || installed) && !done ? '설치하는 중' : undefined}
         aria-expanded={big ? undefined : showHelp}
       >
-        {installed ? '완료' : !pressed && '앱 설치하기'}
+        {done ? '완료' : !pressed && !installed && '앱 설치하기'}
       </Button>
       {big && (
         <p className="install-cta__note">안전하지 않은 앱 차단됨 시 &gt; 세부 정보 더 보기 &gt; 무시하고 설치하기</p>
