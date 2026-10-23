@@ -30,6 +30,7 @@ function applyTheme(dark: boolean) {
   if (dark) root.setAttribute('data-theme', 'dark');
   else root.removeAttribute('data-theme');
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#16181b' : '#ffffff');
+  document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', dark ? 'only dark' : 'only light');
 }
 
 function apply() {
