@@ -116,10 +116,13 @@ describe('친구 요청 · 수락', () => {
 });
 
 describe('친구 이름 · 밥 먹자 · 친구 시간표', () => {
-  it('친구 목록에는 실명이 있고, 요청 단계에서는 실명이 없다', async () => {
+  it('친구·받은 요청에는 실명, 보낸 요청에는 실명 대신 내가 적은 아이디가 보인다', async () => {
     const [a, b] = [await makeUser(), await makeUser()];
     must(await friends.requestFriend(a.id, b.username));
-    expect((await friends.myFriends(b.id)).incoming[0]).not.toHaveProperty('name');
+    expect((await friends.myFriends(b.id)).incoming[0].name).toBe(a.name); // 요청한 사람은 스스로 이름을 밝혔다
+    const out = (await friends.myFriends(a.id)).outgoing[0];
+    expect(out.username).toBe(b.username);
+    expect(out).not.toHaveProperty('name'); // 아이디만 알아도 상대 실명이 새지 않게
     must(await friends.acceptFriend(b.id, a.id));
     expect((await friends.myFriends(b.id)).friends[0].name).toBe(a.name);
   });

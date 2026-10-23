@@ -4,6 +4,7 @@ import { AVATARS, AVATAR_CHARACTERS } from '../../../../shared/lounge';
 import type { AvatarKey } from '../../../../shared/lounge';
 import { Alert, Button, Sheet, btnClass, useToast } from '../../ui';
 import { loungeApi } from '../api';
+import { useAuth } from '../../auth';
 import { useLounge } from '../LoungeContext';
 import Avatar from '../parts/Avatar';
 import { factLine } from '../parts/fact';
@@ -16,6 +17,7 @@ import '../gathering.css';
  * 서버가 "프로필이 필요해요(428)"라고 하면 LoungeProvider 가 이 시트를 연다: 학교 계정을 연동하면 된다는 안내를 한다.
  */
 export default function ProfileSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { user } = useAuth();
   const { profile, setProfile } = useLounge();
   const toast = useToast();
   const [face, setFace] = useState<AvatarKey>(AVATARS[0].key);
@@ -72,7 +74,8 @@ export default function ProfileSheet({ open, onClose }: { open: boolean; onClose
           <div className="lounge-pick__preview">
             <Avatar user={{ avatar: face, avatarColor: profile.avatarColor }} size="lg" />
             <div>
-              <p className="bold">{profile.nickname}</p>
+              {/* 가린 이름(박○재)은 미팅에서만 쓰여서 여기서는 실명을 보여 준다 */}
+              <p className="bold">{user?.name ?? profile.nickname}</p>
               <p className="text-sub text-sm">{factLine(profile)}</p>
             </div>
           </div>

@@ -42,9 +42,14 @@ export function userIdsOf(g: Gathering): string[] {
   return [g.hostId, ...memberIds(g), ...g.applicants.map((a) => a.userId)];
 }
 
-const userView = (users: Map<string, LoungeUser>, id: string): PublicUser => {
+/**
+ * 화면에 보일 사람. 이름을 가린 표기(박○재)는 미팅에서만 쓴다 — 밥약 같은 다른 모임에서는 함께 만나는 사람끼리
+ * 실명을 보여 준다 (showName: 미팅이 아니고 보는 사람이 그 모임의 참여자일 때). 실명은 nickname 자리에 넣어 보낸다.
+ */
+const userView = (users: Map<string, LoungeUser>, id: string, showName = false): PublicUser => {
   const u = users.get(id);
-  return u ? toPublicUser(u) : unknownUser(id);
+  if (!u) return unknownUser(id);
+  return showName ? { ...toPublicUser(u), nickname: u.name } : toPublicUser(u);
 };
 
 /**
@@ -88,6 +93,7 @@ export function toView(
 ): GatheringView {
   const { users } = ctx;
   const status = currentStatus(g, now);
+  const showName = g.kind !== 'meetup' && isMember(g, viewer.id);
 
   const slots: SlotView[] = g.slots.map((s) => ({
     key: s.key,
@@ -95,7 +101,7 @@ export function toView(
     capacity: s.capacity,
     ...(s.gender ? { gender: s.gender } : {}),
     seatsLeft: seatsLeft(s),
-    members: s.memberIds.map((id) => userView(users, id)),
+    members: s.memberIds.map((id) => userView(users, id, showName)),
   }));
 
   const isHost = g.hostId === viewer.id;
@@ -122,7 +128,7 @@ export function toView(
   const visibleApplicants = g.applicants.filter((a) => !ctx.hidden?.has(a.userId));
   const applicants: ApplicantView[] = isHost
     ? visibleApplicants.map((a) => ({
-        user: userView(users, a.userId),
+        user: userView(users, a.userId, showName),
         slotKey: a.slotKey,
         message: a.message,
         appliedAt: a.appliedAt,
@@ -146,7 +152,7 @@ export function toView(
     joinPolicy: g.joinPolicy,
     meta: g.meta,
     status,
-    host: userView(users, g.hostId),
+    host: userView(users, g.hostId, showName),
     slots,
     applicants,
     applicantCount: visibleApplicants.length,

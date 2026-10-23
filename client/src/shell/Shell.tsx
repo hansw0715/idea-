@@ -147,7 +147,7 @@ function TopNav() {
           <Link
             to="/account"
             className={`app-header__avatar${loungeProfile ? ' app-header__avatar--lounge' : ''}`}
-            aria-label={`내 정보 (${loungeProfile?.nickname ?? user.name})`}
+            aria-label={`내 정보 (${user.name})`}
           >
             {loungeProfile ? (
               <Avatar user={loungeProfile} size="md" />
@@ -242,7 +242,7 @@ export function AppHeader({ title, backTo, onBack, actions, subtitle, bare = fal
           <Link
             to="/account"
             className={`app-header__avatar${loungeProfile ? ' app-header__avatar--lounge' : ''}`}
-            aria-label={`내 정보 (${loungeProfile?.nickname ?? user.name})`}
+            aria-label={`내 정보 (${user.name})`}
           >
             {loungeProfile ? (
               <Avatar user={loungeProfile} size="md" />

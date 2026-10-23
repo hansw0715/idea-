@@ -2,14 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "outputDirectory": "client/dist",
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://sangsang-booke.vercel.app/api/$1"
-    },
-    {
-      "source": "/((?!assets/).*)",
-      "destination": "/index.html"
+      "source": "/(.*)",
+      "destination": "https://sangsang-booke.vercel.app/install",
+      "permanent": false
     }
   ],
   "regions": [

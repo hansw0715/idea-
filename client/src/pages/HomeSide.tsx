@@ -52,7 +52,6 @@ export default function HomeSide() {
           )}
         </div>
         <p className="home-side__name">{user.name}</p>
-        {loungeProfile?.nickname && <p className="home-side__sub">{loungeProfile.nickname}</p>}
         <p className="home-side__sub">{user.username}</p>
         <div className="home-side__btns">
           <Link to="/account" className="home-side__btn">

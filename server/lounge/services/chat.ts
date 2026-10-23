@@ -46,10 +46,12 @@ async function accessOf(roomId: string): Promise<Result<Loaded>> {
  *  - 글(kind text)인데 보낸 사람이 없으면 탈퇴한 사람이다 — 메시지 테이블은 탈퇴 시 user_id 를 NULL 로 바꾼다(ON DELETE SET NULL).
  *    이름 없는 말풍선이 되지 않게 좌석 목록과 같은 '(탈퇴한 사용자)' 로 보인다.
  */
-function senderNickname(m: Message, masked: boolean, users: Map<string, LoungeUser>): string {
+function senderNickname(m: Message, masked: boolean, users: Map<string, LoungeUser>, showName: boolean): string {
   if (masked || m.kind === 'system') return '';
   if (m.userId === null) return unknownUser('').nickname;
-  return users.get(m.userId)?.nickname ?? unknownUser(m.userId).nickname;
+  const u = users.get(m.userId);
+  if (!u) return unknownUser(m.userId).nickname;
+  return showName ? u.name : u.nickname;
 }
 
 /**
@@ -66,6 +68,8 @@ export async function roomView(viewer: LoungeUser, roomId: string, after: string
 
   const [raw, hidden] = await Promise.all([listMessages(roomId, { after, limit: RECENT_LIMIT }), hiddenFor(viewer.id)]);
   const users = await loadUsers([...access.memberIds, ...raw.flatMap((m) => (m.userId ? [m.userId] : []))]);
+  // 가린 이름(박○재)은 미팅 방에서만. 밥약 같은 다른 방에서는 함께 만나는 사람끼리 실명을 보여 준다
+  const showName = gathering.kind !== 'meetup';
 
   // 가려진 말풍선은 보낸 사람 정보도 같이 지운다 — 누가 썼는지 알아내는 통로가 되지 않게.
   const messages: ChatMessageView[] = hideBlocked(messagesAfter(raw, after), hidden).map((m) => {
@@ -77,7 +81,7 @@ export async function roomView(viewer: LoungeUser, roomId: string, after: string
       kind: m.kind,
       text: m.text,
       at: m.at,
-      nickname: senderNickname(m, masked, users),
+      nickname: senderNickname(m, masked, users, showName),
       mine: m.userId === viewer.id,
     };
   });
@@ -91,7 +95,8 @@ export async function roomView(viewer: LoungeUser, roomId: string, after: string
     readOnly: access.readOnly,
     members: access.memberIds.map((id) => {
       const u = users.get(id);
-      return u ? toPublicUser(u) : unknownUser(id);
+      if (!u) return unknownUser(id);
+      return showName ? { ...toPublicUser(u), nickname: u.name } : toPublicUser(u);
     }),
     messages,
   });

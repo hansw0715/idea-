@@ -84,11 +84,11 @@ export default function FriendsSection() {
 
   useEffect(load, [load]);
 
-  async function accept(u: PublicUser) {
+  async function accept(u: QuickMember) {
     setBusyId(u.id);
     try {
       setView(await loungeApi.acceptFriend(u.id));
-      toast(`${u.nickname} 님과 친구가 됐어요.`);
+      toast(`${u.name} 님과 친구가 됐어요.`);
     } catch (err) {
       toast(err instanceof Error ? err.message : '수락하지 못했어요.');
       load();
@@ -100,7 +100,7 @@ export default function FriendsSection() {
   async function remove(u: PublicUser, kind: 'decline' | 'cancel' | 'unfriend') {
     if (kind === 'unfriend') {
       const ok = await confirm({
-        title: `${'name' in u ? (u as QuickMember).name : u.nickname} 님을 친구에서 삭제할까요?`,
+        title: `${'name' in u ? (u as QuickMember).name : '이 사용자'} 님을 친구에서 삭제할까요?`,
         message: '상대에게는 알리지 않아요. 다시 친구가 되려면 요청을 새로 보내야 해요.',
         confirmLabel: '삭제하기',
         cancelLabel: '돌아가기',
@@ -159,7 +159,7 @@ export default function FriendsSection() {
               <li key={u.id} className="lounge-friend-row">
                 <Avatar user={u} size="md" />
                 <div className="lounge-friend-row__body">
-                  <div className="lounge-friend-row__name truncate">{u.nickname}</div>
+                  <div className="lounge-friend-row__name truncate">{u.name}</div>
                   <div className="lounge-friend-row__sub truncate">{factLine(u)}</div>
                 </div>
                 <div className="lounge-friend-row__actions">
@@ -193,11 +193,8 @@ export default function FriendsSection() {
             <li key={u.id} className="lounge-friend-row">
               <Avatar user={u} size="md" />
               <div className="lounge-friend-row__body">
-                {/* 친구끼리는 실명을 보여 주고, 라운지 닉네임은 옆에 작게 */}
-                <div className="lounge-friend-row__name truncate">
-                  {u.name}
-                  <span className="lounge-friend-row__nick"> {u.nickname}</span>
-                </div>
+                {/* 친구끼리는 실명 (가린 이름은 미팅에서만 쓴다) */}
+                <div className="lounge-friend-row__name truncate">{u.name}</div>
                 <div className="lounge-friend-row__sub truncate">{factLine(u)}</div>
               </div>
               <div className="lounge-friend-menu" ref={menuId === u.id ? menuRef : undefined}>
@@ -264,7 +261,8 @@ export default function FriendsSection() {
               <li key={u.id} className="lounge-friend-row">
                 <Avatar user={u} size="md" />
                 <div className="lounge-friend-row__body">
-                  <div className="lounge-friend-row__name truncate">{u.nickname}</div>
+                  {/* 아직 친구가 아니라 실명 대신 내가 적은 아이디로 */}
+                  <div className="lounge-friend-row__name truncate">{u.username}</div>
                   <div className="lounge-friend-row__sub truncate">수락을 기다리는 중</div>
                 </div>
                 <button

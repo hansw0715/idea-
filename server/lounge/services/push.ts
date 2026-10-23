@@ -16,6 +16,8 @@ export type PushMessage = {
   url: string;
   /** 같은 tag 의 알림은 새것으로 바뀐다 (여러 번 와도 쌓이지 않게) */
   tag?: string;
+  /** 알림 오른쪽 그림 (사이트 아이콘: /brand/notify-meal.png 등). 없으면 캐릭터 */
+  icon?: string;
 };
 
 type Keys = { publicKey: string; privateKey: string; subject: string };

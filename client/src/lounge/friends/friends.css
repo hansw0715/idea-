@@ -124,13 +124,6 @@
   overflow-wrap: anywhere;
 }
 
-/* 친구 이름 옆 라운지 닉네임 */
-.lounge-friend-row__nick {
-  font-weight: var(--fw-regular);
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-}
-
 /* 친구마다 ⋯ 메뉴: 밥 먹자 · 시간표 보기 · 회의에 초대 · 삭제 */
 .lounge-friend-menu {
   position: relative;

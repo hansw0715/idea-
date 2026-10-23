@@ -203,8 +203,10 @@ export type QuickRequestView = {
 export type FriendsView = {
   /** 친구끼리는 실명도 보인다 */
   friends: QuickMember[];
-  incoming: PublicUser[];
-  outgoing: PublicUser[];
+  /** 나에게 요청한 사람 — 스스로 요청했으니 실명을 보여 준다 */
+  incoming: QuickMember[];
+  /** 내가 요청한 사람 — 아직 실명은 모르고, 내가 적은 아이디로 보여 준다 */
+  outgoing: (PublicUser & { username: string })[];
 };
 
 export type QuickRoomView = {

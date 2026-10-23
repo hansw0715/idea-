@@ -180,6 +180,7 @@ meetingsRouter.post(
         body: `${inviter?.name ?? '친구'} 님이 '${meeting.name}' 회의에 초대했어요.`,
         url: `/meetings/${meetingId}`,
         tag: `meeting-${meetingId}`,
+        icon: '/brand/notify-meeting.png',
       });
     }
     res.json({ ok: true, alreadyMember: already, name: meeting.name });

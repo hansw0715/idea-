@@ -11,8 +11,9 @@
 import { all, get, run } from '../../db.js';
 import { fail, ok } from '../../../shared/lounge/types.js';
 import type { Result } from '../../../shared/lounge/types.js';
-import type { FriendsView } from '../../../shared/lounge/view.js';
+import type { FriendsView, PublicUser } from '../../../shared/lounge/view.js';
 import { findUser, loadUsers, toPublicUser, toQuickMember } from '../users.js';
+import type { LoungeUser } from '../users.js';
 import { resolveWeekStart, weekEndOf } from '../../dates.js';
 import { notify } from './push.js';
 import { hiddenFor } from './safety.js';
@@ -53,15 +54,24 @@ export async function myFriends(me: string): Promise<FriendsView> {
       const u = users.get(other(r));
       return u?.profileDone && !hidden.has(u.id) ? [u] : [];
     });
-  const pick = (filter: (r: FriendRow) => boolean) => visible(filter).map(toPublicUser);
   return {
     // 친구끼리는 실명도 보여 준다 (요청 단계에서는 닉네임만)
     friends: visible((r) => r.status === 'accepted')
       .map(toQuickMember)
       .sort((a, b) => a.name.localeCompare(b.name, 'ko')),
-    incoming: pick((r) => r.status === 'pending' && String(r.addressee_id) === me),
-    outgoing: pick((r) => r.status === 'pending' && String(r.requester_id) === me),
+    incoming: visible((r) => r.status === 'pending' && String(r.addressee_id) === me).map(toQuickMember),
+    outgoing: await withUsernames(visible((r) => r.status === 'pending' && String(r.requester_id) === me)),
   };
+}
+
+/** 보낸 요청은 실명 대신 내가 적은 아이디로 보여 준다 (요청만으로 상대 실명을 알아낼 수 없게) */
+async function withUsernames(list: LoungeUser[]): Promise<(PublicUser & { username: string })[]> {
+  if (list.length === 0) return [];
+  const rows = await all<{ id: number; username: string }>('SELECT id, username FROM users WHERE id = ANY(?::int[])', [
+    list.map((u) => Number(u.id)),
+  ]);
+  const names = new Map(rows.map((r) => [String(r.id), r.username]));
+  return list.map((u) => ({ ...toPublicUser(u), username: names.get(u.id) ?? '' }));
 }
 
 /** 아이디로 친구 요청. 상대가 이미 나에게 요청했으면 바로 친구가 된다 */
@@ -100,6 +110,7 @@ export async function requestFriend(me: string, username: string): Promise<Resul
     body: `${sender?.nickname || '누군가'} 님이 친구 요청을 보냈어요.`,
     url: '/lounge',
     tag: `friend-request-${me}`,
+    icon: '/brand/notify-friend.png',
   });
   return ok('requested');
 }
@@ -127,6 +138,7 @@ async function notifyAccepted(me: string, otherId: string): Promise<void> {
     body: `${accepter?.name || accepter?.nickname || '친구'} 님과 친구가 됐어요.`,
     url: '/lounge',
     tag: `friend-accepted-${me}`,
+    icon: '/brand/notify-friend.png',
   });
 }
 
@@ -145,6 +157,7 @@ export async function askMeal(me: string, friendId: string): Promise<Result<true
     body: `${sender?.name || sender?.nickname || '친구'} 님이 같이 밥 먹자고 해요.`,
     url: '/lounge',
     tag: `meal-${me}`,
+    icon: '/brand/notify-meal.png',
   });
   return ok(true);
 }
