@@ -14,6 +14,8 @@ type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{
 
 /** 첫 화면이 그려지기 전에 온 설치 이벤트도 놓치지 않게 모듈이 읽힐 때부터 받아 둔다 */
 let deferred: InstallEvent | null = null;
+/** 이번에 설치를 마쳤는지 (설치 사이트 버튼에 "완료"를 띄운다) */
+let installed = false;
 const listeners = new Set<() => void>();
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => {
@@ -23,6 +25,7 @@ if (typeof window !== 'undefined') {
   });
   window.addEventListener('appinstalled', () => {
     deferred = null;
+    installed = true;
     listeners.forEach((fn) => fn());
   });
 }
@@ -76,6 +79,8 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
     const choice = await deferred.userChoice.catch(() => ({ outcome: 'dismissed' }));
     deferred = null;
     if (choice.outcome === 'accepted') {
+      installed = true;
+      setPressed(false);
       if (!big) setHidden(true);
     } else {
       setPressed(false);
@@ -91,13 +96,13 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
         size={big ? 'xl' : 'lg'}
         block
         onClick={() => void install()}
-        loading={pressed}
-        aria-label={pressed ? '설치하는 중' : undefined}
+        loading={pressed && !installed}
+        aria-label={pressed && !installed ? '설치하는 중' : undefined}
         aria-expanded={big ? undefined : showHelp}
       >
-        {!pressed && '앱 설치하기'}
+        {installed ? '완료' : !pressed && '앱 설치하기'}
       </Button>
-      {pressed && (
+      {big && (
         <p className="install-cta__note">안전하지 않은 앱 차단됨시 &gt; 세부정보 더보기 &gt; 무시하고 설치하기</p>
       )}
       {showHelp && isMobile() && (
