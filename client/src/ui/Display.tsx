@@ -46,6 +46,10 @@ function applyTheme(dark: boolean) {
   else root.removeAttribute('data-theme');
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#16181b' : '#ffffff');
   document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', dark ? 'only dark' : 'only light');
+  // 설치한 앱의 맨 아래 버튼 줄 색도 맞도록 앱 설정 파일을 바꿔 건넨다 (크롬이 앱을 업데이트할 때 반영)
+  document
+    .querySelector('link[rel="manifest"]')
+    ?.setAttribute('href', dark ? '/manifest-dark.webmanifest' : '/manifest.webmanifest');
 }
 
 function apply() {

@@ -65,6 +65,16 @@
     <link rel="icon" href="/brand/mark-64.png" type="image/png" />
     <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // 설치한 앱의 맨 아래 버튼 줄·시작 화면 색은 설치할 때의 앱 설정 파일 색을 쓴다.
+      // 다크 모드(설정에서 고른 값, 없으면 휴대폰 화면 모드)면 어두운 설정 파일을 건넨다
+      (function () {
+        try {
+          if (document.documentElement.getAttribute('data-theme') === 'dark')
+            document.querySelector('link[rel="manifest"]').setAttribute('href', '/manifest-dark.webmanifest');
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <!-- KRDS 기본 서체 Pretendard GOV -->
     <link
