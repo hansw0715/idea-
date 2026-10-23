@@ -223,8 +223,8 @@ export default function Account() {
                 없습니다.
               </p>
               <p className="account-danger__text">
-                내가 만든 회의에 다른 참여자가 남아 있으면 가장 먼저 참여한 사람에게 넘어가고, 아무도
-                없으면 회의도 함께 사라집니다.
+                또한 탈퇴한 학번으로는 <strong>다시 가입할 수 없습니다.</strong> 다시 이용하려면 관리자에게
+                문의해 주세요.
               </p>
 
               {!open ? (
