@@ -57,6 +57,32 @@ export function Sheet({ open, onClose, title, children, footer, full = false, in
     }
   }, [open, render, initialFocus]);
 
+  useEffect(() => {
+    const dialog = ref.current;
+    const viewport = window.visualViewport;
+    if (!open || !render || !dialog || !viewport) return;
+
+    // iOS 키보드는 100dvh 대신 visualViewport만 줄인다.
+    // 시트별로 적용해 겹친 시트가 닫혀도 바깥 시트의 위치가 유지되게 한다.
+    const fit = () => {
+      if (viewport.scale > 1.01) return;
+      const bottom = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      dialog.style.setProperty('--sheet-viewport-height', `${viewport.height}px`);
+      dialog.style.setProperty('--sheet-viewport-bottom', `${bottom}px`);
+      dialog.style.setProperty('--sheet-safe-bottom', bottom > 0 ? '0px' : 'var(--safe-bottom)');
+    };
+    fit();
+    viewport.addEventListener('resize', fit);
+    viewport.addEventListener('scroll', fit);
+    return () => {
+      viewport.removeEventListener('resize', fit);
+      viewport.removeEventListener('scroll', fit);
+      dialog.style.removeProperty('--sheet-viewport-height');
+      dialog.style.removeProperty('--sheet-viewport-bottom');
+      dialog.style.removeProperty('--sheet-safe-bottom');
+    };
+  }, [open, render]);
+
   if (!render && !open) return null;
 
   return (
