@@ -176,8 +176,8 @@ meetingsRouter.post(
       // 초대받은 친구의 폰에 알린다 (친구끼리는 실명)
       const inviter = await get<{ name: string }>('SELECT name FROM users WHERE id = ?', [me]);
       await notify(String(target), {
-        title: '회의 초대',
-        body: `${inviter?.name ?? '친구'} 님이 '${meeting.name}' 회의에 초대했어요.`,
+        title: inviter?.name || '회의 초대',
+        body: `'${meeting.name}' 회의에 초대했어요.`,
         url: `/meetings/${meetingId}`,
         tag: `meeting-${meetingId}`,
         icon: '/brand/notify-meeting.png',

@@ -106,8 +106,8 @@ export async function requestFriend(me: string, username: string): Promise<Resul
   // 아직 친구가 아니라 실명 대신 라운지 닉네임으로 알린다
   const sender = await findUser(me);
   await notify(targetId, {
-    title: '친구 요청',
-    body: `${sender?.nickname || '누군가'} 님이 친구 요청을 보냈어요.`,
+    title: sender?.nickname || '친구 요청',
+    body: '친구 요청을 보냈어요. 눌러서 수락해 주세요.',
     url: '/lounge',
     tag: `friend-request-${me}`,
     icon: '/brand/notify-friend.png',
@@ -134,8 +134,8 @@ export async function acceptFriend(me: string, requesterId: string): Promise<Res
 async function notifyAccepted(me: string, otherId: string): Promise<void> {
   const accepter = await findUser(me);
   await notify(otherId, {
-    title: '친구가 됐어요',
-    body: `${accepter?.name || accepter?.nickname || '친구'} 님과 친구가 됐어요.`,
+    title: accepter?.name || accepter?.nickname || '친구',
+    body: '친구 요청을 수락했어요. 이제 친구예요!',
     url: '/lounge',
     tag: `friend-accepted-${me}`,
     icon: '/brand/notify-friend.png',
@@ -153,8 +153,8 @@ export async function askMeal(me: string, friendId: string): Promise<Result<true
   if (!(await areFriends(me, friendId))) return fail('NOT_FOUND', '친구만 밥 먹자고 할 수 있어요.');
   const sender = await findUser(me);
   await notify(friendId, {
-    title: '밥 먹자!',
-    body: `${sender?.name || sender?.nickname || '친구'} 님이 같이 밥 먹자고 해요.`,
+    title: sender?.name || sender?.nickname || '친구',
+    body: '밥 먹자! 같이 밥 먹을래요?',
     url: '/lounge',
     tag: `meal-${me}`,
     icon: '/brand/notify-meal.png',

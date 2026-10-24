@@ -147,3 +147,8 @@ html.no-scroll .auth-main {
   min-height: 0;
   box-sizing: border-box;
 }
+
+/* 첫 화면: 파란 "웹앱으로 설치하기" 아래 흰 "웹에서 사용하기" */
+.download-web {
+  margin-top: var(--sp-3);
+}

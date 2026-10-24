@@ -91,7 +91,8 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
     if (!big) return;
     // 설치 창은 사용자가 화면을 누른 순간에만 띄울 수 있어, 어디를 누르든 그 한 번으로 띄운다
     const onTap = (e: MouseEvent) => {
-      if (!deferred || (e.target as HTMLElement).closest('.install-cta')) return;
+      // "웹에서 사용하기"를 누른 것은 설치로 치지 않는다
+      if (!deferred || (e.target as HTMLElement).closest('.install-cta, .download-web')) return;
       void install();
     };
     document.addEventListener('click', onTap);
@@ -133,7 +134,7 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
         aria-label={pressed && !done ? '설치하는 중' : undefined}
         aria-expanded={big ? undefined : showHelp}
       >
-        {done ? '완료' : !pressed && '앱 설치하기'}
+        {done ? '완료' : !pressed && (big ? '웹앱으로 설치하기' : '앱 설치하기')}
       </Button>
       {big && (
         <p className="install-cta__note">안전하지 않은 앱 차단됨 시 &gt; 세부 정보 더 보기 &gt; 무시하고 설치하기</p>

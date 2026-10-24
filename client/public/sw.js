@@ -21,6 +21,8 @@ self.addEventListener('push', (event) => {
       badge: '/brand/mark-64.png',
       tag: data.tag,
       renotify: Boolean(data.tag),
+      timestamp: Date.now(),
+      vibrate: [80, 40, 80],
       data: { url: data.url || '/' },
     }),
   );
