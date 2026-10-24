@@ -26,7 +26,20 @@ import AdminPage from './lounge/AdminPage';
 function Protected({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
+  // 관리자 모드(admin_아이디)는 관리자 화면만 쓴다
+  if (user.adminSession) return <Navigate to="/admin" replace />;
   return <AppFrame>{children}</AppFrame>;
+}
+
+/** 관리자 화면: 관리자 모드 세션이면 탭바 없이 이 화면만, 아니면 일반 화면처럼 */
+function AdminRoute() {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return (
+    <AppFrame tabs={!user.adminSession}>
+      <AdminPage />
+    </AppFrame>
+  );
 }
 
 /** 로그인·가입 화면: 하단 탭바 없이 같은 컬럼 프레임만 쓴다. */
@@ -140,7 +153,7 @@ export default function App() {
                       <Route path="/lounge" element={<Protected><LoungePage /></Protected>} />
                       <Route path="/lounge/meetup" element={<Protected><MeetupPage /></Protected>} />
                       <Route path="/lounge/rooms/:id" element={<Protected><ChatRoomPage /></Protected>} />
-                      <Route path="/admin" element={<Protected><AdminPage /></Protected>} />
+                      <Route path="/admin" element={<AdminRoute />} />
                     </>
                   )}
                   <Route path="*" element={<Navigate to="/" replace />} />

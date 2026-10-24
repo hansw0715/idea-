@@ -296,7 +296,7 @@ describe('관리자 로그인: admin_아이디 + 원래 비밀번호', () => {
       body: JSON.stringify({ username, password }),
     }).then(async (r) => ({ status: r.status, json: (await r.json()) as Record<string, unknown>, cookie: (r.headers.get('set-cookie') ?? '').split(';')[0] }));
 
-  it('지정한 아이디(dedea715)를 admin_dedea715 로 로그인하면 관리자 모드, 그냥 로그인하면 일반', async () => {
+  it('지정한 아이디(dedea715)를 admin_dedea715 로 로그인하면 관리자 화면만 쓰는 관리자 모드, 그냥 로그인하면 일반', async () => {
     await addLoginUser('dedea715', 'Pw-1234!');
     const normal = await login('dedea715', 'Pw-1234!');
     expect(normal.status).toBe(200);
@@ -305,9 +305,16 @@ describe('관리자 로그인: admin_아이디 + 원래 비밀번호', () => {
 
     const admin = await login('admin_dedea715', 'Pw-1234!');
     expect(admin.status).toBe(200);
-    expect(admin.json).toMatchObject({ username: 'dedea715', isAdmin: true });
-    expect((await call('GET', '/api/auth/me', { cookie: admin.cookie })).json?.isAdmin).toBe(true);
+    // 원래 계정 정보(이름 등)는 내보내지 않고 관리자 모드 세션으로만 알린다
+    expect(admin.json).toMatchObject({ username: 'admin_dedea715', name: '관리자', isAdmin: true, adminSession: true });
+    expect(admin.json.name).not.toBe('관리자후보');
+    expect((await call('GET', '/api/auth/me', { cookie: admin.cookie })).json).toMatchObject({ adminSession: true });
     expect((await call('GET', '/api/lounge/admin/stats', { cookie: admin.cookie })).status).toBe(200);
+    // 관리자 화면 밖(원래 계정의 화면·탈퇴)은 쓸 수 없다
+    expect((await call('GET', '/api/dashboard', { cookie: admin.cookie })).status).toBe(403);
+    expect((await call('GET', '/api/timetable', { cookie: admin.cookie })).status).toBe(403);
+    expect((await call('GET', '/api/lounge/me', { cookie: admin.cookie })).status).toBe(403);
+    expect((await call('DELETE', '/api/auth/me', { cookie: admin.cookie })).status).toBe(403);
 
     expect((await login('admin_dedea715', 'wrong-pw')).status).toBe(401);
   });

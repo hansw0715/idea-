@@ -55,6 +55,14 @@ function jwtSecret(): string {
 
 const TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** 관리자 모드 세션(admin_아이디)이 부를 수 있는 API. 원래 계정의 시간표·라운지 등은 열지 않는다. */
+function adminSessionAllows(req: Request): boolean {
+  const path = req.originalUrl.split('?')[0];
+  // GET 만: DELETE /api/auth/me(탈퇴) 같은 원래 계정 작업은 막는다
+  if (/^\/api\/auth\/me\/?$/.test(path)) return req.method === 'GET';
+  return /^\/api\/lounge\/admin(\/|$)/.test(path);
+}
+
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const token = (req as Request & { cookies?: Record<string, string> }).cookies?.token;
   if (!token) {
@@ -66,8 +74,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     // 같은 비밀로 서명한 다른 증표(학교 인증 ticket 등)를 로그인 쿠키 자리에 넣어도 통과하지 못하게 uid 가 정수인지 본다.
     if (typeof payload.uid !== 'number' || !Number.isInteger(payload.uid)) throw new Error('uid 없음');
     res.locals.userId = payload.uid;
-    // admin_아이디 로 로그인한 세션이면 관리자 모드 (adminMode)
+    // admin_아이디 로 로그인한 세션이면 관리자 모드 (adminMode). 이 세션은 원래 계정과 상관없이 관리자 화면만 쓴다.
     res.locals.adminMode = payload.adm === true;
+    if (res.locals.adminMode && !adminSessionAllows(req)) {
+      res.status(403).json({ error: '관리자 로그인으로는 관리자 화면만 쓸 수 있어요.', code: 'FORBIDDEN' });
+      return;
+    }
     next();
   } catch {
     res.status(401).json({ error: '세션이 만료되었습니다. 다시 로그인해 주세요.' });
@@ -81,6 +93,7 @@ export function userId(res: Response): number {
 /**
  * 관리자 로그인을 쓸 수 있는 아이디들. 환경 변수 ADMIN_LOGIN_USERNAMES(쉼표로 구분)로 바꿀 수 있고,
  * 없으면 아래 기본값을 쓴다. 이 아이디를 "admin_아이디" 로, 비밀번호는 원래 것으로 로그인하면 관리자 모드가 된다.
+ * 관리자 모드는 원래 계정으로 인증만 할 뿐, 원래 계정의 정보·화면과는 상관없이 관리자 화면만 연다.
  */
 const DEFAULT_ADMIN_LOGIN_USERNAMES = ['dedea715'];
 
@@ -100,6 +113,11 @@ export function adminLoginBase(username: string): string | null {
 /** 이 요청이 관리자 모드 세션인가 (admin_아이디 로 로그인) */
 export function adminMode(res: Response): boolean {
   return res.locals.adminMode === true;
+}
+
+/** 관리자 모드 세션이 받는 사용자 정보. 원래 계정의 이름 등은 내보내지 않는다. */
+function adminSessionUser(baseUsername: string): AuthUser {
+  return { id: 0, username: `${ADMIN_LOGIN_PREFIX}${baseUsername}`, name: '관리자', isAdmin: true, email: null, adminSession: true };
 }
 
 /** async 핸들러의 거부(rejection)를 Express 에러 처리로 넘겨준다. */
@@ -605,7 +623,7 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
       }
       loginLimiter.clear(limiterKey);
       issueToken(res, row.id, adminBase !== null);
-      res.json(adminBase !== null ? { ...publicUser(row), isAdmin: true } : publicUser(row));
+      res.json(adminBase !== null ? adminSessionUser(adminBase) : publicUser(row));
     }),
   );
 
@@ -626,7 +644,7 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
         res.status(401).json({ error: '로그인이 필요합니다.' });
         return;
       }
-      res.json(adminMode(res) ? { ...publicUser(row), isAdmin: true } : publicUser(row));
+      res.json(adminMode(res) ? adminSessionUser(row.username ?? '') : publicUser(row));
     }),
   );
 

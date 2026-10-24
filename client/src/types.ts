@@ -7,6 +7,8 @@ export interface User {
   name: string;
   /** 운영용으로 미리 만들어 둔 계정. 탈퇴할 수 없다. */
   isAdmin?: boolean;
+  /** admin_아이디 로 들어온 관리자 모드. 원래 계정과 상관없이 관리자 화면만 쓴다 */
+  adminSession?: boolean;
 }
 
 export interface TimetableEntry {

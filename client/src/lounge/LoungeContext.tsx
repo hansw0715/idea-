@@ -67,7 +67,8 @@ export function LoungeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!user) {
+    // 관리자 모드 세션은 원래 계정의 라운지 정보를 쓰지 않는다
+    if (!user || user.adminSession) {
       setProfileState(null);
       setNeedsProfile(false);
       setIsAdmin(false);

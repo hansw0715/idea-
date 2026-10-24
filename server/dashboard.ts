@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { get } from './db.js';
-import { adminMode, requireAuth, userId, wrap } from './auth.js';
+import { requireAuth, userId, wrap } from './auth.js';
 import { todayStr, resolveWeekStart, weekEndOf } from './dates.js';
 
 export const dashboardRouter = Router();
@@ -87,8 +87,7 @@ dashboardRouter.get(
       return;
     }
     res.json({
-      // admin_아이디 로 로그인한 세션은 관리자로 보여 준다
-      user: adminMode(res) ? { ...row.user, isAdmin: true } : row.user,
+      user: row.user,
       timetable: row.timetable ?? [],
       meetings: row.meetings ?? [],
       reservations: row.reservations ?? [],

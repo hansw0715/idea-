@@ -200,7 +200,7 @@ export function AppHeader({ title, backTo, onBack, actions, subtitle, bare = fal
   // 라운지 프로필이 있으면 고른 캐릭터를, 없으면 이름 첫 글자를 보여 준다
   const loungeProfile = useLoungeOptional()?.profile ?? null;
   const hasBack = title !== undefined;
-  const showAvatar = !hasBack && !bare && user;
+  const showAvatar = !hasBack && !bare && user && !user.adminSession;
 
   return (
     <header className={`app-header${hasBack ? ' app-header--back' : ''}${bare ? ' app-header--bare' : ''}`}>

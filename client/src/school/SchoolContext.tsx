@@ -84,7 +84,8 @@ const deps = { vault, remote: schoolApi } as const;
 /** 로그인한 동안 학교 연동 상태를 들고 있다. 로그아웃하면 비운다. */
 export function SchoolProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const uid = user?.id ?? null;
+  // 관리자 모드 세션은 원래 계정의 학교 연동을 불러오지 않는다
+  const uid = user && !user.adminSession ? user.id : null;
   // 비동기 응답이 돌아왔을 때 그 사이 로그아웃·계정 전환이 있었는지 알아보려는 최신 사용자 id
   const uidRef = useRef(uid);
   uidRef.current = uid;

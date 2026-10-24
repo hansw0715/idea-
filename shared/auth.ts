@@ -23,7 +23,7 @@ export function normalizeUsername(value: unknown): string {
 
 /**
  * 관리자 로그인 머리말. 지정한 관리자 아이디(예: dedea715)를 "admin_dedea715" 로, 비밀번호는 원래 것으로 로그인하면
- * 그 계정이 관리자 모드로 열린다 (server/auth.ts). 그래서 이 머리말로 시작하는 아이디는 새로 가입할 수 없다.
+ * 그 계정으로 인증만 하고 관리자 화면만 열린다 (server/auth.ts, 원래 계정 정보와는 상관없다). 그래서 이 머리말로 시작하는 아이디는 새로 가입할 수 없다.
  */
 export const ADMIN_LOGIN_PREFIX = 'admin_';
 
@@ -54,4 +54,6 @@ export interface AuthUser {
   isAdmin: boolean;
   /** 학교 메일로 가입한 옛 계정만 있다. 새 가입은 null */
   email: string | null;
+  /** admin_아이디 로 들어온 관리자 모드 세션. 관리자 화면만 쓴다 */
+  adminSession?: boolean;
 }
