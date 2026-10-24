@@ -227,3 +227,14 @@ export async function listAllGatherings(): Promise<Gathering[]> {
   const rows = await all<DataRow>('SELECT data FROM lounge_gatherings ORDER BY created_at DESC, id');
   return rows.map((r) => parse(r.data));
 }
+
+/** 채팅 목록에는 기간 제한 없이 실제 좌석에 참여한 모임만 가져온다. */
+export async function listRoomGatherings(userId: string): Promise<Gathering[]> {
+  const rows = await all<DataRow>(
+    `SELECT data FROM lounge_gatherings
+     WHERE data @> ?::jsonb
+     ORDER BY meet_at DESC, id`,
+    [JSON.stringify({ slots: [{ memberIds: [userId] }] })],
+  );
+  return rows.map((r) => parse(r.data));
+}

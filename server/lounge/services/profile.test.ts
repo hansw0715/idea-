@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { PROFILE_LOCKED_MESSAGE, currentYearKst, toMeResponse, validateProfileUpdate } from './profile.js';
 import type { LoungeUser } from '../users.js';
+import { AVATARS, normalizeAvatar } from '../../../shared/lounge/constants.js';
+
+describe('새 마스코트 선택과 이전 표정 호환', () => {
+  it('예전 표정은 같은 캐릭터로 표시하고 선택지는 새 다섯 개만 제공한다', () => {
+    expect(AVATARS.map((a) => a.label)).toEqual(['상상부기', '한성냥이', '상찌', '꼬꼬', '꾸꾸']);
+    expect(normalizeAvatar('turtle-cry')).toBe('turtle-smile');
+    expect(normalizeAvatar('cat-surprised')).toBe('cat-think');
+    expect(normalizeAvatar('frog-tongue')).toBe('frog-tongue');
+    expect(normalizeAvatar('kkukku')).toBe('kkukku');
+    expect(normalizeAvatar(null)).toBe('turtle-smile');
+  });
+  it('새 캐릭터 선택을 저장하고 없어진 표정은 새 선택으로 받지 않는다', () => {
+    expect(validateProfileUpdate({ avatar: 'kkukku', avatarColor: 'm1' })).toEqual({ ok: true, value: { avatar: 'kkukku', avatarColor: 'm1' } });
+    expect(validateProfileUpdate({ avatar: 'turtle-love', avatarColor: 'm1' }).ok).toBe(false);
+  });
+});
 
 describe('currentYearKst — 올해(KST) 계산', () => {
   it('12월 31일 24시(KST) 직전까지는 그 해, 정각부터는 새해', () => {

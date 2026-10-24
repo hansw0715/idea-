@@ -22,6 +22,7 @@ import SafetyForm from '../parts/SafetyForm';
 import TextAreaField from '../parts/TextAreaField';
 import UserSheet from './UserSheet';
 import '../gathering.css';
+import LoungeSurface from '../LoungeSurface';
 
 /**
  * 테이블(모임) 상세 시트 — 자리·신청·승인·참여 취소·모임 취소·모임 후 평가·단톡방 입장·신고/차단.
@@ -37,6 +38,7 @@ import '../gathering.css';
  *    onChanged 로 알릴 view 가 없으므로 이쪽으로 알려 지도·목록이 다시 읽게 한다.
  */
 export type TableSheetProps = {
+  presentation?: 'sheet' | 'page';
   open: boolean;
   gatheringId: string | null;
   initial?: GatheringView | null;
@@ -70,6 +72,7 @@ export default function TableSheet({
   onClose,
   onChanged,
   onSafetyChanged,
+  presentation = 'sheet',
 }: TableSheetProps) {
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -433,7 +436,7 @@ export default function TableSheet({
   // ───────────── 그리기 ─────────────
 
   const v = g?.viewer;
-  const sheetTitle = g ? `${KIND_LABEL[g.kind]} 테이블` : '모임 정보';
+  const sheetTitle = g ? `${KIND_LABEL[g.kind]}${presentation === 'page' ? ' 상세' : ' 테이블'}` : '모임 정보';
 
   let footer: ReactNode = undefined;
   if (g && v) {
@@ -464,7 +467,7 @@ export default function TableSheet({
 
   return (
     <>
-      <Sheet open={open} onClose={onClose} title={sheetTitle} footer={footer}>
+      <LoungeSurface presentation={presentation} open={open} onClose={onClose} title={sheetTitle} footer={footer}>
         <div ref={rootRef} className="lounge-gath-table">
           {(problem || notice || pollFailed) && (
             <div className="lounge-gath-msgs">
@@ -533,12 +536,12 @@ export default function TableSheet({
                   <Icon name={KIND_ICON[g.kind]} />
                 </span>
                 <div className="grow">
-                  <h3 className="lounge-gath-title" tabIndex={-1} data-settle-focus>
+                  <h2 className="lounge-gath-title" tabIndex={-1} data-settle-focus>
                     {g.title}
-                  </h3>
+                  </h2>
                   <div className="lounge-gath-item__badges">
-                    <Badge tone={STATUS_BADGE[g.status].tone}>{STATUS_BADGE[g.status].label}</Badge>
-                    {relationBadge(g) && <Badge tone={relationBadge(g)!.tone}>{relationBadge(g)!.label}</Badge>}
+                    <span className={`lounge-gath-status lounge-gath-status--${STATUS_BADGE[g.status].tone}`}>{STATUS_BADGE[g.status].label}</span>
+                    {relationBadge(g) && <span className="lounge-gath-relation">{relationBadge(g)!.label}</span>}
                   </div>
                 </div>
                 {safetyTargets.length > 0 && (
@@ -676,7 +679,7 @@ export default function TableSheet({
             </div>
           )}
         </div>
-      </Sheet>
+      </LoungeSurface>
 
       {/* 신고 · 차단: 참여자 중 대상을 고른 뒤 같은 폼을 쓴다 */}
       <Sheet open={safetyOpen} onClose={() => setSafetyOpen(false)} title="신고 · 차단">

@@ -64,10 +64,13 @@
   min-height: var(--touch);
 }
 
-.mtg-chip__off {
-  font-size: var(--fs-sm);
+.mtg-chip__role {
+  font-size: var(--fs-xs);
+  font-weight: 500;
   color: var(--c-text-sub);
 }
+.mtg-chip__role::before { content: "·"; margin-right: 5px; }
+.mtg-legend__item.is-off { color: var(--c-text-muted); }
 
 .mtg-members__warn {
   margin-top: var(--sp-4);

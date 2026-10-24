@@ -106,8 +106,8 @@ export default function GatheringListItem({ gathering: g, onOpen }: GatheringLis
               {taken}/{capacity}
             </span>
           </span>
-          <Badge tone={status.tone}>{status.label}</Badge>
-          {relation && <Badge tone={relation.tone}>{relation.label}</Badge>}
+          <span className={`lounge-gath-status lounge-gath-status--${status.tone}`}>{status.label}</span>
+          {relation && <span className="lounge-gath-relation">{relation.label}</span>}
           {conflict && (
             <Badge tone="warning">
               <Icon name="alert" className="lounge-gath-badge-icon" />

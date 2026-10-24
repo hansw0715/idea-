@@ -8,6 +8,7 @@
  */
 import webpush from 'web-push';
 import { all, run } from '../../db.js';
+import { saveNotification } from './notifications.js';
 
 export type PushMessage = {
   title: string;
@@ -70,6 +71,7 @@ export async function deleteSubscription(userId: string, endpoint: string): Prom
 
 /** 그 사람의 모든 기기로 알림을 보낸다. 실패해도 예외를 던지지 않는다 */
 export async function notify(userId: string, message: PushMessage): Promise<void> {
+  try { await saveNotification(userId, message); } catch { /* 원래 요청을 방해하지 않는다. */ }
   if (!keys()) return;
   try {
     const subs = await all<{ endpoint: string; p256dh: string; auth: string }>(

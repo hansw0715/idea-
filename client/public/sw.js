@@ -17,7 +17,7 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(title, {
       body: data.body || '',
       // 오른쪽 그림: 알림 종류별 사이트 아이콘 (밥 먹자 = 수저). 없으면 캐릭터
-      icon: data.icon || '/brand/mark-192.png',
+      icon: data.icon || '/brand/app-icon-192.png',
       badge: '/brand/mark-64.png',
       tag: data.tag,
       renotify: Boolean(data.tag),

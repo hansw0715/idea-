@@ -2,12 +2,17 @@ import { Router } from 'express';
 import { fail } from '../../../shared/lounge/types.js';
 import { handler, me, sendError } from '../http.js';
 import { deleteSubscription, parseSubscription, publicKey, saveSubscription } from '../services/push.js';
+import { notificationsFor } from '../services/notifications.js';
 
 /**
  * 폰 알림 구독: GET /push/key · POST /push/subscribe · DELETE /push/subscribe
  * 라운지 프로필이 없어도 구독할 수 있다 (회의 초대 알림은 라운지와 상관없이 온다).
  */
 export const pushRouter = Router();
+pushRouter.get('/notifications', handler(async (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ notifications: await notificationsFor(me(res).id) });
+}));
 
 pushRouter.get(
   '/push/key',

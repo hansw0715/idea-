@@ -6,15 +6,15 @@ import { randomUUID } from 'node:crypto';
 import { fail, ok } from '../../../shared/lounge/types.js';
 import type { Result } from '../../../shared/lounge/types.js';
 import { SYSTEM_OPEN_MESSAGE } from '../../../shared/lounge/constants.js';
-import type { ChatMessageView, RoomView } from '../../../shared/lounge/view.js';
+import type { ChatMessageView, RoomView, RoomSummary } from '../../../shared/lounge/view.js';
 import { loadUsers, toPublicUser, unknownUser } from '../users.js';
 import type { LoungeUser } from '../users.js';
 import { currentStatus, isFull, memberIds } from '../domain/gathering.js';
 import { canRead, checkSend, hideBlocked, messagesAfter } from '../domain/chat.js';
 import type { Message, RoomAccess } from '../domain/chat.js';
 import type { Gathering } from '../../../shared/lounge/gathering.js';
-import { findGathering } from '../repo/gatherings.js';
-import { insertMessage, insertSystemMessageIfEmpty, listMessages } from '../repo/messages.js';
+import { findGathering, listRoomGatherings } from '../repo/gatherings.js';
+import { insertMessage, insertSystemMessageIfEmpty, listMessages, latestRoomActivity } from '../repo/messages.js';
 import { hiddenFor } from './safety.js';
 
 const nowISO = () => new Date().toISOString();
@@ -23,6 +23,20 @@ const nowISO = () => new Date().toISOString();
 const RECENT_LIMIT = 200;
 
 type Loaded = { gathering: Gathering; access: RoomAccess };
+
+/** 기존 방 읽기 권한과 같은 기준. 신청자·탈퇴한 참여자는 포함하지 않는다. */
+export async function roomSummaries(viewer: LoungeUser): Promise<RoomSummary[]> {
+  const rows = await listRoomGatherings(viewer.id);
+  const activity = await latestRoomActivity(viewer.id);
+  const now = nowISO();
+  return rows.flatMap((g) => {
+    const status = currentStatus(g, now);
+    const members = memberIds(g);
+    if (!canRead({ memberIds: members, opened: isFull(g) || status === 'done', readOnly: true }, viewer.id)) return [];
+    return [{ id: g.id, title: g.title, kind: g.kind, meetAt: g.meetAt, place: g.place, lastActivityAt: activity.get(g.id) ?? null,
+      memberCount: members.length, readOnly: status === 'done' || status === 'cancelled' }];
+  });
+}
 
 async function accessOf(roomId: string): Promise<Result<Loaded>> {
   const gathering = await findGathering(roomId);

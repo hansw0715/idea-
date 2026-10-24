@@ -22,6 +22,7 @@ export const LOUNGE_TABLES = [
   'lounge_presence',
   'lounge_friends',
   'lounge_push_subscriptions',
+  'lounge_notifications',
 ] as const;
 
 export const LOUNGE_MIGRATIONS = `
@@ -146,6 +147,17 @@ export const LOUNGE_MIGRATIONS = `
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_lounge_push_user ON lounge_push_subscriptions(user_id);
+
+  CREATE TABLE IF NOT EXISTS lounge_notifications (
+    id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    url TEXT NOT NULL,
+    tag TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_lounge_notifications_user ON lounge_notifications(user_id, created_at DESC);
 
   -- RLS: 공개 Data API 로는 접근할 수 없게 (서버는 소유자 역할이라 영향 없음)
   ${LOUNGE_TABLES.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY;`).join('\n  ')}

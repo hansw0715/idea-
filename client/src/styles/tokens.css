@@ -1,11 +1,11 @@
 /* ───────────────────────────────────────────────────────────────
-   상상Book-E 디자인 토큰 — KRDS(대한민국 정부 디자인 시스템) 기준
+   상상Book-E 디자인 토큰 — 한성대학교 파랑·흰색
    원본: DESIGN.md (프로젝트 루트)
 
    DESIGN.md "Explicit user selections"는 KRDS 관찰값보다 우선한다.
-     · Primary 색   #6366f1  → --primary-50
-     · 라운드       4px      → --r (버튼·입력·카드·배지·시트). 원형/pill 만 1000px
-     · 입력 스타일  underline → .input / .select 는 밑줄형
+     · Primary 색   #1459a6  → --primary-50 (사용자 지정 학교 블루 계열)
+     · 라운드       컨트롤 6px, 패널 8px. 원형만 1000px
+     · 입력 스타일  outlined → .input / .select 는 경계가 보이는 입력
      · 내비 스타일  solid     → 상단 헤더·하단 탭바는 불투명 면(blur·반투명 금지)
      · 레이아웃 밀도 compact  → 여백은 KRDS 표준보다 한 단계 촘촘하게
 
@@ -16,7 +16,7 @@
 :root {
   background: var(--c-bg-outer);
   /* 글자·화면 설정에서 바뀌는 값: 0.8 / 0.9 / 1 / 1.1 */
-  --zoom: 0.8; /* 기본 크기 (예전 글자 크기 설정의 80%) */
+  --zoom: 1; /* 본문 16px, 보조 글자 14px 기준 */
 
   --font:
     'Pretendard GOV Variable', 'Pretendard GOV', 'Pretendard Variable', Pretendard, -apple-system,
@@ -38,18 +38,18 @@
   --gray-95: #131416;
   --gray-100: #000000;
 
-  /* ── Primary — 사용자 지정 #6366f1 이 50단계 ───────────── */
-  --primary-5: #eef2ff;
-  --primary-10: #e0e7ff;
-  --primary-20: #c7d2fe;
-  --primary-30: #a5b4fc;
-  --primary-40: #818cf8;
-  --primary-50: #6366f1;
-  --primary-60: #4f46e5; /* 밝은 면 위 텍스트·pressed (흰 배경 대비 6.3:1) */
-  --primary-70: #4338ca;
-  --primary-80: #3730a3;
-  --primary-90: #312e81;
-  --primary-95: #1e1b4b;
+  /* ── Primary — 학교 심벌·부기와 맞춘 블루 계열 ────────── */
+  --primary-5: #edf4fc;
+  --primary-10: #dceafb;
+  --primary-20: #b7d3f2;
+  --primary-30: #8db8e8;
+  --primary-40: #4f91d4;
+  --primary-50: #1459a6;
+  --primary-60: #104d92;
+  --primary-70: #0c3d78;
+  --primary-80: #0b3060;
+  --primary-90: #09264b;
+  --primary-95: #071d39;
 
   /* ── Secondary (Navy) ─────────────────────────────────── */
   --secondary-5: #eef2f7;
@@ -90,15 +90,18 @@
   --c-bg-outer: var(--gray-5); /* 프레임 바깥(데스크톱) 배경 */
   --c-surface: var(--gray-5);
   /* 흰 페이지 위의 옅은 회색 면 — 선 대신 이 면으로 구역을 나눈다 (홈 공지·일정 상자, 시간표 주 이동·탭) */
-  --c-panel: #f2f4f8;
-  --c-panel-strong: #e6e9f0;
-  --c-green-bg: #e5f3d6; /* 예약 블록·미수강 카드 연두색 */
-  --c-green-bg-strong: #d6ebc2;
-  --c-green-text: var(--success-70); /* 연두색 상자 위 링크 글자 */
-  --r-panel: 1.2rem;
+  --c-panel: #edf0f4;
+  --c-panel-border: #d7dde5;
+  --c-card-bg: var(--c-panel);
+  --c-card-border: var(--c-panel-border);
+  --c-panel-strong: #e9edf2;
+  --c-green-bg: var(--primary-5); /* 예약 블록도 공통 학교 블루를 사용 */
+  --c-green-bg-strong: var(--primary-10);
+  --c-green-text: var(--primary-60);
+  --r-panel: 8px;
   --c-text: var(--gray-90);
   --c-text-sub: var(--gray-70);
-  --c-text-muted: var(--gray-50); /* 흰 배경 위 캡션 전용 (회색 면 위에서는 text-sub) */
+  --c-text-muted: var(--gray-60);
   --c-placeholder: var(--gray-50);
   --c-border-strong: var(--gray-60);
   --c-border: var(--gray-30);
@@ -138,22 +141,22 @@
   --m-7: #0e8a8a;
   --m-8: #58616a;
 
-  /* ── 라운드 (사용자 지정 4px) ──────────────────────────── */
+  /* ── 라운드: 컨트롤 6px / 패널 8px ────────────────────── */
   --r-xs: 2px;
-  --r: 4px;
+  --r: 6px;
   --r-pill: 1000px; /* 원형 컨트롤·필터 칩·토글 */
 
   /* ── 타이포 ───────────────────────────────────────────── */
   --fs-display: 2.8rem; /* Heading xlarge (mobile) */
   --fs-h1: 2.4rem; /* Heading large (mobile) — 화면 제목 */
-  --fs-h2: 2.2rem; /* Heading medium */
-  --fs-h3: 1.9rem; /* Heading small — 섹션 제목 */
-  --fs-h4: 1.7rem; /* Heading xsmall */
+  --fs-h2: 2rem;
+  --fs-h3: 1.8rem;
+  --fs-h4: 1.6rem;
   --fs-h5: 1.5rem; /* Heading xxsmall */
-  --fs-lg: 1.9rem; /* Body large */
-  --fs-md: 1.7rem; /* Body medium — 본문 기본 */
-  --fs-sm: 1.5rem; /* Body small — 캡션·보조 */
-  --fs-xs: 1.3rem; /* Body xsmall — 메타·탭 라벨 */
+  --fs-lg: 1.8rem;
+  --fs-md: 1.6rem;
+  --fs-sm: 1.4rem;
+  --fs-xs: 1.2rem;
   --fw-regular: 400;
   --fw-bold: 700;
   --lh: 1.5;
@@ -169,12 +172,12 @@
   --sp-8: 2.4rem;
   --sp-9: 3.2rem;
   --sp-10: 4rem;
-  --gutter: 1.6rem;
+  --gutter: 2rem;
   --section-gap: 2.4rem;
 
   /* ── 컨트롤 높이 (KRDS 5단계) ─────────────────────────── */
   --h-xs: 3.2rem;
-  --h-sm: 4rem;
+  --h-sm: 4.4rem;
   --h-md: 4.8rem;
   --h-lg: 5.6rem;
   --h-xl: 6.4rem;
@@ -183,15 +186,15 @@
   /* ── 레이아웃 ─────────────────────────────────────────── */
   --frame-max: 480px; /* 모바일 프레임 폭. 이보다 넓은 화면에서도 가운데 정렬 */
   --header-h: 6.4rem; /* 상단 헤더 — 로고·프로필을 키워 56px → 64px */
-  --tabbar-h: 5.6rem;
+  --tabbar-h: 6.4rem;
   --topnav-h: 7.2rem; /* 큰 화면 위쪽 가로 메뉴 높이 */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  /* ── 모션: KRDS 400ms, 스프링·바운스 금지 ──────────────── */
-  --t-base: 0.4s ease-in-out;
-  --t-fade: 0.4s linear;
-  --t-collapse: 0.4s ease;
+  /* ── 모션: 짧은 상태 피드백과 과한 반동 없는 팝업 전환 ──── */
+  --t-base: 160ms ease-out;
+  --t-fade: 180ms ease-out;
+  --t-collapse: 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* ── 깊이: 보더가 기본, 그림자는 드롭/모달/토스트에만 ──── */
   --shadow-drop: 0 0.2rem 0 0 rgba(0, 0, 0, 0.04), 0 0.4rem 0.8rem 0 rgba(0, 0, 0, 0.12);
@@ -256,10 +259,10 @@
   }
 }
 
-/* ── 다크 모드: 휴대폰이 다크 모드면 자동으로 (앱 안에 바꾸는 버튼은 없다).
+/* ── 다크 모드: 내 정보의 선택을 우선하고, 기기 설정을 고르면 자동 적용.
    회색 단계를 뒤집고 옅은 색 면을 어둡게 바꾼다 ── */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     color-scheme: dark;
     --gray-0: #16181b;
     --gray-5: #1e2125;
@@ -274,8 +277,8 @@
     --gray-90: #e8ebee;
     --gray-95: #f2f4f6;
     --gray-100: #ffffff;
-    --primary-5: #23244a;
-    --primary-10: #2d2f5e;
+    --primary-5: #192c43;
+    --primary-10: #223b58;
     --secondary-5: #22272f;
     --danger-5: #3a2220;
     --warning-5: #3a3020;
@@ -284,10 +287,62 @@
     --point-5: #3a2226;
     --c-bg-outer: #0e0f11;
     --c-panel: #1f2226;
+    --c-panel-border: transparent;
+    --c-card-bg: var(--c-bg);
+    --c-card-border: var(--c-divider);
     --c-panel-strong: #2a2e33;
-    --c-green-bg: #24361c;
-    --c-green-bg-strong: #2f4625;
-    --c-green-text: #a8dc8f;
+    --c-green-bg: var(--primary-5);
+    --c-green-bg-strong: var(--primary-10);
+    --c-green-text: var(--primary-30);
     --c-action-text: var(--primary-30);
+    --c-danger: #ff8d7e;
+    --c-danger-text: #ff9d90;
+    --c-success: #8dce9f;
+    --c-success-text: #9bd5a9;
+    --c-warning: #e8bf68;
+    --c-info: #8cbeed;
+    --c-select-error: #ff9d90;
   }
+}
+
+:root[data-theme='dark'] {
+    color-scheme: dark;
+    --gray-0: #16181b;
+    --gray-5: #1e2125;
+    --gray-10: #2a2e33;
+    --gray-20: #3a3f45;
+    --gray-30: #4e555c;
+    --gray-40: #6d7680;
+    --gray-50: #8a949e;
+    --gray-60: #a3acb5;
+    --gray-70: #bfc6cc;
+    --gray-80: #d5dadf;
+    --gray-90: #e8ebee;
+    --gray-95: #f2f4f6;
+    --gray-100: #ffffff;
+    --primary-5: #192c43;
+    --primary-10: #223b58;
+    --secondary-5: #22272f;
+    --danger-5: #3a2220;
+    --warning-5: #3a3020;
+    --success-5: #1f3324;
+    --info-5: #1d2e3d;
+    --point-5: #3a2226;
+    --c-bg-outer: #0e0f11;
+    --c-panel: #1f2226;
+    --c-panel-border: transparent;
+    --c-card-bg: var(--c-bg);
+    --c-card-border: var(--c-divider);
+    --c-panel-strong: #2a2e33;
+    --c-green-bg: var(--primary-5);
+    --c-green-bg-strong: var(--primary-10);
+    --c-green-text: var(--primary-30);
+    --c-action-text: var(--primary-30);
+    --c-danger: #ff8d7e;
+    --c-danger-text: #ff9d90;
+    --c-success: #8dce9f;
+    --c-success-text: #9bd5a9;
+    --c-warning: #e8bf68;
+    --c-info: #8cbeed;
+    --c-select-error: #ff9d90;
 }

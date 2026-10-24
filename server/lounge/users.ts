@@ -5,7 +5,7 @@
  */
 import { all, get, run } from '../db.js';
 import {
-  AVATARS,
+  normalizeAvatar,
   DEFAULT_AVATAR,
   AVATAR_COLORS,
   BAN_NOTICE_GENERIC,
@@ -66,7 +66,6 @@ const COLUMNS =
 
 const isGender = (v: string | null): v is Gender => v === 'male' || v === 'female';
 
-const isAvatar = (v: string | null): v is AvatarKey => AVATARS.some((a) => a.key === v);
 const isColor = (v: string | null): v is AvatarColor => (AVATAR_COLORS as readonly string[]).includes(v ?? '');
 
 function fromRow(row: UserRow): LoungeUser {
@@ -79,7 +78,7 @@ function fromRow(row: UserRow): LoungeUser {
     admissionYear: row.admission_year ?? null,
     gender: isGender(row.school_gender) ? row.school_gender : isGender(row.gender) ? row.gender : null,
     genderFromSchool: isGender(row.school_gender),
-    avatar: isAvatar(row.avatar) ? row.avatar : DEFAULT_AVATAR,
+    avatar: normalizeAvatar(row.avatar),
     avatarColor: isColor(row.avatar_color) ? row.avatar_color : 'm1',
     temperature: row.temperature ?? DEFAULT_TEMPERATURE,
     warnings: row.warnings ?? 0,

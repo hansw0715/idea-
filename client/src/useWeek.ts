@@ -11,8 +11,8 @@ export interface WeekSlide {
  * 시간표가 보고 있는 '주'(월요일 날짜)를 다룬다.
  * 대시보드·시간표·회의가 같은 방식으로 주를 넘길 수 있도록 한곳에 모았다.
  */
-export function useWeek() {
-  const [weekStart, setWeekStart] = useState(currentWeekStart);
+export function useWeek(initialWeek?: string) {
+  const [weekStart, setWeekStart] = useState(() => initialWeek ?? currentWeekStart());
   const [slide, setSlide] = useState<WeekSlide | null>(null);
 
   const shiftWeeks = useCallback((weeks: number) => {

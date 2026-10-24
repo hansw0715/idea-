@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { GatheringView } from '../../../shared/lounge';
 import { AppHeader } from '../shell/Shell';
 import { Alert, Button, EmptyState, Icon, LoadingBlock } from '../ui';
 import { useLounge } from './LoungeContext';
 import GatheringListItem from './parts/GatheringListItem';
 import CreateGatheringSheet from './sheets/CreateGatheringSheet';
-import TableSheet from './sheets/TableSheet';
 import { isEnded } from './world/tables';
 import { useGatherings } from './world/useGatherings';
 import './hub.css';
@@ -16,14 +16,10 @@ export default function MeetupPage() {
   const ready = !loading && !needsProfile && profile !== null;
   const gatherings = useGatherings(ready);
   const { upsert, refresh } = gatherings;
+  const navigate = useNavigate();
 
-  const [tableOpen, setTableOpen] = useState(false);
-  const [tableArg, setTableArg] = useState<{ id: string | null; initial: GatheringView | null }>({ id: null, initial: null });
   const [createOpen, setCreateOpen] = useState(false);
-  const openTable = useCallback((g: GatheringView) => {
-    setTableArg({ id: g.id, initial: g });
-    setTableOpen(true);
-  }, []);
+  const openTable = (g: GatheringView) => navigate(`/lounge/gatherings/${g.id}`, { state: { backTo: '/lounge/meetup' } });
 
   const meetups = gatherings.all.filter((g) => g.kind === 'meetup' && !isEnded(g));
 
@@ -76,7 +72,7 @@ export default function MeetupPage() {
               ) : meetups.length === 0 ? (
                 <EmptyState icon="smile" title="아직 열린 미팅이 없어요." description="첫 번째 자리를 만들어 보세요." />
               ) : (
-                <ul className="card card--list">
+                <ul className="lounge-gathering-list">
                   {meetups.map((g) => (
                     <li key={g.id}>
                       <GatheringListItem gathering={g} onOpen={openTable} />
@@ -88,18 +84,6 @@ export default function MeetupPage() {
           </>
         )}
 
-        <TableSheet
-          open={tableOpen}
-          gatheringId={tableArg.id}
-          initial={tableArg.initial}
-          focusSlotKey={null}
-          onClose={() => setTableOpen(false)}
-          onSafetyChanged={refresh}
-          onChanged={(g) => {
-            upsert(g);
-            refresh();
-          }}
-        />
         <CreateGatheringSheet
           open={createOpen}
           kind="meetup"
@@ -108,6 +92,7 @@ export default function MeetupPage() {
             upsert(g);
             refresh();
             setCreateOpen(false);
+            navigate(`/lounge/gatherings/${g.id}`, { state: { backTo: '/lounge/meetup' } });
           }}
         />
       </main>

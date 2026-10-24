@@ -149,6 +149,17 @@ export type ChatMessageView = {
   mine: boolean;
 };
 
+export type RoomSummary = {
+  lastActivityAt?: string | null;
+  id: string;
+  title: string;
+  kind: GatheringKind;
+  meetAt: ISODateTime;
+  place: string;
+  memberCount: number;
+  readOnly: boolean;
+};
+
 export type RoomView = {
   id: string;
   title: string;

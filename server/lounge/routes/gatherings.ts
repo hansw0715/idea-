@@ -15,7 +15,7 @@ import { createRateLimiter } from '../../rateLimit.js';
 import { handler, me, sendError, sendResult } from '../http.js';
 import * as service from '../services/gathering.js';
 import { APPLY_MESSAGE_MAX } from '../services/gathering.js';
-import { roomView, sendMessage } from '../services/chat.js';
+import { roomView, roomSummaries, sendMessage } from '../services/chat.js';
 import { hasUnsafeChars } from '../domain/chat.js';
 
 /**
@@ -185,6 +185,10 @@ const noStore = (_req: Request, res: Response, next: () => void) => {
 };
 gatheringsRouter.use('/gatherings', noStore);
 gatheringsRouter.use('/mine', noStore);
+gatheringsRouter.use('/rooms', noStore);
+gatheringsRouter.get('/rooms', handler(async (_req, res) => {
+  res.json({ rooms: await roomSummaries(me(res)) });
+}));
 
 // 모임 id 는 UUID(또는 시드의 영문-숫자 이름)다. 그 밖의 모양(NUL 같은 글자, 너무 긴 값)은 DB 에 닿기 전에 "없는 모임" 으로 돌려보낸다.
 // (NUL 이 바인딩되면 Postgres 가 오류를 내서 500 이 된다)

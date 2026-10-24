@@ -1,451 +1,599 @@
-/* 홈(대시보드) 전용 스타일 — 접두사 home-
-   배치: 학교 이름 → 옆으로 넘기는 요약 카드 → 배너 → e-class → 내 일정 표
-   색·버튼은 공통 토큰을 그대로 쓰고, 홈의 카드만 둥글기를 크게(--home-r) 준다. */
-
-.home-page {
-  --home-r: 1.6rem;
-}
-
-/* ── 학교 이름 + 오늘 날짜 ───────────────────────────────────── */
-/* ── 옆으로 넘기는 요약 카드 ─────────────────────────────────── */
-/* 카드가 화면 오른쪽 끝에 걸쳐 보여 "옆으로 더 있다"는 걸 알린다 */
-.home-cards {
-  margin: 0 calc(var(--gutter) * -1);
-}
-.home-cards__track {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(24rem, 64%);
-  gap: var(--sp-5);
-  padding: 0 var(--gutter) var(--sp-2);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding: 0 var(--gutter);
-  scrollbar-width: none;
-}
-.home-cards__track::-webkit-scrollbar {
-  display: none;
-}
-.home-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  min-height: 15rem;
-  padding: var(--sp-7) var(--sp-7) var(--sp-6);
-  border: 1px solid var(--c-border-soft);
-  border-radius: var(--home-r);
-  background: var(--c-bg);
-  scroll-snap-align: start;
-}
-.home-card--accent {
-  border-color: var(--c-action-bg-strong);
-  background: var(--c-action-bg);
-}
-.home-card__title {
-  margin: 0;
-  font-size: var(--fs-h3);
-  font-weight: var(--fw-bold);
-  line-height: 1.3;
-}
-.home-card__sub {
-  margin: 0;
-  font-size: var(--fs-md);
-  color: var(--c-text-sub);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.home-card__more,
-.home-card__act {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  min-height: var(--touch);
-  font-size: var(--fs-md);
-  font-weight: var(--fw-bold);
-  color: var(--c-text-sub);
-  text-decoration: none;
-}
-.home-card__more {
-  margin-top: auto;
-  align-self: flex-start;
-}
-.home-card--accent .home-card__more {
-  color: var(--c-action-text);
-}
-.home-card__more svg,
-.home-card__act svg {
-  width: 1.8rem;
-  height: 1.8rem;
-}
-.home-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-6);
-  margin-top: auto;
-}
-@media (hover: hover) {
-  .home-card__more:hover,
-  .home-card__act:hover {
-    color: var(--c-action-text);
-  }
-}
-
-/* 세 번째 요약 카드: 미수강 강의 — 연두색 상자 */
-.home-card--green {
-  border-color: transparent;
-  background: var(--c-green-bg);
-}
-.home-card--green .home-card__more {
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  font-size: var(--fs-md);
-  font-weight: var(--fw-bold);
-  color: var(--c-green-text);
-  cursor: pointer;
-}
-.home-card__list {
-  display: grid;
-  gap: var(--sp-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.home-card__line {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  min-width: 0;
-  font-size: var(--fs-md);
-  color: var(--c-text);
-}
-.home-card__line svg {
-  flex: none;
-  width: 1.6rem;
-  height: 1.6rem;
-  color: var(--success-70);
-}
-.home-card__line span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.home-card__more-count {
-  font-size: var(--fs-sm);
-  color: var(--c-text-sub);
-}
-
-/* ── 배너 ───────────────────────────────────────────────────── */
-.home-banner {
+/* Campus home: 12 columns, 16px gutters. Main 8 + aside 4 = 12.
+   At 1100px: 12 * 77px + 11 * 16px = 1100px. */
+.home-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-5);
-  margin-top: var(--sp-8);
-  padding: var(--sp-7);
-  border-radius: var(--home-r);
-  background: var(--c-action);
-  color: var(--c-on-action);
-  text-decoration: none;
+  gap: 16px;
+  margin-bottom: 24px;
 }
-.home-banner__text {
-  display: grid;
-  gap: var(--sp-3);
-  min-width: 0;
+.home-heading .page-title {
+  font-weight: 600;
 }
-.home-banner__text strong {
-  font-size: var(--fs-h3);
-  font-weight: var(--fw-bold);
-  line-height: 1.35;
+.home-heading .page-lead {
+  margin-top: 8px;
 }
-.home-banner__art {
-  display: grid;
-  place-items: center;
+.lounge-avatar.home-profile {
   flex: none;
-  width: 6.4rem;
-  height: 6.4rem;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.18);
+  --avatar-size: 76px;
 }
-.home-banner__art svg {
-  width: 3.2rem;
-  height: 3.2rem;
+.home-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 24px;
+  border: 1px solid var(--c-divider);
+  border-radius: var(--r-panel);
 }
-@media (hover: hover) {
-  .home-banner:hover {
-    background: var(--c-action-hover);
-  }
+.home-shortcuts a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 64px;
+  padding: 12px 16px;
+  color: var(--c-text);
+  text-decoration: none;
+  font-size: var(--fs-sm);
 }
-
-/* e-class 구역: 아래 표와 같은 제목 크기·둥근 상자 */
-.home-page .section {
-  margin-top: var(--sp-9);
+.home-shortcuts a + a {
+  border-left: 1px solid var(--c-divider);
 }
-.home-page .section .section__title {
-  font-size: var(--fs-h2);
+.home-shortcuts svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--c-text-sub);
 }
-.home-page .section .card {
-  border-color: var(--c-border-soft);
-  border-radius: var(--home-r);
+.home-shortcuts svg:last-child {
+  margin-left: auto;
+  width: 14px;
 }
-
-/* ── 내 일정 표: 굵은 제목 + 더 보기, 아래 둥근 상자 안에 한 줄씩 ─────────── */
-.home-table {
-  margin-top: var(--sp-9);
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.dashboard-layout > * { width: 100%; }
+.home-panel {
+  padding: 20px;
+  background: var(--c-panel);
+  border: 1px solid var(--c-panel-border);
+  border-radius: var(--r-panel);
+  min-width: 0;
 }
 .home-sum__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-4);
+  gap: 12px;
+  margin-bottom: 4px;
 }
 .home-sum__title {
-  margin: 0;
-  font-size: var(--fs-h2);
-  font-weight: var(--fw-bold);
+  font-size: var(--fs-h4);
+  font-weight: 600;
+}
+.home-sum__head > svg {
+  width: 18px;
+  height: 18px;
+  color: var(--c-text-sub);
 }
 .home-sum__link {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-1);
-  min-height: var(--touch);
+  gap: 4px;
+  min-height: 44px;
   font-size: var(--fs-sm);
-  font-weight: var(--fw-bold);
-  color: var(--c-text-sub);
+  color: var(--c-action-text);
   text-decoration: none;
+  font-weight: 500;
 }
 .home-sum__link svg {
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 16px;
+  height: 16px;
 }
-.home-sum__link:hover {
-  color: var(--c-action-text);
+.home-week {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--c-divider);
 }
-
-/* 줄 사이 구분선 없이 위아래 여백만으로 나눈다 */
-.home-table__box {
-  margin: 0;
-  padding: var(--sp-4) 0;
-  list-style: none;
-  border: 1px solid var(--c-border-soft);
-  border-radius: var(--home-r);
-  background: var(--c-bg);
-  overflow: hidden;
-}
-/* 학교·학과 공지는 테두리 대신 옅은 회색 면 */
-.home-table--panel .home-table__box {
-  border-color: transparent;
-  background: var(--c-panel);
-}
-
-/* 상자 안 빈 상태·안내 문장 */
-.home-sum__empty {
-  margin: 0;
-  padding: var(--sp-2) var(--sp-7);
-  font-size: var(--fs-md);
+.home-week__day {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  background: transparent;
   color: var(--c-text-sub);
+  font-size: var(--fs-sm);
+  transition:
+    background-color var(--t-base),
+    color var(--t-base);
 }
-.home-sum__empty a {
+.home-week__day strong {
+  font-size: 2.2rem;
+  color: var(--c-text);
+  font-weight: 400;
+}
+.home-week__day[aria-pressed="true"] {
+  background: var(--c-bg);
+  border-color: var(--c-divider);
   color: var(--c-action-text);
 }
-
-/* 한 줄: 굵은 이름 · 흐린 미리보기 · 오른쪽 동그라미 개수 */
-.home-table__row {
+.home-week__day[aria-pressed="true"] strong {
+  color: var(--c-action-text);
+  font-weight: 600;
+}
+.home-week__day.is-today > span:first-child::after {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-left: 3px;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: var(--c-action);
+}
+.home-week__count {
+  font-size: var(--fs-xs);
+}
+.home-agenda {
+  padding-top: 16px;
+}
+.home-agenda__label {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--c-text-sub);
+  margin-bottom: 4px;
+}
+.home-agenda__row {
   display: flex;
   align-items: center;
-  gap: var(--sp-6);
-  min-height: 5.2rem;
-  padding: var(--sp-3) var(--sp-7);
+  gap: 16px;
+  padding: 14px 0;
+  color: var(--c-text);
+  text-decoration: none;
+  min-height: 72px;
+}
+.home-agenda li + li {
+  border-top: 1px solid var(--c-divider);
+}
+.home-agenda__time {
+  flex: none;
+  font-size: var(--fs-sm);
+  border-left: 3px solid var(--c-action);
+  padding-left: 10px;
+}
+.home-agenda__body {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.home-agenda__body strong {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.home-agenda__body > span {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.home-agenda__row > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--c-text-sub);
+}
+.home-empty {
+  padding: 16px 0;
+  color: var(--c-text-sub);
+  font-size: var(--fs-sm);
+}
+.home-empty a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  text-decoration: none;
+}
+.home-empty svg {
+  width: 16px;
+  height: 16px;
+}
+.home-meetings a {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  min-height: 68px;
   color: var(--c-text);
   text-decoration: none;
 }
-.home-table__label {
+.home-meetings li + li {
+  border-top: 1px solid var(--c-divider);
+}
+.home-meetings a > span {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.home-meetings strong {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.home-meetings a > span > span {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.home-meetings svg {
+  width: 16px;
+  height: 16px;
+  color: var(--c-text-sub);
+}
+.home-reservation {
+  background: var(--c-action-bg);
+}
+.home-reservation__date {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.home-reservation__time {
+  font-size: 2.4rem;
+  font-weight: 400;
+  margin: 4px 0 12px;
+}
+.home-reservation__place {
+  font-size: var(--fs-h4);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.home-reservation .btn {
+  margin-top: 16px;
+  background: var(--c-bg);
+  color: var(--c-action-text);
+  border-color: var(--c-divider);
+}
+.home-learning {
+  display: grid;
+  gap: 12px;
+}
+.home-learning__stamp {
+  color: var(--c-text-sub);
+  font-size: var(--fs-xs);
+}
+.home-card__sub {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.home-card__list {
+  display: grid;
+  gap: 8px;
+}
+.home-card__line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-sm);
+}
+.home-card__line svg {
+  width: 14px;
+  height: 14px;
   flex: none;
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-bold);
-  white-space: nowrap;
+  color: var(--c-text-sub);
+}
+.home-card__more-count {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.home-lounge-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 4px;
+  color: var(--c-text);
+  text-decoration: none;
+}
+.home-lounge-link > svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: var(--c-text-sub);
+}
+.home-lounge-link > svg:last-child {
+  width: 16px;
+}
+.home-lounge-link > span {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+}
+.home-lounge-link strong {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.home-lounge-link span span {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.home-table__box {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.home-table__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  color: var(--c-text);
+  text-decoration: none;
+  min-height: 56px;
+}
+.home-table__box > li + li {
+  border-top: 1px solid var(--c-divider);
 }
 .home-table__preview {
   flex: 1;
   min-width: 0;
-  font-size: var(--fs-md);
-  color: var(--c-text-sub);
+  font-size: var(--fs-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.home-table__count {
-  display: grid;
-  place-items: center;
-  flex: none;
-  min-width: 2.2rem;
-  height: 2.2rem;
-  padding: 0 var(--sp-2);
-  border-radius: var(--r-pill);
-  background: var(--c-action);
-  color: var(--c-on-action);
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-bold);
-  line-height: 1;
+.home-table__label {
+  font-size: var(--fs-sm);
+  font-weight: 500;
 }
-/* 공지 줄: 제목이 남는 폭을 다 쓰고, 날짜는 오른쪽에 */
-.home-notice__title {
-  color: var(--c-text);
+.home-table__chev {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.home-table__count {
+  font-size: var(--fs-xs);
+  color: var(--c-action-text);
+  flex: none;
 }
 .home-notice__date {
+  color: var(--c-text-sub);
+  font-size: var(--fs-xs);
   flex: none;
-  font-size: var(--fs-sm);
-  color: var(--c-text-muted);
 }
-@media (hover: hover) {
-  .home-table__row:hover {
-    background: var(--c-surface);
-  }
-  .home-table--panel .home-table__row:hover {
-    background: var(--c-panel-strong);
-  }
-}
-
-/* 넓은 화면: 요약 카드를 넘기지 않고 나란히 */
-@media (min-width: 768px) {
-  .home-cards {
-    margin: 0;
-  }
-  .home-cards__track {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(3, 1fr);
-    padding: 0;
-    overflow: visible;
-  }
-}
-
-/* ── 큰 화면 홈 ─────────────────────────────────────────────
-   1024px 이상: 왼쪽 프로필·바로 가기 열 | 오른쪽 내용.
-   768px 이상: 공지 둘은 나란히, e-class·내 일정은 한 줄 전체로 두 칸 격자. */
-.home-side {
-  display: none;
-}
-@media (min-width: 768px) {
-  .home-boards {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--sp-9) var(--sp-7);
-    align-items: start;
-    margin-top: var(--sp-9);
-  }
-  .home-page .home-boards > * {
-    margin: 0;
-  }
-  .home-boards > :not(.home-table--panel) {
-    grid-column: 1 / -1;
-  }
-}
-@media (min-width: 1024px) {
-  .home-layout {
-    display: grid;
-    grid-template-columns: 26rem minmax(0, 1fr);
-    gap: var(--sp-8);
-    align-items: start;
-  }
-  .home-side {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-5);
-    position: sticky;
-    top: calc(var(--topnav-h) + var(--safe-top) + var(--sp-8));
-  }
-  .home-content {
-    min-width: 0;
-  }
-}
-
-.home-side__profile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: var(--sp-8) var(--sp-6) var(--sp-6);
-  border: 1px solid var(--c-border-soft);
-  border-radius: var(--r-panel);
-  background: var(--c-bg);
-  text-align: center;
-}
-.home-side__avatar {
-  display: grid;
-  place-items: center;
-  width: 7.2rem;
-  height: 7.2rem;
-  margin-bottom: var(--sp-4);
-  border-radius: 50%;
-  background: var(--c-action);
-  color: var(--c-on-action);
-  font-size: var(--fs-h2);
-  font-weight: var(--fw-bold);
-}
-.home-side__avatar .lounge-avatar {
-  --avatar-size: 7.2rem;
-}
-.home-side__name {
-  margin: 0;
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-bold);
-}
-.home-side__sub {
-  margin: var(--sp-1) 0 0;
+.home-sum__empty {
   font-size: var(--fs-sm);
   color: var(--c-text-sub);
+  padding: 12px 0;
 }
-.home-side__btns {
+[aria-labelledby="home-plans-title"] .home-table__row {
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+[aria-labelledby="home-plans-title"] .home-table__label {
+  display: none;
+}
+[aria-labelledby="home-plans-title"] .home-table__preview {
+  flex-basis: 75%;
+  white-space: normal;
+}
+.campus-content {
+  padding-top: 24px;
+}
+.campus-content > .section {
+  margin-top: 0;
+}
+.campus-notices {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-3);
-  width: 100%;
-  margin-top: var(--sp-6);
+  gap: 16px;
 }
-.home-side__btn {
+.campus-notices .home-notice__title {
+  white-space: normal;
+}
+@media (hover: hover) {
+  .home-shortcuts a:hover,
+  .home-week__day:hover {
+    background: var(--c-surface);
+  }
+  .home-meetings a:hover strong,
+  .home-agenda__row:hover strong,
+  .home-table__row:hover .home-table__preview,
+  .home-lounge-link:hover strong {
+    color: var(--c-action-text);
+  }
+  .home-sum__link:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+}
+@media (max-width: 767px) {
+  .dashboard-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .dashboard-layout > * {
+    width: 100%;
+  }
+  .home-deadlines {
+    display: contents;
+  }
+  .home-deadlines > * {
+    width: 100%;
+  }
+  .home-heading {
+    margin-bottom: 20px;
+  }
+  .lounge-avatar.home-profile {
+    --avatar-size: 64px;
+  }
+  .home-shortcuts {
+    margin-bottom: 20px;
+  }
+  .home-shortcuts a {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 12px;
+    gap: 8px;
+    font-size: 1.3rem;
+  }
+  .home-shortcuts svg:last-child {
+    display: none;
+  }
+  .home-panel {
+    padding: 16px;
+  }
+  .home-heading .page-title {
+    font-size: 2.2rem;
+  }
+  .home-heading .page-lead {
+    font-size: 1.3rem;
+  }
+  .home-agenda__row {
+    gap: 10px;
+  }
+  .home-agenda__time {
+    font-size: 1.2rem;
+  }
+}
+
+.home-week-nav {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 4rem;
-  border: 1px solid var(--c-border);
-  border-radius: var(--r);
-  background: var(--c-bg);
-  color: var(--c-text);
-  font: inherit;
+  gap: 8px;
+  padding: 0 0 8px;
+}
+.home-week-nav .btn--icon {
+  padding: 8px;
+}
+.home-week-nav .btn--icon svg {
+  width: 18px;
+  height: 18px;
+}
+.home-week-nav__range {
+  flex: 1;
+  display: grid;
+  gap: 2px;
   font-size: var(--fs-sm);
-  text-decoration: none;
-  cursor: pointer;
+  color: var(--c-text);
 }
-.home-side__btn:hover {
-  background: var(--c-surface);
+.home-week-nav__range small {
+  color: var(--c-text-sub);
+  font-size: var(--fs-xs);
 }
-.home-side__menu {
+.home-week-nav__today {
+  min-height: 44px;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--r);
+  color: var(--c-action-text);
+  background: transparent;
+  font-size: var(--fs-xs);
+}
+.home-learning__urgent {
   display: flex;
-  flex-direction: column;
-  border: 1px solid var(--c-border-soft);
-  border-radius: var(--r-panel);
-  background: var(--c-bg);
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--c-action-text);
+  font-size: var(--fs-h4);
+  font-weight: 600;
+  text-decoration: none;
+}
+.home-learning__urgent svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.home-learning__item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  color: var(--c-text);
+  text-decoration: none;
+  padding: 8px 0;
+}
+.home-learning__item strong {
+  font-weight: 500;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
 }
-.home-side__link {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  padding: var(--sp-5) var(--sp-6);
-  color: var(--c-text);
-  text-decoration: none;
+.home-learning__course,
+.home-learning__itemmeta {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
 }
-.home-side__link + .home-side__link {
+.home-card__line + .home-card__line {
   border-top: 1px solid var(--c-divider);
 }
-.home-side__link svg {
-  flex: none;
-  width: 2rem;
-  height: 2rem;
-  color: var(--c-action-text);
+.home-empty > a + a {
+  margin-left: 16px;
 }
-.home-side__link:hover {
-  background: var(--c-surface);
+@media (max-width: 767px) {
+  .home-notice__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 8px;
+  }
+  .home-notice__row .home-notice__title {
+    grid-column: 1 / -1;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
+    line-height: 1.5;
+  }
+  .home-notice__date {
+    grid-column: 1;
+  }
+  .home-notice__row .home-table__count {
+    grid-column: 2;
+  }
+  .home-meetings strong,
+  .home-agenda__body strong {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+  .home-agenda__row {
+    flex-wrap: wrap;
+  }
+  .home-empty > a {
+    display: flex;
+  }
+  .home-empty > a + a {
+    margin-left: 0;
+  }
 }
+
+/* 홈은 일정 → 통합 알림 → 강의·과제 → 학교 소식 순서로 읽는다. */
+.home-notifications { background: var(--c-action-bg); }
+.home-notifications__lead { color: var(--c-text-sub); font-size: var(--fs-sm); line-height: 1.6; margin: 4px 0 12px; }
+.home-notifications__list { list-style: none; padding: 0; margin: 0; }
+.home-notifications__list li + li { border-top: 1px solid var(--c-divider); }
+.home-notifications__list a { display: flex; align-items: center; gap: 12px; padding: 16px 0; color: var(--c-text); text-decoration: none; min-height: 64px; }
+.home-notifications__icon { width: 22px; height: 22px; flex: none; color: var(--c-action-text); }
+.home-notifications__body { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.home-notifications__body strong { font-size: var(--fs-sm); font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.home-notifications__body > span { font-size: var(--fs-xs); line-height: 1.6; color: var(--c-text-sub); }
+.home-notifications__chevron { width: 16px; height: 16px; flex: none; color: var(--c-text-sub); }
+.notification-new { width: 7px; height: 7px; background: #2388ee; border-radius: 50%; flex: none; }
+.home-notifications__retry { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: var(--fs-xs); }
+
+.home-notifications__list { display: grid; gap: 10px; }
+.home-notifications__list li { min-width: 0; background: var(--c-bg); border-radius: var(--r-panel); }
+.home-notifications__list li + li { border: 0; }
+.home-notifications__list a { padding: 16px; border-radius: inherit; }
+.home-notifications__body > .home-notifications__when { display: flex; align-items: flex-start; gap: 5px; color: var(--c-action-text); font-weight: 500; }
+.home-notifications__when > svg { width: 14px; height: 14px; flex: none; margin-top: 3px; }

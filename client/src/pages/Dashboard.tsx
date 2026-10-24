@@ -1,239 +1,278 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppHeader } from "../shell/Shell";
+import { useAuth } from "../auth";
 import { api } from "../api";
-import { fmtDate, fmtRange } from "../time";
+import {
+  DAY_NAMES,
+  currentWeekStart,
+  fmtDate,
+  fmtRange,
+  todayStr,
+  weekDates,
+  addDaysStr,
+  fmtWeekLabel,
+} from "../time";
 import { useWeek } from "../useWeek";
+import { homeWeekStart } from "../homeSchedule";
 import { Alert, Button, Icon } from "../ui";
-import { LOUNGE_ENABLED } from "../features";
-import EclassHome from "../school/EclassHome";
 import EclassHomeCard from "../school/EclassHomeCard";
-import MyLoungeSection from "../lounge/home/MyLoungeSection";
-import { HomeTableRow } from "./HomeTableRow";
+import HomeNotifications from "../notifications/HomeNotifications";
 import HomeNotices from "./HomeNotices";
-import HomeSide from "./HomeSide";
-import type { Meeting, Reservation } from "../types";
+import Avatar from "../lounge/parts/Avatar";
+import { useLoungeOptional } from "../lounge/LoungeContext";
+import type { Meeting, Reservation, TimetableEntry } from "../types";
 import "./home.css";
-
-/** 오늘 날짜 글자 (한국 시간): "10월 11일 (일)" */
-const TODAY_LABEL = () =>
-  new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    month: "long",
-    day: "numeric",
-    weekday: "short",
-  }).format(new Date());
 
 interface DashboardData {
   meetings: Meeting[];
   reservations: Reservation[];
+  timetable: TimetableEntry[];
+  weekReservations: Reservation[];
 }
 
 export default function Dashboard() {
-  const { weekStart } = useWeek();
-  // 지난번에 받은 내용이 있으면 먼저 보여 주고, 최신 내용은 아래에서 받아와 바꿔 넣는다
-  const [data, setData] = useState<DashboardData | null>(() => {
-    const last = api.cached<DashboardData>(`/dashboard?week=${weekStart}`);
-    return last ? { meetings: last.meetings ?? [], reservations: last.reservations ?? [] } : null;
+  const { user } = useAuth();
+  const profile = useLoungeOptional()?.profile;
+  const { weekStart, prevWeek, nextWeek, goToday } = useWeek(
+    homeWeekStart(todayStr()),
+  );
+  const currentWeek = currentWeekStart();
+  const weekLabel =
+    weekStart === currentWeek
+      ? "이번 주 일정"
+      : weekStart === addDaysStr(currentWeek, 7)
+        ? "다음 주 일정"
+        : "주간 일정";
+  const dates = weekDates(weekStart);
+  const today = todayStr();
+  const [day, setDay] = useState(() => Math.max(0, dates.indexOf(today)));
+  const [loaded, setLoaded] = useState<{
+    week: string;
+    data: DashboardData;
+  } | null>(() => {
+    const data = api.cached<DashboardData>(`/dashboard?week=${weekStart}`);
+    return data ? { week: weekStart, data } : null;
   });
+  const data = loaded?.week === weekStart ? loaded.data : null;
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    // 네 번 나눠 부르면 왕복 비용이 그만큼 쌓이므로 한 번에 받는다.
     let cancelled = false;
     setError(null);
     api
       .get<DashboardData>(`/dashboard?week=${weekStart}`)
       .then((d) => {
-        if (cancelled) return;
-        setData({
-          meetings: d.meetings ?? [],
-          reservations: d.reservations ?? [],
-        });
+        if (!cancelled) setLoaded({ week: weekStart, data: d });
       })
       .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(
-          err instanceof Error
-            ? err.message
-            : "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-        );
+        if (!cancelled)
+          setError(
+            err instanceof Error ? err.message : "홈을 불러오지 못했습니다.",
+          );
       });
     return () => {
       cancelled = true;
     };
   }, [weekStart, attempt]);
 
-  const retry = () => setAttempt((n) => n + 1);
+  const changeWeek = (direction: "prev" | "next" | "today") => {
+    setDay(0);
+    if (direction === "prev") prevWeek();
+    else if (direction === "next") nextWeek();
+    else goToday();
+  };
 
-  const meetings = data?.meetings ?? [];
-  const reservations = data?.reservations ?? [];
-  const next = reservations[0];
+  const classesFor = (index: number) =>
+    (data?.timetable ?? []).filter(
+      (e) =>
+        e.day === index && (e.repeatKind !== "once" || e.date === dates[index]),
+    );
+  const bookedFor = (index: number) =>
+    (data?.weekReservations ?? []).filter((r) => r.date === dates[index]);
+  const agenda = [
+    ...classesFor(day).map((e) => ({
+      key: `class-${e.id}`,
+      title: e.title,
+      place: e.place,
+      start: e.startMin,
+      end: e.endMin,
+      to: `/timetable?week=${weekStart}`,
+      kind: "수업·일정",
+    })),
+    ...bookedFor(day).map((r) => ({
+      key: `reservation-${r.id}`,
+      title: r.meetingName,
+      place: r.facilityName,
+      start: r.startMin,
+      end: r.endMin,
+      to: `/meetings/${r.meetingId}`,
+      kind: "시설 예약",
+    })),
+  ].sort((a, b) => a.start - b.start);
 
   return (
     <>
-      {/* 오늘 날짜는 헤더 오른쪽, 글자 설정(AA) 왼쪽에 작게 */}
-      <AppHeader subtitle={TODAY_LABEL()} />
+      <AppHeader />
       <main id="main" className="app-main home-page">
-        {/* 큰 화면: 왼쪽 프로필·바로 가기 | 오른쪽 내용. 작은 화면에서는 왼쪽 열이 숨고 내용만 위에서 아래로 */}
-        <div className="home-layout">
-          <HomeSide />
-          <div className="home-content">
-            {/* 학교 이름 + 오늘 날짜 */}
-            {/* 화면 제목은 화면 읽기용으로만 둔다 (라우트 이동 때 포커스가 h1 로 간다) */}
-            <h1 className="sr-only">홈</h1>
-
-            {error && !data ? (
-              <Alert
-                tone="danger"
-                title="홈 화면을 불러오지 못했습니다."
-                actions={
-                  <Button variant="secondary" onClick={retry}>
-                    다시 시도하기
-                  </Button>
-                }
-              >
-                {error}
-              </Alert>
-            ) : (
-              <>
-                {/* 1. 옆으로 넘기는 요약 카드: 다음 예약(강조) · 미수강 강의 · 내 회의 */}
-                <section className="home-cards" aria-label="오늘 요약">
-                  <div className="home-cards__track">
-                    <article className="home-card home-card--accent">
-                      <h2 className="home-card__title">다음 예약</h2>
-                      <p className="home-card__sub tabular">
-                        {!data
-                          ? "불러오는 중이에요."
-                          : next
-                            ? fmtDate(next.date)
-                            : "아직 예정된 예약이 없어요."}
-                      </p>
-                      {next && (
-                        <p className="home-card__sub tabular">
-                          {fmtRange(next.startMin, next.endMin)} ·{" "}
-                          {next.facilityName}
-                        </p>
-                      )}
-                      <Link to="/timetable" className="home-card__more">
-                        일정 더 보기
-                        <Icon name="chevron-right" />
-                      </Link>
-                    </article>
-
-                    {/* 두 번째: 미수강 강의 (연두색 상자) */}
-                    <EclassHomeCard />
-
-                    <article className="home-card">
-                      <h2 className="home-card__title">내 회의</h2>
-                      <p className="home-card__sub">
-                        {!data
-                          ? "불러오는 중이에요."
-                          : meetings.length === 0
-                            ? "참여 중인 회의가 없어요."
-                            : `${meetings.length}개 참여 중`}
-                      </p>
-                      <div className="home-card__actions">
-                        <Link
-                          to="/meetings"
-                          state={{ sheet: "create" }}
-                          className="home-card__act"
-                        >
-                          <Icon name="plus" />
-                          만들기
-                        </Link>
-                        <Link to="/meetings" className="home-card__act">
-                          <Icon name="list" />
-                          전체 보기
-                        </Link>
-                      </div>
-                    </article>
-                  </div>
-                </section>
-
-                {/* 3. 배너 — 라운지가 켜져 있을 때만 */}
-                {LOUNGE_ENABLED && (
-                  <Link to="/lounge" className="home-banner">
-                    <span className="home-banner__text">
-                      <strong>
-                        공강에 같이 밥 먹을 사람,
-                        <br />
-                        라운지에서 바로 찾기!
-                      </strong>
-                    </span>
-                    <span className="home-banner__art" aria-hidden="true">
-                      <Icon name="utensils" />
-                    </span>
-                  </Link>
-                )}
-
-                {/* 큰 화면에서는 아래 구역들을 두 칸 격자로 (공지 둘은 나란히, e-class·내 일정은 한 줄 전체) */}
-                <div className="home-boards">
-                  {/* 공지: 학교 공지 → 내 학과 공지 (최근 2주). 자기 데이터를 따로 불러온다 */}
-                  <HomeNotices />
-
-                  {/* 4. 미수강 강의(e-class) — 자기 데이터를 따로 불러와 아래 구역과 서로 막지 않는다 */}
-                  <EclassHome />
-
-                  {/* 5. 표: 이름 · 가장 가까운 항목 · 개수. 줄마다 눌러서 해당 화면으로 */}
-                  <section
-                    className="home-table"
-                    aria-labelledby="home-table-title"
-                  >
-                    <div className="home-sum__head">
-                      <h2 className="home-sum__title" id="home-table-title">
-                        내 일정
-                      </h2>
-                      <Link to="/timetable" className="home-sum__link">
-                        더 보기
-                        <Icon name="chevron-right" />
-                      </Link>
-                    </div>
-                    <ul className="home-table__box">
-                      <HomeTableRow
-                        to={next ? `/meetings/${next.meetingId}` : "/meetings"}
-                        label="다가오는 예약"
-                        preview={
-                          !data
-                            ? "불러오는 중이에요."
-                            : next
-                              ? `${next.facilityName} · ${fmtDate(next.date)} ${fmtRange(next.startMin, next.endMin)}`
-                              : "아직 예정된 예약이 없어요."
-                        }
-                        count={reservations.length}
-                        countLabel={`예약 ${reservations.length}건`}
-                      />
-                      <HomeTableRow
-                        to={
-                          meetings.length === 1
-                            ? `/meetings/${meetings[0].id}`
-                            : "/meetings"
-                        }
-                        state={
-                          data && meetings.length === 0
-                            ? { sheet: "create" }
-                            : undefined
-                        }
-                        label="내 회의"
-                        preview={
-                          !data
-                            ? "불러오는 중이에요."
-                            : meetings.length === 0
-                              ? "참여 중인 회의가 없어요. 눌러서 만들기"
-                              : meetings.map((m) => m.name).join(", ")
-                        }
-                        count={meetings.length}
-                        countLabel={`회의 ${meetings.length}개`}
-                      />
-                      {/* 라운지 약속은 자기 데이터를 따로 불러와서 위 줄의 로딩·오류와 서로 막지 않는다 */}
-                      {LOUNGE_ENABLED && <MyLoungeSection />}
-                    </ul>
-                  </section>
-                </div>
-              </>
-            )}
+        <div className="home-heading">
+          <div>
+            <h1 className="page-title">{user?.name}님, 안녕하세요.</h1>
+            <p className="page-lead">
+              {new Intl.DateTimeFormat("ko-KR", {
+                timeZone: "Asia/Seoul",
+                month: "long",
+                day: "numeric",
+                weekday: "long",
+              }).format(new Date())}{" "}
+              · 한성대학교
+            </p>
           </div>
+          <Avatar user={profile ?? { avatarColor: 'm1' }} size="lg" className="home-profile" label={`${user?.name ?? '내'} 프로필 이미지`} />
+        </div>
+        {error && (
+          <Alert
+            tone="danger"
+            title="일정을 불러오지 못했습니다."
+            actions={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setAttempt((n) => n + 1)}
+              >
+                다시 시도
+              </Button>
+            }
+          >
+            {error}
+            {data ? " 마지막으로 불러온 내용을 보여드립니다." : ""}
+          </Alert>
+        )}
+        <div className="dashboard-layout">
+          <section
+            className="home-panel"
+            aria-labelledby="home-week-title"
+            aria-busy={!data && !error}
+          >
+            <div className="home-sum__head">
+              <h2 className="home-sum__title" id="home-week-title">
+                {weekLabel}
+              </h2>
+              <Link
+                to={`/timetable?week=${weekStart}`}
+                className="home-sum__link"
+              >
+                전체 시간표
+                <Icon name="chevron-right" />
+              </Link>
+            </div>
+            <div
+              className="home-week-nav"
+              role="group"
+              aria-label="주간 일정 이동"
+            >
+              <button
+                type="button"
+                className="btn btn--icon"
+                aria-label="이전 주 일정"
+                onClick={() => changeWeek("prev")}
+              >
+                <Icon name="chevron-left" />
+              </button>
+              <span className="home-week-nav__range tabular">
+                {fmtWeekLabel(weekStart)}
+                <small>
+                  {Number(dates[0].slice(5, 7))}.{Number(dates[0].slice(8))} –{" "}
+                  {Number(dates[4].slice(5, 7))}.{Number(dates[4].slice(8))}
+                </small>
+              </span>
+              <button
+                type="button"
+                className="home-week-nav__today"
+                onClick={() => changeWeek("today")}
+              >
+                이번 주
+              </button>
+              <button
+                type="button"
+                className="btn btn--icon"
+                aria-label="다음 주 일정"
+                onClick={() => changeWeek("next")}
+              >
+                <Icon name="chevron-right" />
+              </button>
+            </div>
+            <div className="home-week" role="group" aria-label="일정을 볼 날짜">
+              {DAY_NAMES.map((name, i) => (
+                <button
+                  key={name}
+                  type="button"
+                  className={`home-week__day${dates[i] === today ? " is-today" : ""}`}
+                  aria-pressed={day === i}
+                  onClick={() => setDay(i)}
+                >
+                  <span>{name}</span>
+                  <strong className="tabular">
+                    {Number(dates[i].slice(-2))}
+                  </strong>
+                  <span className="home-week__count">
+                    {data
+                      ? `${classesFor(i).length + bookedFor(i).length}개`
+                      : "—"}
+                  </span>
+                  {dates[i] === today && <span className="sr-only">오늘</span>}
+                </button>
+              ))}
+            </div>
+            <div className="home-agenda" aria-live="polite">
+              <h3 className="home-agenda__label">
+                {fmtDate(dates[day])}
+                {dates[day] === today ? " · 오늘" : ""}
+              </h3>
+              {!data ? (
+                <p className="home-empty">
+                  {error
+                    ? "일정을 확인할 수 없습니다."
+                    : "일정을 불러오는 중입니다."}
+                </p>
+              ) : agenda.length === 0 ? (
+                <div className="home-empty">
+                  <p>등록된 일정이 없습니다.</p>
+                  <Link to={`/timetable?week=${weekStart}`}>
+                    시간표에 일정 추가하기
+                    <Icon name="plus" />
+                  </Link>
+                </div>
+              ) : (
+                <ul>
+                  {agenda.slice(0, 4).map((item) => (
+                    <li key={item.key}>
+                      <Link to={item.to} className="home-agenda__row">
+                        <span className="home-agenda__time tabular">
+                          {fmtRange(item.start, item.end)}
+                        </span>
+                        <span className="home-agenda__body">
+                          <strong>{item.title}</strong>
+                          <span>{item.place || item.kind}</span>
+                        </span>
+                        <Icon name="chevron-right" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {agenda.length > 4 && (
+                <Link to={`/timetable?week=${weekStart}`} className="home-sum__link">
+                  나머지 {agenda.length - 4}개 일정 보기
+                  <Icon name="chevron-right" />
+                </Link>
+              )}
+            </div>
+          </section>
+          <HomeNotifications />
+          <EclassHomeCard />
+          <HomeNotices compact />
         </div>
       </main>
     </>

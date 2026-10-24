@@ -18,38 +18,34 @@ export type College = (typeof COLLEGES)[number];
 
 /** 아바타 캐릭터 (같은 캐릭터끼리 이어서 보여 준다) */
 export const AVATAR_CHARACTERS = [
-  { key: 'turtle', label: '거북이' },
-  { key: 'cat', label: '고양이' },
-  { key: 'frog', label: '개구리' },
-  { key: 'chick', label: '병아리' },
+  { key: 'bugi', label: '상상부기' },
+  { key: 'nyangi', label: '한성냥이' },
+  { key: 'sangjji', label: '상찌' },
+  { key: 'kkokko', label: '꼬꼬' },
+  { key: 'kkukku', label: '꾸꾸' },
 ] as const;
 export type AvatarCharacter = (typeof AVATAR_CHARACTERS)[number]['key'];
 
-/**
- * 아바타(프로필 이미지). 키는 DB 에 저장되는 값이고, 화면은 `/avatars/<키>.webp` 이미지를 그린다.
- * 배열 순서가 곧 고르는 화면의 순서다: 캐릭터별로 묶고, 캐릭터 안에서는 감정이 비슷한 것끼리 이어 둔다.
- */
+/** 저장된 대표 키는 유지하되, 선택 이미지와 캐릭터 이름은 새 마스코트로 교체한다. */
 export const AVATARS = [
-  { key: 'turtle-smile', character: 'turtle', label: '거북이 · 미소' },
-  { key: 'turtle-laugh', character: 'turtle', label: '거북이 · 활짝 웃음' },
-  { key: 'turtle-cool', character: 'turtle', label: '거북이 · 멋짐' },
-  { key: 'turtle-love', character: 'turtle', label: '거북이 · 설렘' },
-  { key: 'turtle-shy', character: 'turtle', label: '거북이 · 부끄러움' },
-  { key: 'turtle-proud', character: 'turtle', label: '거북이 · 뿌듯함' },
-  { key: 'turtle-cry', character: 'turtle', label: '거북이 · 울음' },
-  { key: 'turtle-angry', character: 'turtle', label: '거북이 · 화남' },
-  { key: 'turtle-sleep', character: 'turtle', label: '거북이 · 졸림' },
-  { key: 'turtle-dizzy', character: 'turtle', label: '거북이 · 어지러움' },
-  { key: 'cat-surprised', character: 'cat', label: '고양이 · 놀람' },
-  { key: 'cat-think', character: 'cat', label: '고양이 · 고민' },
-  { key: 'cat-excited', character: 'cat', label: '고양이 · 신남' },
-  { key: 'cat-angry', character: 'cat', label: '고양이 · 화남' },
-  { key: 'cat-sleepy', character: 'cat', label: '고양이 · 졸림' },
-  { key: 'frog-tongue', character: 'frog', label: '개구리 · 메롱' },
-  { key: 'chick-love', character: 'chick', label: '병아리 · 하트' },
+  { key: 'turtle-smile', character: 'bugi', label: '상상부기', src: '/avatars/bugi.webp' },
+  { key: 'cat-think', character: 'nyangi', label: '한성냥이', src: '/avatars/nyangi.webp' },
+  { key: 'frog-tongue', character: 'sangjji', label: '상찌', src: '/avatars/sangjji.webp' },
+  { key: 'chick-love', character: 'kkokko', label: '꼬꼬', src: '/avatars/kkokko.webp' },
+  { key: 'kkukku', character: 'kkukku', label: '꾸꾸', src: '/avatars/kkukku.webp' },
 ] as const;
 export const DEFAULT_AVATAR = AVATARS[0].key;
 export type AvatarKey = (typeof AVATARS)[number]['key'];
+
+/** 이전 표정 선택은 같은 캐릭터의 새 이미지로 표시한다. 계정 데이터는 삭제하지 않는다. */
+export function normalizeAvatar(value: string | null | undefined): AvatarKey {
+  const current = AVATARS.find((a) => a.key === value);
+  if (current) return current.key;
+  if (value === 'cat' || value?.startsWith('cat-')) return 'cat-think';
+  if (value === 'frog' || value?.startsWith('frog-')) return 'frog-tongue';
+  if (value?.startsWith('chick-')) return 'chick-love';
+  return DEFAULT_AVATAR;
+}
 
 /** 아바타 색. 키 m1~m8 은 CSS 변수 --m-1 ~ --m-8 (tokens.css 의 범주 색)에 대응한다. */
 export const AVATAR_COLORS = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8'] as const;

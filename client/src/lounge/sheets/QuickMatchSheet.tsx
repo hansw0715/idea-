@@ -14,7 +14,8 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QUICK_WAIT_MIN } from '../../../../shared/lounge';
 import type { QuickMember, QuickState } from '../../../../shared/lounge';
-import { Alert, Button, Choice, Icon, LoadingBlock, Segmented, Sheet, useConfirm } from '../../ui';
+import { Alert, Button, Choice, Icon, LoadingBlock, Segmented, useConfirm } from '../../ui';
+import LoungeSurface from '../LoungeSurface';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
 import Avatar from '../parts/Avatar';
@@ -22,6 +23,7 @@ import { factLine } from '../parts/fact';
 import '../quick.css';
 
 export type QuickMatchSheetProps = {
+  presentation?: 'sheet' | 'page';
   open: boolean;
   onClose: () => void;
   onConfirmed?: (gatheringId: string) => void;
@@ -73,7 +75,7 @@ function phaseOf(state: QuickState | null): Phase {
   return 'idle';
 }
 
-export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMatchSheetProps) {
+export default function QuickMatchSheet({ open, onClose, onConfirmed, presentation = 'sheet' }: QuickMatchSheetProps) {
   const navigate = useNavigate();
   const confirm = useConfirm();
   const { handleError } = useLounge();
@@ -271,7 +273,7 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="밥약" footer={footer}>
+    <LoungeSurface presentation={presentation} open={open} onClose={onClose} title="밥약" footer={footer}>
       {!loaded ? (
         <LoadingBlock>불러오는 중입니다.</LoadingBlock>
       ) : (
@@ -354,7 +356,7 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
               <p className="text-sub text-sm">
                 {canStartNow
                   ? `${wanted - forming.length}명 더 모이면 바로 연결돼요. 기다리지 않고 지금 ${forming.length}명으로 시작할 수도 있어요.`
-                  : `${wanted - Math.max(1, forming.length)}명 더 모이면 바로 연결돼요. 이 창을 닫아도 계속 찾고 있어요.`}
+                  : `${wanted - Math.max(1, forming.length)}명 더 모이면 바로 연결돼요. 이 화면을 나가도 계속 찾고 있어요.`}
               </p>
             </div>
           )}
@@ -398,6 +400,6 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed }: QuickMat
           )}
         </div>
       )}
-    </Sheet>
+    </LoungeSurface>
   );
 }

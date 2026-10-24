@@ -5,6 +5,11 @@
 import { all, get, run } from '../../db.js';
 import type { ISODateTime } from '../../../shared/lounge/types.js';
 import type { Message } from '../domain/chat.js';
+/** 본인이 보낸 글은 새 대화 표시에서 제외한다. 본문은 목록으로 내보내지 않는다. */
+export async function latestRoomActivity(userId: string): Promise<Map<string, string>> {
+  const rows = await all<{ room_id: string; at: string }>(`SELECT m.room_id, MAX(m.at) AS at FROM lounge_messages m JOIN lounge_gatherings g ON g.id = m.room_id WHERE g.data @> ?::jsonb AND (m.user_id IS NULL OR m.user_id <> ?) GROUP BY m.room_id`, [JSON.stringify({ slots: [{ memberIds: [userId] }] }), Number(userId)]);
+  return new Map(rows.map((r) => [r.room_id, new Date(r.at).toISOString()]));
+}
 
 interface MessageRow {
   id: string;

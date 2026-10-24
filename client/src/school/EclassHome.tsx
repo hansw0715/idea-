@@ -5,13 +5,21 @@
  * - 학교 계정은 필요한 순간에만 풀어(withCredentials) 서버로 보낸다. 인증 실패·잠금 뒤에는 자동으로 다시 시도하지 않는다.
  * - 모르는 상태("확인 필요")를 완료나 0개로 보여 주지 않는다. 강의 영상·제출·출석 처리는 이 화면에서 하지 않는다(e-class 에서).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../auth';
-import type { EclassItem, EclassSnapshot } from '../../../shared/school/eclass';
-import { Alert, Badge, Button, Icon, LoadingBlock, Segmented, btnClass } from '../ui';
-import { schoolApi } from './api';
-import { isCredentialFailure, needsRelink, schoolErrorMessage } from './errors';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { useAuth } from "../auth";
+import type { EclassItem, EclassSnapshot } from "../../../shared/school/eclass";
+import {
+  Alert,
+  Badge,
+  Button,
+  Icon,
+  LoadingBlock,
+  Segmented,
+  btnClass,
+} from "../ui";
+import { schoolApi } from "./api";
+import { isCredentialFailure, needsRelink, schoolErrorMessage } from "./errors";
 import {
   ECLASS_STALE_MS,
   countsOf,
@@ -23,28 +31,36 @@ import {
   safeEclassUrl,
   sortItems,
   ts,
-} from './eclassLogic';
-import { useSchool } from './SchoolContext';
-import './eclass.css';
+} from "./eclassLogic";
+import { useSchool } from "./SchoolContext";
+import "./eclass.css";
 
-type KindFilter = 'lecture' | 'assignment';
+type KindFilter = "lecture" | "assignment";
 const PAGE = 5;
 
 /** 강좌 이름 정리: [분반] 표기와 NEW 표시를 떼어 낸다 */
 function courseLabel(name: string): string {
-  const cleaned = name.replace(/\[[^\]]*\]/g, '').replace(/NEW.*$/i, '').replace(/\s+/g, ' ').trim();
+  const cleaned = name
+    .replace(/\[[^\]]*\]/g, "")
+    .replace(/NEW.*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
   return cleaned || name;
 }
 
 /** 항목 아래 한 줄: 마감 시각 · 진도 · 확인 필요. 완료된 항목은 비운다(위 배지가 말해 준다) */
 function detailOf(item: EclassItem, now: number): string {
-  if (!isAvailable(item, now)) return item.availableAt ? `${formatDue(item.availableAt)}에 공개돼요` : '아직 공개되지 않았어요';
-  if (item.completion === 'completed') return '';
+  if (!isAvailable(item, now))
+    return item.availableAt
+      ? `${formatDue(item.availableAt)}에 공개돼요`
+      : "아직 공개되지 않았어요";
+  if (item.completion === "completed") return "";
   const parts: string[] = [];
-  if (item.completion === 'unknown') parts.push('완료 여부 확인 필요');
+  if (item.completion === "unknown") parts.push("완료 여부 확인 필요");
   if (item.dueAt) parts.push(`마감 ${formatDue(item.dueAt)}`);
-  if (item.kind === 'lecture' && item.progress !== null && item.progress > 0) parts.push(`학습 ${Math.round(item.progress)}%`);
-  return parts.join(' · ');
+  if (item.kind === "lecture" && item.progress !== null && item.progress > 0)
+    parts.push(`학습 ${Math.round(item.progress)}%`);
+  return parts.join(" · ");
 }
 
 const cacheKey = (userId: number) => `sangsang-booke:eclass:${userId}`;
@@ -54,7 +70,7 @@ function readCache(userId: number): EclassSnapshot | null {
     const raw = localStorage.getItem(cacheKey(userId));
     if (!raw) return null;
     const s = JSON.parse(raw) as EclassSnapshot;
-    return Array.isArray(s?.items) && typeof s.syncedAt === 'string' ? s : null;
+    return Array.isArray(s?.items) && typeof s.syncedAt === "string" ? s : null;
   } catch {
     return null;
   }
@@ -64,24 +80,46 @@ function writeCache(userId: number, snapshot: EclassSnapshot): void {
   try {
     localStorage.setItem(cacheKey(userId), JSON.stringify(snapshot));
     // 홈 요약 카드(EclassHomeCard)가 새 결과를 다시 읽게 알린다
-    window.dispatchEvent(new Event('sangsang-booke:eclass-updated'));
+    window.dispatchEvent(new Event("sangsang-booke:eclass-updated"));
   } catch {
     /* 저장하지 못해도 이번 화면에서는 그대로 보인다 */
   }
 }
 
 export default function EclassHome() {
+  const [params] = useSearchParams();
   const { user } = useAuth();
   const school = useSchool();
   const uid = user?.id ?? null;
 
-  const [snapshot, setSnapshot] = useState<EclassSnapshot | null>(() => (uid === null ? null : readCache(uid)));
+  const [snapshot, setSnapshot] = useState<EclassSnapshot | null>(() =>
+    uid === null ? null : readCache(uid),
+  );
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ message: string; relink: boolean } | null>(null);
-  const [kind, setKind] = useState<KindFilter>('lecture');
+  const [error, setError] = useState<{
+    message: string;
+    relink: boolean;
+  } | null>(null);
+  const [kind, setKind] = useState<KindFilter>(
+    params.get("kind") === "assignment" ? "assignment" : "lecture",
+  );
   const [showDone, setShowDone] = useState(false);
   const [limit, setLimit] = useState(PAGE);
   const [now, setNow] = useState(() => Date.now());
+  const requestedKind = params.get("kind");
+  const requestedItem = params.get("item");
+  useEffect(() => {
+    if (requestedKind === "lecture" || requestedKind === "assignment") {
+      setKind(requestedKind);
+      setLimit(PAGE);
+    }
+  }, [requestedKind]);
+  useEffect(() => {
+    if (!requestedItem) return;
+    const target = document.getElementById(`eclass-item-${requestedItem}`);
+    target?.scrollIntoView({ block: "center" });
+    target?.focus({ preventScroll: true });
+  }, [requestedItem, snapshot, kind]);
   const alive = useRef(true);
   const inFlight = useRef(false);
   // 인증 실패·잠금 뒤에는 이 방문 동안 자동으로 다시 시도하지 않는다
@@ -102,7 +140,9 @@ export default function EclassHome() {
     setLoading(true);
     setError(null);
     try {
-      const next = await school.withCredentials((creds) => schoolApi.eclass(creds));
+      const next = await school.withCredentials((creds) =>
+        schoolApi.eclass(creds),
+      );
       if (!alive.current) return;
       blocked.current = false;
       setSnapshot(next);
@@ -126,7 +166,10 @@ export default function EclassHome() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [school.canUse]);
 
-  const counts = useMemo(() => (snapshot ? countsOf(snapshot.items, now) : null), [snapshot, now]);
+  const counts = useMemo(
+    () => (snapshot ? countsOf(snapshot.items, now) : null),
+    [snapshot, now],
+  );
   const visible = useMemo(() => {
     if (!snapshot) return [];
     return sortItems(
@@ -134,16 +177,27 @@ export default function EclassHome() {
       snapshot.items.filter(
         (i) =>
           i.kind === kind &&
-          (showDone ? i.completion === 'completed' && isAvailable(i, now) && isThisWeek(i, now) : needsAttention(i, now)),
+          (showDone
+            ? i.completion === "completed" &&
+              isAvailable(i, now) &&
+              isThisWeek(i, now)
+            : needsAttention(i, now)),
       ),
       now,
     );
   }, [snapshot, kind, showDone, now]);
   // 보이는 항목을 강좌별로 묶는다 (강좌 순서는 가장 급한 항목 기준)
   const groups = useMemo(() => {
-    const map = new Map<string, { courseId: string; name: string; items: EclassItem[] }>();
+    const map = new Map<
+      string,
+      { courseId: string; name: string; items: EclassItem[] }
+    >();
     for (const item of visible.slice(0, limit)) {
-      const group = map.get(item.courseId) ?? { courseId: item.courseId, name: courseLabel(item.courseName), items: [] };
+      const group = map.get(item.courseId) ?? {
+        courseId: item.courseId,
+        name: courseLabel(item.courseName),
+        items: [],
+      };
       group.items.push(item);
       map.set(item.courseId, group);
     }
@@ -155,7 +209,7 @@ export default function EclassHome() {
   const head = (
     <div className="section__head">
       <h2 className="section__title" id="eclass-title">
-        미수강 강의
+        강의·과제 현황
       </h2>
     </div>
   );
@@ -166,9 +220,12 @@ export default function EclassHome() {
       <section className="section" aria-labelledby="eclass-title">
         {head}
         <div className="card school-eclass-empty">
-          <p className="bold">남은 강의와 과제를 홈에서 확인해요</p>
-          <p className="text-sub text-sm">학교 계정을 연동하면 미수강 강의와 미제출 과제, 마감까지 남은 시간을 볼 수 있어요.</p>
-          <Link to="/account" className={btnClass({ variant: 'secondary' })}>
+          <p className="bold">남은 강의와 과제를 한곳에서 확인해요</p>
+          <p className="text-sub text-sm">
+            학교 계정을 연동하면 미수강 강의와 미제출 과제, 마감까지 남은 시간을
+            볼 수 있어요.
+          </p>
+          <Link to="/account" className={btnClass({ variant: "secondary" })}>
             학교 계정 연동하기
           </Link>
         </div>
@@ -181,14 +238,20 @@ export default function EclassHome() {
         {head}
         <div className="card school-eclass-empty">
           <p className="bold">이 기기에서는 e-class를 확인할 수 없어요</p>
-          <p className="text-sub text-sm">로그아웃한 뒤 다시 로그인하면 이 기기에서도 확인할 수 있어요.</p>
+          <p className="text-sub text-sm">
+            로그아웃한 뒤 다시 로그인하면 이 기기에서도 확인할 수 있어요.
+          </p>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="section" aria-labelledby="eclass-title" aria-busy={loading || undefined}>
+    <section
+      className="section"
+      aria-labelledby="eclass-title"
+      aria-busy={loading || undefined}
+    >
       {head}
 
       {error && (
@@ -197,25 +260,35 @@ export default function EclassHome() {
           title="e-class 정보를 불러오지 못했어요"
           actions={
             error.relink ? (
-              <Link to="/account" className={btnClass({ variant: 'secondary', size: 'sm' })}>
+              <Link
+                to="/account"
+                className={btnClass({ variant: "secondary", size: "sm" })}
+              >
                 내 정보로 가기
               </Link>
             ) : (
-              <Button variant="secondary" size="sm" loading={loading} onClick={() => void refresh()}>
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={loading}
+                onClick={() => void refresh()}
+              >
                 다시 불러오기
               </Button>
             )
           }
         >
           {error.message}
-          {snapshot ? ' 마지막으로 확인한 정보를 보여 드려요.' : ''}
+          {snapshot ? " 마지막으로 확인한 정보를 보여 드려요." : ""}
         </Alert>
       )}
 
       {!snapshot ? (
         <div className="card">
           {loading || school.loading ? (
-            <LoadingBlock>e-class를 확인하는 중입니다. 강좌가 많으면 조금 걸려요.</LoadingBlock>
+            <LoadingBlock>
+              e-class를 확인하는 중입니다. 강좌가 많으면 조금 걸려요.
+            </LoadingBlock>
           ) : (
             <div className="school-eclass-empty">
               <p className="text-sub">아직 e-class 정보를 확인하지 못했어요.</p>
@@ -228,7 +301,10 @@ export default function EclassHome() {
       ) : (
         <div className="card school-eclass">
           {counts && counts.unknownCompletion > 0 && (
-            <p className="text-sub text-sm">완료 여부를 확인하지 못한 {counts.unknownCompletion}개는 위 숫자에 넣지 않았어요.</p>
+            <p className="text-sub text-sm">
+              완료 여부를 확인하지 못한 {counts.unknownCompletion}개는 위 숫자에
+              넣지 않았어요.
+            </p>
           )}
 
           {snapshot.warnings.length > 0 && (
@@ -256,7 +332,7 @@ export default function EclassHome() {
                   }}
                 >
                   {showDone && <Icon name="check" className="btn__icon" />}
-                  이번주 완료 {kind === 'lecture' ? '강의' : '과제'} 보기
+                  이번주 완료 {kind === "lecture" ? "강의" : "과제"} 보기
                 </button>
               }
               value={kind}
@@ -265,17 +341,22 @@ export default function EclassHome() {
                 setLimit(PAGE);
               }}
               options={[
-                { value: 'lecture', label: '강의' },
-                { value: 'assignment', label: '과제' },
+                { value: "lecture", label: "강의" },
+                { value: "assignment", label: "과제" },
               ]}
             />
             <div className="school-eclass__toggle">
-              <p className="school-eclass__tally" aria-label="확인된 강의와 과제 요약">
+              <p
+                className="school-eclass__tally"
+                aria-label="확인된 강의와 과제 요약"
+              >
                 <span>
-                  미수강 강의 <b className="tabular">{counts?.pendingLectures ?? 0}</b>
+                  미수강 강의{" "}
+                  <b className="tabular">{counts?.pendingLectures ?? 0}</b>
                 </span>
                 <span>
-                  미제출 과제 <b className="tabular">{counts?.pendingAssignments ?? 0}</b>
+                  미제출 과제{" "}
+                  <b className="tabular">{counts?.pendingAssignments ?? 0}</b>
                 </span>
               </p>
             </div>
@@ -286,26 +367,46 @@ export default function EclassHome() {
             snapshot.items.length === 0 ? (
               <p className="school-eclass__none">확인된 강의·과제가 없어요.</p>
             ) : showDone ? (
-              <p className="school-eclass__none">{`이번주에 완료한 ${kind === 'lecture' ? '강의' : '과제'}가 없어요.`}</p>
+              <p className="school-eclass__none">{`이번주에 완료한 ${kind === "lecture" ? "강의" : "과제"}가 없어요.`}</p>
             ) : null
           ) : (
             <div className="school-eclass__groups">
               {groups.map((group) => (
-                <section key={group.courseId} className="school-eclass__group" aria-label={group.name}>
+                <section
+                  key={group.courseId}
+                  className="school-eclass__group"
+                  aria-label={group.name}
+                >
                   <h3 className="school-eclass__course">{group.name}</h3>
                   <ul className="school-eclass__list">
                     {group.items.map((item) => {
                       const d = deadlineOf(item, now);
                       return (
-                        <li key={item.id} className="school-eclass__item">
+                        <li
+                          key={item.id}
+                          id={`eclass-item-${item.id}`}
+                          tabIndex={-1}
+                          className={`school-eclass__item${requestedItem === item.id ? " is-requested" : ""}`}
+                        >
                           <div className="school-eclass__row">
-                            <a className="school-eclass__title" href={safeEclassUrl(item.url)} target="_blank" rel="noopener noreferrer">
+                            <a
+                              className="school-eclass__title"
+                              href={safeEclassUrl(item.url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
                               {item.title}
-                              <span className="sr-only">(e-class, 새 창으로 열림)</span>
+                              <span className="sr-only">
+                                (e-class, 새 창으로 열림)
+                              </span>
                             </a>
                             <Badge tone={d.tone}>{d.label}</Badge>
                           </div>
-                          {detailOf(item, now) && <p className="school-eclass__sub">{detailOf(item, now)}</p>}
+                          {detailOf(item, now) && (
+                            <p className="school-eclass__sub">
+                              {detailOf(item, now)}
+                            </p>
+                          )}
                         </li>
                       );
                     })}
@@ -316,15 +417,21 @@ export default function EclassHome() {
           )}
 
           {visible.length > limit && (
-            <Button variant="secondary" block onClick={() => setLimit((n) => n + PAGE)}>
-              {PAGE}개 더 보기 ({Math.min(limit, visible.length)}/{visible.length})
+            <Button
+              variant="secondary"
+              block
+              onClick={() => setLimit((n) => n + PAGE)}
+            >
+              {PAGE}개 더 보기 ({Math.min(limit, visible.length)}/
+              {visible.length})
             </Button>
           )}
 
           <div className="school-eclass__foot">
             <span className="school-eclass__stamp">
-              {stale ? '최근 정보가 아닐 수 있어요. ' : ''}
-              마지막 확인 {syncedAt === null ? '-' : formatDue(snapshot.syncedAt)}
+              {stale ? "최근 정보가 아닐 수 있어요. " : ""}
+              마지막 확인{" "}
+              {syncedAt === null ? "-" : formatDue(snapshot.syncedAt)}
             </span>
             <button
               type="button"
@@ -334,7 +441,7 @@ export default function EclassHome() {
               onClick={() => void refresh()}
             >
               <Icon name="refresh" className="btn__icon" />
-              {loading ? '확인 중' : '새로고침'}
+              {loading ? "확인 중" : "새로고침"}
             </button>
           </div>
         </div>

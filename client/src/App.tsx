@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { api, ApiError, clearCachedResponses, setOnUnauthorized } from './api';
 import { AuthContext, useAuth } from './auth';
 import type { User } from './types';
@@ -10,6 +10,8 @@ import { ErrorBoundary } from './shell/ErrorScreen';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import Campus from './pages/Campus';
+import Friends from './pages/Friends';
 import TimetablePage from './pages/TimetablePage';
 import Meetings from './pages/Meetings';
 import MeetingDetail from './pages/MeetingDetail';
@@ -19,10 +21,18 @@ import { LOUNGE_ENABLED } from './features';
 import { SchoolProvider } from './school/SchoolContext';
 import LoungePage from './lounge/LoungePage';
 import MeetupPage from './lounge/MeetupPage';
+import MealPage from './lounge/MealPage';
+import GatheringPage from './lounge/GatheringPage';
 import ChatRoomPage from './lounge/ChatRoomPage';
+import { NotificationsProvider } from './notifications/Notifications';
 import AdminPage from './lounge/AdminPage';
 
 /** 로그인 후 화면: 로그인이 안 되어 있으면 로그인으로 보낸다. 헤더·탭바는 AppFrame 이 맡는다. */
+function MeetingsEntry() {
+  const location = useLocation();
+  return LOUNGE_ENABLED ? <Navigate to="/lounge/meetings" state={location.state} replace /> : <Meetings />;
+}
+
 function Protected({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
@@ -140,24 +150,31 @@ export default function App() {
               <MaybeLounge>
               <SchoolProvider>
               <BrowserRouter>
+                <NotificationsProvider key={user?.id ?? 'guest'}>
                 <Routes>
                   <Route path="/login" element={<Public><Login /></Public>} />
                   <Route path="/signup" element={<Public><Signup /></Public>} />
                   <Route path="/" element={<Protected><Dashboard /></Protected>} />
                   <Route path="/timetable" element={<Protected><TimetablePage /></Protected>} />
-                  <Route path="/meetings" element={<Protected><Meetings /></Protected>} />
+                  <Route path="/meetings" element={<Protected><MeetingsEntry /></Protected>} />
                   <Route path="/meetings/:id" element={<Protected><MeetingDetail /></Protected>} />
                   <Route path="/account" element={<Protected><Account /></Protected>} />
+                  <Route path="/campus" element={<Protected><Campus /></Protected>} />
                   {LOUNGE_ENABLED && (
                     <>
+                      <Route path="/account/friends" element={<Protected><Friends /></Protected>} />
                       <Route path="/lounge" element={<Protected><LoungePage /></Protected>} />
+                      <Route path="/lounge/meetings" element={<Protected><Meetings /></Protected>} />
                       <Route path="/lounge/meetup" element={<Protected><MeetupPage /></Protected>} />
+                      <Route path="/lounge/meal" element={<Protected><MealPage /></Protected>} />
+                      <Route path="/lounge/gatherings/:id" element={<Protected><GatheringPage /></Protected>} />
                       <Route path="/lounge/rooms/:id" element={<Protected><ChatRoomPage /></Protected>} />
                       <Route path="/admin" element={<AdminRoute />} />
                     </>
                   )}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+                </NotificationsProvider>
               </BrowserRouter>
               </SchoolProvider>
               </MaybeLounge>

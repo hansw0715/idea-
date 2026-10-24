@@ -1,0 +1,29 @@
+import { describe, expect, it } from 'vitest';
+import { activityDate, buildActivity, scopeFor } from './activity';
+import type { Reservation } from '../types';
+
+describe('통합 알림', () => {
+  const reservation = { id: 1, date: '2026-10-26', startMin: 600, endMin: 660, meetingId: 2, meetingName: '캡스톤', facilityId: 3, facilityName: '스터디룸', schoolStatus: 'planned' } as Reservation;
+  it('종료된 예약은 제외하고 예약 변경은 새 항목으로 구분한다', () => {
+    const old = buildActivity({ reservations: [reservation] }, Date.parse('2026-10-26T11:01:00+09:00'));
+    expect(old).toEqual([]);
+    const before = buildActivity({ reservations: [reservation] }, 0)[0];
+    const after = buildActivity({ reservations: [{ ...reservation, startMin: 630 }] }, 0)[0];
+    expect(before.scopes).toEqual(['timetable', 'lounge']);
+    expect(before.id).not.toBe(after.id);
+  });
+  it('같은 공지를 다시 조회해도 같은 알림이며 다른 계열로 섞이지 않는다', () => {
+    const data = { notices: { school: { items: [{ id: '1', title: '장학 공지', date: '2026-10-25', url: 'https://example.org' }] } } };
+    expect(buildActivity(data)).toEqual(buildActivity(data));
+    expect(buildActivity(data)[0].scopes).toEqual(['campus']);
+    expect(scopeFor('/account/friends')).toBe('account');
+    expect(scopeFor('/meetings/2')).toBe('lounge');
+  });
+  it('알림에는 생성 시각 대신 실제 예약 일시와 종료 시각을 안내한다', () => {
+    const items = buildActivity({ reservations: [reservation], meetings: [{ id: 2, name: '캡스톤', ownerId: 1, code: '1234', createdAt: '2026-10-01T00:00:00Z' }, { id: 3, name: '미정 회의', ownerId: 1, code: '2222', createdAt: '2026-10-01T00:00:00Z' }] }, 0);
+    expect(items[0].when).toMatch(/10월 26일.*10:00–11:00/);
+    expect(items[1].when).toBe(items[0].when);
+    expect(items[2].when).toContain('일정 미정');
+    expect(activityDate('2026-10-25T15:30:00Z')).toMatch(/10월 26일.*00:30/);
+  });
+});

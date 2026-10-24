@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { AVATARS, temperatureFace } from '../../../../shared/lounge';
+import { AVATARS, normalizeAvatar, temperatureFace } from '../../../../shared/lounge';
 import { Icon } from '../../ui';
 import type { AvatarColor, AvatarKey } from '../../../../shared/lounge';
 import './parts.css';
@@ -7,8 +7,8 @@ import './parts.css';
 type AvatarLike = { avatar?: AvatarKey; avatarColor: AvatarColor; nickname?: string };
 
 /**
- * 라운지 아바타: 사용자가 고른 캐릭터 이미지(원형 배지). 이모지는 쓰지 않는다.
- * 색은 범주 색 토큰(--m-1 ~ --m-8)이고, 사람 구분은 색만이 아니라 이름/이모지/위치와 함께 한다.
+ * 라운지 아바타: 동일한 배경·모서리를 가진 새 마스코트 이미지.
+ * 이전 캐릭터 선택도 같은 마스코트로 연결하며, 사용자 구분은 이름과 함께 제공한다.
  * size: sm(24) md(36) lg(56). 지도처럼 크기를 직접 정하려면 `--avatar-size` 를 style 로 넘긴다.
  */
 export default function Avatar({
@@ -25,7 +25,7 @@ export default function Avatar({
   className?: string;
   style?: CSSProperties;
 }) {
-  const face = AVATARS.find((a) => a.key === user.avatar) ?? AVATARS[0];
+  const face = AVATARS.find((a) => a.key === normalizeAvatar(user.avatar)) ?? AVATARS[0];
   const n = user.avatarColor.replace('m', '');
   return (
     <span
@@ -35,7 +35,7 @@ export default function Avatar({
       aria-label={label}
       aria-hidden={label ? undefined : true}
     >
-      <img className="lounge-avatar__img" src={`/avatars/${face.key}.webp`} alt="" width="256" height="256" loading="lazy" draggable={false} />
+      <img className="lounge-avatar__img" src={face.src} alt="" width="256" height="256" loading="lazy" draggable={false} />
     </span>
   );
 }

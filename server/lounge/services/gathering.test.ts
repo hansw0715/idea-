@@ -26,7 +26,8 @@ import * as G from '../domain/gathering.js';
 import { findGathering, insertGathering, listMine, mutateGathering } from '../repo/gatherings.js';
 import { listMessages } from '../repo/messages.js';
 import * as svc from './gathering.js';
-import { openRoomIfNeeded, roomView, sendMessage } from './chat.js';
+import { openRoomIfNeeded, roomView, roomSummaries, sendMessage } from './chat.js';
+import { notify } from './push.js';
 import { blockChecker, blockUser, handleReport, hiddenFor, listReportsForAdmin, myBlocks, reportUser, unblockUser } from './safety.js';
 import { adminStats } from './stats.js';
 import { sortMealFeed, toView } from './present.js';
@@ -661,6 +662,25 @@ describe('단톡방', () => {
     expect(errCode(await sendMessage(host, g.id, '안녕'))).toBe('NOT_OPEN');
     const room = must(await roomView(host, g.id));
     expect(room.readOnly).toBe(true);
+  });
+
+  it('채팅 목록은 오래된 방도 포함하고 실제 참여자에게 열린 방만 보여 준다', async () => {
+    const host = await makeUser();
+    const [a, b, c, outsider] = await Promise.all([makeUser(), makeUser(), makeUser(), makeUser()]);
+    const g = await makeMeetup(host);
+    expect(await roomSummaries(host)).toEqual([]);
+    for (const [u, slot] of [[a, 'guest'], [b, 'guest'], [c, 'host']] as const) must(await joinAs(u, g.id, slot));
+    const full = (await findGathering(g.id))!;
+    const old = { ...full, id: randomUUID(), meetAt: new Date(Date.now() - 30 * 86400000).toISOString(), status: 'done' as const };
+    await insertGathering(old);
+    const rooms = await roomSummaries(a);
+    expect(rooms.map((r) => r.id)).toEqual([g.id, old.id]);
+    expect(rooms[0]).toMatchObject({ memberCount: 4, readOnly: false });
+    expect(rooms[1]).toMatchObject({ readOnly: true });
+    expect(await roomSummaries(outsider)).toEqual([]);
+    expect(must(await roomView(a, old.id)).readOnly).toBe(true);
+    await svc.leaveGathering(a, g.id);
+    expect((await roomSummaries(a)).map((r) => r.id)).toEqual([old.id]);
   });
 
   it('보낸 메시지가 보이고, after 로 새 메시지만 받으며, 보낸 사람 표시(mine)가 맞다', async () => {
@@ -1624,6 +1644,17 @@ describe('HTTP — 실제 라우터 체인', () => {
     }
     return { status: res.status, json };
   }
+
+  it('푸시를 켜지 않아도 알림을 보관하고 본인 알림만 조회한다', async () => {
+    const a = await makeUser({ profile: false });
+    const b = await makeUser();
+    await notify(a.id, { title: '회의 초대', body: '새 회의에 초대했어요.', url: '/meetings/1' });
+    const own = await call(a, 'GET', '/notifications');
+    expect(own.status).toBe(200);
+    expect(own.json?.notifications).toEqual([expect.objectContaining({ title: '회의 초대', url: '/meetings/1' })]);
+    expect((await call(b, 'GET', '/notifications')).json?.notifications).toEqual([]);
+    expect((await fetch(`${base}/notifications`)).status).toBe(401);
+  });
 
   const BAD_IDS: [string, string][] = [
     ['NUL', 'a\u0000b'],

@@ -357,7 +357,7 @@ function ChatRoom({ roomId }: { roomId: string }) {
 
   return (
     <div className={`lounge-chat-shell${ready ? ' lounge-chat-root' : ''}`}>
-      <AppHeader title={title} backTo="/lounge" actions={moreButton} />
+      <AppHeader title={title} backTo="/lounge?tab=chats" actions={moreButton} />
 
       {phase === 'loading' && (
         <main id="main" className="app-main">

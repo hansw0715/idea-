@@ -24,6 +24,7 @@ import type {
   ReportInput,
   ReportView,
   RoomView,
+  RoomSummary,
 } from '../../../shared/lounge';
 
 const L = '/lounge';
@@ -62,6 +63,7 @@ export const loungeApi = {
     api.post<{ gathering: GatheringView }>(`${L}/gatherings/${id}/${action}`, body).then((r) => r.gathering),
 
   // 단톡방
+  rooms: () => api.get<{ rooms: RoomSummary[] }>(`${L}/rooms`).then((r) => r.rooms),
   room: (id: string, after?: string) =>
     api
       .get<{ room: RoomView }>(`${L}/gatherings/${id}/messages${after ? `?after=${encodeURIComponent(after)}` : ''}`)

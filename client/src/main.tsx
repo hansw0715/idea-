@@ -5,6 +5,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/components.css';
 import App from './App';
+import './styles/refresh.css';
 import DownloadPage from './pages/DownloadPage';
 import { isStandalone } from './shell/InstallBanner';
 

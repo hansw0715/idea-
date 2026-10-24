@@ -52,7 +52,7 @@ describe('DEMO_USERS', () => {
 
   it('단과대·아바타·색·학번이 고르게 흩어져 있고 같은 학과 쌍이 있다', () => {
     expect(new Set(DEMO_USERS.map((u) => u.college)).size).toBeGreaterThanOrEqual(4);
-    expect(new Set(DEMO_USERS.map((u) => u.avatar)).size).toBe(8);
+    expect(new Set(DEMO_USERS.map((u) => u.avatar)).size).toBe(AVATARS.length);
     expect(DEMO_USERS.every((u) => (COLLEGES as readonly string[]).includes(u.college))).toBe(true);
     expect(DEMO_USERS.every((u) => AVATARS.some((a) => a.key === u.avatar))).toBe(true);
     expect(DEMO_USERS.every((u) => (AVATAR_COLORS as readonly string[]).includes(u.avatarColor))).toBe(true);

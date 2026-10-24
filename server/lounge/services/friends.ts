@@ -108,7 +108,7 @@ export async function requestFriend(me: string, username: string): Promise<Resul
   await notify(targetId, {
     title: sender?.nickname || '친구 요청',
     body: '친구 요청을 보냈어요. 눌러서 수락해 주세요.',
-    url: '/lounge',
+    url: '/account/friends',
     tag: `friend-request-${me}`,
     icon: '/brand/notify-friend.png',
   });
@@ -136,7 +136,7 @@ async function notifyAccepted(me: string, otherId: string): Promise<void> {
   await notify(otherId, {
     title: accepter?.name || accepter?.nickname || '친구',
     body: '친구 요청을 수락했어요. 이제 친구예요!',
-    url: '/lounge',
+    url: '/account/friends',
     tag: `friend-accepted-${me}`,
     icon: '/brand/notify-friend.png',
   });

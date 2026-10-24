@@ -349,7 +349,7 @@ describe('POST /api/auth/signup — 가입 ② 아이디·비밀번호 + 연동'
     const wrongSecret = jwt.sign({ purpose: 'school-signup', sh: 'a'.repeat(64), name: 'x', department: '', admissionYear: null, hint: '***' }, 'some-other-secret', { expiresIn: '15m' });
     const loginToken = jwt.sign({ uid: 1 }, process.env.JWT_SECRET!);
     const [h, p, s] = good.split('.');
-    const tampered = `${h}.${p}.${s.slice(0, -2)}${s.endsWith('A') ? 'B' : 'A'}${s.slice(-1)}`;
+    const tampered = `${h}.${p}.${s.slice(0, -2)}${s.at(-2) === 'A' ? 'B' : 'A'}${s.slice(-1)}`;
     const forgedPayload = `${h}.${Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(p, 'base64url').toString()), name: '다른사람' })).toString('base64url')}.${s}`;
     for (const t of [undefined, '', 123, 'abc.def.ghi', wrongSecret, loginToken, tampered, forgedPayload]) {
       const r = await signup(signupBody(t as string, { username: `u${Math.floor(Math.random() * 1e6)}x` }));

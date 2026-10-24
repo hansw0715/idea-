@@ -52,7 +52,7 @@ export function validateProfileUpdate(
   // 표정은 보내지 않으면 지금 것을 그대로 둔다
   if (b.avatar === undefined) return ok({ avatarColor, ...(gender ? { gender } : {}) });
   const face = AVATARS.find((a) => a.key === b.avatar);
-  if (typeof b.avatar !== 'string' || !face) return fail('INVALID', '표정을 목록에서 골라 주세요.');
+  if (typeof b.avatar !== 'string' || !face) return fail('INVALID', '프로필 이미지를 목록에서 골라 주세요.');
   return ok({ avatarColor, avatar: face.key, ...(gender ? { gender } : {}) });
 }
 

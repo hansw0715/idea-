@@ -13,7 +13,6 @@ import { schoolErrorMessage } from '../school/errors';
 import { useSchool } from '../school/SchoolContext';
 import {
   Alert,
-  Badge,
   Button,
   EmptyState,
   Icon,
@@ -610,8 +609,7 @@ export default function MeetingDetail() {
                     aria-hidden="true"
                   />
                   <span>{m.name}</span>
-                  {m.isOwner ? <Badge tone="gray">방장</Badge> : null}
-                  {!on && <span className="mtg-chip__off">제외됨</span>}
+                  {m.isOwner ? <span className="mtg-chip__role">방장</span> : null}
                 </button>
               );
             })}
@@ -657,14 +655,13 @@ export default function MeetingDetail() {
             <div className="stack">
               <ul className="mtg-legend" aria-label="팀원별 색 안내">
                 {detail.members.map((m, i) => (
-                  <li key={m.id} className="mtg-legend__item">
+                  <li key={m.id} className={`mtg-legend__item${activeIds.includes(m.id) ? '' : ' is-off'}`}>
                     <span
                       className="mtg-legend__dot"
-                      style={{ background: colorOf(i) }}
+                      style={{ background: activeIds.includes(m.id) ? colorOf(i) : 'var(--gray-30)' }}
                       aria-hidden="true"
                     />
                     {m.name}
-                    {!activeIds.includes(m.id) && <span className="text-muted"> (제외됨)</span>}
                   </li>
                 ))}
                 <li className="mtg-legend__item">

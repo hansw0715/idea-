@@ -32,10 +32,10 @@ manifestRouter.get('/', (req, res) => {
         background_color: color,
         theme_color: color,
         icons: [
-          { src: '/brand/mark-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/brand/mark-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/brand/mark-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-          { src: '/brand/mark-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/brand/app-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/brand/app-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/brand/app-icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: '/brand/app-icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
         // 설치 사이트가 "정말 깔렸는지" 확인할 때 쓴다 (getInstalledRelatedApps)
         related_applications: [{ platform: 'webapp', url: '/api/manifest' }],

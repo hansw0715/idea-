@@ -1,24 +1,25 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { BAN_NOTICE_GENERIC } from '../../../shared/lounge';
 import type { GatheringView, Profile } from '../../../shared/lounge';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { AppHeader } from '../shell/Shell';
-import { Alert, Button, Icon, LoadingBlock } from '../ui';
+import { Alert, Button, Icon, LoadingBlock, Tabs } from '../ui';
+import ChatList from './ChatList';
 import { useLounge } from './LoungeContext';
 import GatheringListItem from './parts/GatheringListItem';
-import QuickMatchSheet from './sheets/QuickMatchSheet';
-import FriendsSection from './friends/FriendsSection';
-import TableSheet from './sheets/TableSheet';
 import { isEnded } from './world/tables';
 import { useGatherings } from './world/useGatherings';
 import './hub.css';
 
 /**
- * 라운지 첫 화면 (/lounge): 큰 버튼 두 개 — 위는 밥약(가까운 학우와 바로 연결), 아래는 미팅(자리에 앉아 참여).
- * 그 아래 친구(추가·요청·목록), 내 약속.
+ * 라운지 첫 화면 (/lounge): 밥약·미팅·회의를 같은 카드와 페이지 탐색으로 제공한다.
+ * 모임 탭에서 밥약·미팅·내 약속·팀 회의를 함께 보여 준다.
  * 프로필이 없으면 프로필 만들기를 안내한다(게이트).
  */
 export default function LoungePage() {
+  const [params, setParams] = useSearchParams();
+  const tab = params.get('tab') === 'chats' ? 'chats' : 'discover';
+  const changeTab = (next: string) => setParams(next === 'discover' ? {} : { tab: next });
   const { profile, needsProfile, loading, error, refresh, openProfileSheet } = useLounge();
 
   // 프로필이 없으면 들어오자마자 만들기 시트를 한 번 연다. 닫으면 아래 안내가 남는다.
@@ -36,9 +37,11 @@ export default function LoungePage() {
       <main id="main" className="app-main">
         <div className="page-head">
           <h1 className="page-title">라운지</h1>
-          <p className="page-lead">같이 밥 먹을 사람, 같이 만날 사람을 찾아요.</p>
+          <p className="page-lead">밥약부터 팀 회의, 함께하는 대화까지.</p>
         </div>
-
+        <Tabs label="라운지 메뉴" value={tab} onChange={changeTab} idBase="lounge" tabs={[{ value: 'discover', label: '모임' }, { value: 'chats', label: '채팅' }]} />
+        <div role="tabpanel" id={`lounge-panel-${tab}`} aria-labelledby={`lounge-tab-${tab}`} className="lounge-panel">
+        {tab === 'chats' ? <ChatList onExplore={() => changeTab('discover')} /> : <>
         {loading ? (
           <LoadingBlock>라운지를 불러오는 중입니다.</LoadingBlock>
         ) : error ? (
@@ -68,6 +71,9 @@ export default function LoungePage() {
         ) : (
           <LoungeHome profile={profile} />
         )}
+        {(loading || error || needsProfile || profile === null) && <div className="lounge-hub"><MeetingCard /></div>}
+        </>}
+        </div>
       </main>
     </>
   );
@@ -75,16 +81,10 @@ export default function LoungePage() {
 
 function LoungeHome({ profile }: { profile: Profile }) {
   const gatherings = useGatherings(true);
-  const { upsert, refresh } = gatherings;
+  const navigate = useNavigate();
   const banned = profile.banned;
 
-  const [quickOpen, setQuickOpen] = useState(false);
-  const [tableOpen, setTableOpen] = useState(false);
-  const [tableArg, setTableArg] = useState<{ id: string | null; initial: GatheringView | null }>({ id: null, initial: null });
-  const openTable = useCallback((g: GatheringView) => {
-    setTableArg({ id: g.id, initial: g });
-    setTableOpen(true);
-  }, []);
+  const openTable = (g: GatheringView) => navigate(`/lounge/gatherings/${g.id}`, { state: { backTo: '/lounge' } });
 
   const mine = gatherings.mine.filter((g) => !isEnded(g));
 
@@ -97,7 +97,7 @@ function LoungeHome({ profile }: { profile: Profile }) {
       )}
 
       <div className="lounge-hub">
-        <button type="button" className="lounge-hub-btn lounge-hub-btn--meal" disabled={banned} onClick={() => setQuickOpen(true)}>
+        <Link to="/lounge/meal" className="lounge-hub-btn lounge-hub-btn--meal" aria-disabled={banned || undefined}>
           <Icon name="utensils" className="lounge-hub-btn__icon" />
           <span>
             <span className="lounge-hub-btn__title">밥약</span>
@@ -107,7 +107,7 @@ function LoungeHome({ profile }: { profile: Profile }) {
             <span className="bold">밥 같이 먹기</span>
             <Icon name="chevron-right" />
           </span>
-        </button>
+        </Link>
 
         <Link to="/lounge/meetup" className="lounge-hub-btn lounge-hub-btn--meetup" aria-disabled={banned || undefined}>
           <Icon name="smile" className="lounge-hub-btn__icon" />
@@ -120,10 +120,8 @@ function LoungeHome({ profile }: { profile: Profile }) {
             <Icon name="chevron-right" />
           </span>
         </Link>
+        <MeetingCard />
       </div>
-
-      {/* 친구: 밥약·미팅 바로 아래. 추가·요청 수락·삭제는 모두 여기서 하고, 밥약의 "친구끼리만"에 쓰인다 */}
-      <FriendsSection />
 
       {mine.length > 0 && (
         <section className="section lounge-hub-mine" aria-labelledby="lounge-mine-title">
@@ -132,7 +130,7 @@ function LoungeHome({ profile }: { profile: Profile }) {
               내 약속
             </h2>
           </div>
-          <ul className="card card--list">
+          <ul className="lounge-gathering-list">
             {mine.map((g) => (
               <li key={g.id}>
                 <GatheringListItem gathering={g} onOpen={openTable} />
@@ -142,19 +140,14 @@ function LoungeHome({ profile }: { profile: Profile }) {
         </section>
       )}
 
-      <TableSheet
-        open={tableOpen}
-        gatheringId={tableArg.id}
-        initial={tableArg.initial}
-        focusSlotKey={null}
-        onClose={() => setTableOpen(false)}
-        onSafetyChanged={refresh}
-        onChanged={(g) => {
-          upsert(g);
-          refresh();
-        }}
-      />
-      <QuickMatchSheet open={quickOpen} onClose={() => setQuickOpen(false)} onConfirmed={() => refresh()} />
     </>
   );
+}
+
+function MeetingCard() {
+  return <Link to="/lounge/meetings" className="lounge-hub-btn lounge-hub-btn--meeting">
+    <Icon name="users" className="lounge-hub-btn__icon" />
+    <span><span className="lounge-hub-btn__title">회의</span><span className="lounge-hub-btn__sub">팀원의 공강을 맞추고 함께할 공간을 예약해요.</span></span>
+    <span className="lounge-hub-btn__go"><span className="bold">회의 보러 가기</span><Icon name="chevron-right" /></span>
+  </Link>;
 }

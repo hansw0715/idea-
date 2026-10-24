@@ -3,8 +3,8 @@
  * 3초마다 사람 수만큼 불리는 경로라서 읽기는 쿼리 2개(차단 목록 + 접속자·프로필 조인)로 끝낸다.
  * 규칙: docs/lounge/01-contract.md §2
  */
-import { AVATARS, AVATAR_COLORS, DEFAULT_AVATAR, EMOTES, EMOTE_TTL_MS, PRESENCE_TTL_SEC, ZONES } from '../../../shared/lounge/constants.js';
-import type { AvatarColor, AvatarKey, EmoteKey } from '../../../shared/lounge/constants.js';
+import { normalizeAvatar, AVATAR_COLORS, EMOTES, EMOTE_TTL_MS, PRESENCE_TTL_SEC, ZONES } from '../../../shared/lounge/constants.js';
+import type { AvatarColor, EmoteKey } from '../../../shared/lounge/constants.js';
 import { fail, ok } from '../../../shared/lounge/types.js';
 import type { Result } from '../../../shared/lounge/types.js';
 import type { PresenceInput, PresenceResponse, PresenceUser } from '../../../shared/lounge/view.js';
@@ -55,7 +55,6 @@ export async function writePresence(user: LoungeUser, raw: unknown, now: Date = 
 
 // ───────────── 읽기 ─────────────
 
-const isAvatar = (v: string | null): v is AvatarKey => AVATARS.some((a) => a.key === v);
 const isColor = (v: string | null): v is AvatarColor => (AVATAR_COLORS as readonly string[]).includes(v ?? '');
 const isEmote = (v: string | null): v is EmoteKey => EMOTES.some((e) => e.key === v);
 
@@ -75,7 +74,7 @@ export function toPresenceUser(row: PresenceRow, now: Date): PresenceUser {
       department: row.department,
       admissionYear: row.admissionYear,
       gender: row.gender === 'male' || row.gender === 'female' ? row.gender : null,
-      avatar: isAvatar(row.avatar) ? row.avatar : DEFAULT_AVATAR,
+      avatar: normalizeAvatar(row.avatar),
       avatarColor: isColor(row.avatarColor) ? row.avatarColor : 'm1',
       temperature: row.temperature,
     },

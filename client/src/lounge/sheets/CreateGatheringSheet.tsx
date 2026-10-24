@@ -263,7 +263,7 @@ function CreateForm({
               slots: MEAL_PRESET(capacity).slots,
               meta: { placeType, menu, tags },
             });
-      toast('자리를 만들었어요.');
+      toast('자리를 만들었어요.', { tone: 'success' });
       onCreated(view);
     } catch (err) {
       if (handleError(err)) {

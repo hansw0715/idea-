@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import Icon from './Icon';
 
 interface ToastOptions {
+  tone?: 'neutral' | 'success';
   /** "되돌리기"처럼 스낵바에 붙는 행동 */
   action?: { label: string; onClick: () => void };
   /** 자동으로 닫히기까지 ms (기본 4000) */
@@ -59,6 +61,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div className="toast-region" aria-live="polite" aria-atomic="true">
         {items.map((t) => (
           <div className="toast" key={t.id} role="status">
+            <Icon name={t.tone === 'success' ? 'check' : 'info'} className="toast__mark" />
             <span className="toast__text">{t.message}</span>
             {t.action && (
               <button
@@ -72,6 +75,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 {t.action.label}
               </button>
             )}
+            <button type="button" className="toast__close" onClick={() => dismiss(t.id)} aria-label="알림 닫기"><Icon name="close" /></button>
           </div>
         ))}
       </div>

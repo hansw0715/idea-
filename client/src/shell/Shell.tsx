@@ -1,12 +1,14 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Icon } from '../ui';
 import type { IconName } from '../ui';
 import { LOUNGE_ENABLED } from '../features';
 import { useAuth } from '../auth';
 import { useLoungeOptional } from '../lounge/LoungeContext';
 import Avatar from '../lounge/parts/Avatar';
+import { useNotifications } from '../notifications/Notifications';
+import { scopeFor } from '../notifications/activity';
 
 /* ── 하단 탭바 숨김 제어 (전체 화면 흐름에서 사용) ─────────────── */
 interface ShellApi {
@@ -34,6 +36,8 @@ function routeTitle(pathname: string): string | null {
   if (pathname === '/lounge') return '라운지';
   if (pathname === '/admin') return '관리자';
   if (pathname === '/account') return '내 정보';
+  if (pathname === '/account/friends') return '친구';
+  if (pathname === '/campus') return '학사 알림';
   return null; // 회의 상세 등: 화면 제목(h1)을 따라간다
 }
 
@@ -76,13 +80,15 @@ function ScrollToTop() {
 const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: '/', label: '홈', icon: 'home', end: true },
   { to: '/timetable', label: '시간표', icon: 'calendar' },
-  { to: '/meetings', label: '회의', icon: 'users' },
+  ...(!LOUNGE_ENABLED ? [{ to: '/meetings', label: '회의', icon: 'users' as IconName }] : []),
   ...(LOUNGE_ENABLED ? [{ to: '/lounge', label: '라운지', icon: 'lounge' as IconName }] : []),
+  { to: '/campus', label: '학사 알림', icon: 'list' },
   { to: '/account', label: '내 정보', icon: 'user' },
 ];
 
 /** 지금 주소에 해당하는 탭 번호. 탭에 없는 화면(관리자 등)이면 -1 */
 function activeTabIndex(pathname: string): number {
+  if (LOUNGE_ENABLED && pathname.startsWith('/meetings')) return TABS.findIndex((t) => t.to === '/lounge');
   return TABS.findIndex((t) => (t.end ? pathname === t.to : pathname === t.to || pathname.startsWith(`${t.to}/`)));
 }
 
@@ -93,6 +99,7 @@ function activeTabIndex(pathname: string): number {
 let lastTabIndex = -1;
 
 export function TabBar() {
+  const { unread } = useNotifications();
   const { pathname } = useLocation();
   const target = activeTabIndex(pathname);
   // 처음에는 지난 자리에 그렸다가, 그려진 직후 새 자리로 옮겨 움직임이 보이게 한다
@@ -109,12 +116,12 @@ export function TabBar() {
         {shown >= 0 && (
           <li className="tabbar__pill" role="presentation" aria-hidden="true" style={{ '--tab-index': shown } as CSSProperties} />
         )}
-        {TABS.map((t) => (
+        {TABS.map((t, index) => (
           <li key={t.to} style={{ display: 'contents' }}>
-            <NavLink to={t.to} end={t.end} className="tabbar__item">
-              <Icon name={t.icon} className="tabbar__icon" />
+            <Link to={t.to} aria-current={target === index ? 'page' : undefined} className="tabbar__item">
+              <span className="nav-icon"><Icon name={t.icon} className="tabbar__icon" />{unread(scopeFor(t.to)!) && <span className="nav-dot" role="img" aria-label="새 알림" />}</span>
               <span>{t.label}</span>
-            </NavLink>
+            </Link>
           </li>
         ))}
       </ul>
@@ -127,20 +134,24 @@ export function TabBar() {
  * 큰 화면에서는 하단 탭바와 화면마다의 로고 머리글 대신 이것이 보인다 (작은 화면에서는 숨는다).
  */
 function TopNav() {
+  const { unread } = useNotifications();
+  const { pathname } = useLocation();
+  const target = activeTabIndex(pathname);
   const { user } = useAuth();
   const loungeProfile = useLoungeOptional()?.profile ?? null;
   return (
     <header className="topnav">
       <div className="topnav__inner">
         <Link to="/" className="topnav__brand" aria-label="상상Book-E 홈">
-          <img className="topnav__mark" src="/brand/mark.png" alt="" width="40" height="40" />
-          <span>상상Book-E</span>
+          <img className="topnav__mark" src="/brand/app-icon-64.png" alt="" width="40" height="40" />
+          <span>상상Book-E<small className="topnav__scope">한성대학교 캠퍼스</small></span>
         </Link>
         <nav className="topnav__menu" aria-label="주요 메뉴">
-          {TABS.map((t) => (
-            <NavLink key={t.to} to={t.to} end={t.end} className="topnav__item">
+          {TABS.map((t, index) => (
+            <Link key={t.to} to={t.to} aria-current={target === index ? 'page' : undefined} className="topnav__item">
+              <span className="nav-icon"><Icon name={t.icon} />{unread(scopeFor(t.to)!) && <span className="nav-dot" role="img" aria-label="새 알림" />}</span>
               {t.label}
-            </NavLink>
+            </Link>
           ))}
         </nav>
         {user && (
@@ -149,11 +160,13 @@ function TopNav() {
             className={`app-header__avatar${loungeProfile ? ' app-header__avatar--lounge' : ''}`}
             aria-label={`내 정보 (${user.name})`}
           >
-            {loungeProfile ? (
+            <span className="topnav__user-icon">{loungeProfile ? (
               <Avatar user={loungeProfile} size="md" />
             ) : (
               <span aria-hidden="true">{user.name.trim().charAt(0) || '나'}</span>
-            )}
+            )}</span>
+            <span className="topnav__user-name">{user.name}<small>내 정보 · 계정 관리</small></span>
+            <Icon name="chevron-right" className="topnav__user-arrow" />
           </Link>
         )}
       </div>
@@ -196,11 +209,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ title, backTo, onBack, actions, subtitle, bare = false }: AppHeaderProps) {
-  const { user } = useAuth();
-  // 라운지 프로필이 있으면 고른 캐릭터를, 없으면 이름 첫 글자를 보여 준다
-  const loungeProfile = useLoungeOptional()?.profile ?? null;
   const hasBack = title !== undefined;
-  const showAvatar = !hasBack && !bare && user && !user.adminSession;
 
   return (
     <header className={`app-header${hasBack ? ' app-header--back' : ''}${bare ? ' app-header--bare' : ''}`}>
@@ -227,7 +236,7 @@ export function AppHeader({ title, backTo, onBack, actions, subtitle, bare = fal
       ) : (
         <>
           <Link to="/" className="app-header__brand" aria-label="상상Book-E 홈">
-            <img className="app-header__mark" src="/brand/mark.png" alt="" width="32" height="32" />
+            <img className="app-header__mark" src="/brand/app-icon-64.png" alt="" width="32" height="32" />
             <span className="app-header__name">
               <span>상상Book-E</span>
               {subtitle && <span className="app-header__date">{subtitle}</span>}
@@ -238,19 +247,6 @@ export function AppHeader({ title, backTo, onBack, actions, subtitle, bare = fal
       )}
       <div className="app-header__actions">
         {actions}
-        {showAvatar && (
-          <Link
-            to="/account"
-            className={`app-header__avatar${loungeProfile ? ' app-header__avatar--lounge' : ''}`}
-            aria-label={`내 정보 (${user.name})`}
-          >
-            {loungeProfile ? (
-              <Avatar user={loungeProfile} size="md" />
-            ) : (
-              <span aria-hidden="true">{user.name.trim().charAt(0) || '나'}</span>
-            )}
-          </Link>
-        )}
       </div>
     </header>
   );

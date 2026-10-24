@@ -117,7 +117,7 @@ export default function Meetings() {
     const requested = (location.state as { sheet?: string } | null)?.sheet;
     if (requested === 'create' || requested === 'join') {
       openSheet(requested);
-      navigate(location.pathname, { replace: true, state: null });
+      navigate(location.pathname + location.search, { replace: true, state: null });
     }
     // 처음 한 번만 확인한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,7 +142,7 @@ export default function Meetings() {
     setPending(true);
     try {
       const meeting = await api.post<Meeting>('/meetings', { name: trimmed });
-      toast('회의를 만들었습니다.');
+      toast('회의를 만들었습니다.', { tone: 'success' });
       navigate(`/meetings/${meeting.id}`);
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : '회의를 만들지 못했습니다.');
@@ -175,7 +175,7 @@ export default function Meetings() {
         });
         return;
       }
-      toast('회의에 참가했습니다.');
+      toast('회의에 참가했습니다.', { tone: 'success' });
       navigate(`/meetings/${meeting.id}`);
     } catch (err) {
       setJoinError(err instanceof Error ? err.message : '회의에 참가하지 못했습니다.');
@@ -189,11 +189,11 @@ export default function Meetings() {
 
   return (
     <>
-      <AppHeader />
+      <AppHeader title="회의" backTo="/lounge" />
       <main id="main" className="app-main">
         <div className="page-head meet-page__head">
           <div className="grow">
-            <h1 className="page-title">회의</h1>
+            <h2 className="section__title">팀 회의</h2>
             <p className="page-lead">회의를 만들거나, 받은 코드로 참가해 보세요.</p>
           </div>
           {/* 제목 오른쪽의 작은 "학교 예약 보기" (학교 계정이 연동돼 있을 때만) */}
@@ -240,9 +240,10 @@ export default function Meetings() {
                 title="아직 참여 중인 회의가 없습니다."
                 description="회의를 만들면 4자리 코드가 생기고, 팀원은 그 코드로 참가할 수 있습니다."
                 action={
-                  <Button variant="secondary" onClick={() => openSheet('create')}>
+                  <div className="empty-meeting-actions"><Button variant="secondary" onClick={() => openSheet('create')}>
                     회의 만들기
                   </Button>
+                  <Button variant="tertiary" onClick={() => openSheet('join')}>초대 코드로 참가</Button></div>
                 }
               />
             </div>
