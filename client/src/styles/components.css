@@ -959,11 +959,13 @@
 .sheet {
   position: fixed;
   inset: auto 0 0 0;
+  bottom: var(--sheet-viewport-bottom, 0px);
   /* flex-direction 은 닫히는 동안에도 유지돼야 한다 — [open] 에만 두면 닫는 400ms 동안 가로로 펼쳐져 깨져 보인다 */
   flex-direction: column;
   width: 100%;
   max-width: var(--frame-max);
-  max-height: 92dvh;
+  max-height: 92vh;
+  max-height: calc(var(--sheet-viewport-height, 100dvh) * 0.92);
   margin: 0 auto;
   padding: 0;
   border: 0;
@@ -980,16 +982,28 @@
 .sheet[open] {
   display: flex;
   transform: translateY(0);
+  /* iOS Safari의 @starting-style / display 전환 지원 여부에 의존하지 않는다. */
+  animation: sheet-enter var(--t-base);
 }
-@starting-style {
-  .sheet[open] {
+@keyframes sheet-enter {
+  from {
     transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
   }
 }
 .sheet--full {
-  height: 100dvh;
-  max-height: 100dvh;
+  height: 100vh;
+  max-height: 100vh;
+  height: var(--sheet-viewport-height, 100dvh);
+  max-height: var(--sheet-viewport-height, 100dvh);
   border-radius: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open] {
+    animation: none;
+  }
 }
 .sheet::backdrop,
 .dialog::backdrop {
@@ -1027,17 +1041,21 @@
   font-weight: var(--fw-bold);
 }
 .sheet__body {
-  flex: 1;
+  /* 높이가 auto인 시트에서도 Safari가 본문 높이를 기준으로 축소하게 한다. */
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--sp-6) var(--gutter);
 }
+.sheet__body:last-child {
+  padding-bottom: calc(var(--sp-6) + var(--sheet-safe-bottom, var(--safe-bottom)));
+}
 .sheet__foot {
   flex: none;
   display: flex;
   gap: var(--sp-3);
-  padding: var(--sp-4) var(--gutter) calc(var(--sp-4) + var(--safe-bottom));
+  padding: var(--sp-4) var(--gutter) calc(var(--sp-4) + var(--sheet-safe-bottom, var(--safe-bottom)));
   border-top: 1px solid var(--c-divider);
   background: var(--c-bg);
 }
