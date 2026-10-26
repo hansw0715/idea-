@@ -222,7 +222,6 @@ export default function EclassHome() {
       return next;
     });
   const syncedAt = ts(snapshot?.syncedAt ?? null);
-  const stale = syncedAt === null || now - syncedAt > ECLASS_STALE_MS;
 
   const head = (
     <div className="section__head">
@@ -466,7 +465,6 @@ export default function EclassHome() {
 
           <div className="school-eclass__foot">
             <span className="school-eclass__stamp">
-              {stale ? "최근 정보가 아닐 수 있어요. " : ""}
               마지막 확인{" "}
               {syncedAt === null ? "-" : formatDue(snapshot.syncedAt)}
             </span>
