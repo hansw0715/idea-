@@ -3,9 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { useAuth } from '../auth';
 import { AppHeader } from '../shell/Shell';
-import TimetableGrid, { MEMBER_COLORS, WeekNav } from '../components/TimetableGrid';
+import TimetableGrid, { WeekNav } from '../components/TimetableGrid';
 import type { GridEntry } from '../components/TimetableGrid';
 import BookingFlow from '../components/BookingFlow';
+import MeetingParticipants from '../components/MeetingParticipants';
+import { reconcileParticipants } from '../meetingParticipants';
+import { mergeMeetingTimetable } from '../meetingTimetable';
 import SchoolBookSheet from '../school/SchoolBookSheet';
 import SchoolLinkSheet from '../school/SchoolLinkSheet';
 import { schoolApi } from '../school/api';
@@ -84,6 +87,7 @@ export default function MeetingDetail() {
 
   /** 회의에 참여할 팀원. null 이면 아직 초기화 전(=전원) */
   const [participants, setParticipants] = useState<number[] | null>(null);
+  const previousMembers = useRef<number[]>([]);
 
   const [bookingOpen, setBookingOpen] = useState(false);
   const [flowKey, setFlowKey] = useState(0);
@@ -129,6 +133,7 @@ export default function MeetingDetail() {
     setReservations([]);
     setLoadError(null);
     setParticipants(null);
+    previousMembers.current = [];
     setCheckNote(null);
     leaving.current = false;
   }, [id]);
@@ -185,10 +190,6 @@ export default function MeetingDetail() {
     loadCore();
   }, [loadCore]);
 
-  useEffect(() => {
-    loadTimetable();
-  }, [loadTimetable]);
-
   // 다른 사람이 참가하면 화면을 열어 둔 채로도 팀원 목록이 갱신되도록 15초마다, 그리고 창이 다시 보일 때 불러온다.
   useEffect(() => {
     const onTick = () => {
@@ -204,19 +205,25 @@ export default function MeetingDetail() {
     };
   }, [loadAll]);
 
-  // 팀원 목록이 바뀌면 참여자 기본값은 전원. 나간 사람은 빼고, 새로 온 사람은 자동으로 넣는다.
-  useEffect(() => {
-    if (!detail) return;
-    setParticipants((prev) => {
-      const ids = detail.members.map((m) => m.id);
-      if (prev === null) return ids;
-      const kept = prev.filter((x) => ids.includes(x));
-      const added = ids.filter((x) => !prev.includes(x));
-      return added.length === 0 && kept.length === prev.length ? prev : [...kept, ...added];
-    });
-  }, [detail]);
+  const memberIdsKey = detail?.members.map((m) => m.id).join(',') ?? '';
 
-  const activeIds = participants ?? [];
+  // 새 팀원만 자동으로 포함한다. 기존 팀원의 제외 상태는 정보 갱신 중에도 유지한다.
+  useEffect(() => {
+    if (!memberIdsKey) return;
+    const ids = memberIdsKey.split(',').map(Number);
+    const previous = previousMembers.current;
+    previousMembers.current = ids;
+    setParticipants((prev) => reconcileParticipants(prev, previous, ids));
+  }, [memberIdsKey]);
+
+  useEffect(() => {
+    loadTimetable();
+  }, [loadTimetable, memberIdsKey]);
+
+  const activeIds = useMemo(
+    () => detail?.members.filter((m) => participants === null || participants.includes(m.id)).map((m) => m.id) ?? [],
+    [detail, participants],
+  );
 
   function toggleParticipant(memberId: number) {
     // 예약 흐름의 여유 시간·선택은 흐름이 열릴 때마다 처음부터 시작하므로, 여기서 바꾼 값이 곧바로 반영된다.
@@ -227,18 +234,12 @@ export default function MeetingDetail() {
   }
 
   /* ── 시간표에 올릴 항목 ── */
-  const memberIndexById = useMemo(() => {
-    const map = new Map<number, number>();
-    detail?.members.forEach((m, i) => map.set(m.id, i));
-    return map;
-  }, [detail]);
-
   const gridEntries: GridEntry[] = useMemo(() => {
     const days = weekDates(weekStart);
-    return [
-      ...memberEntries.map((e) => ({
+    return mergeMeetingTimetable([
+      ...memberEntries.filter((e) => activeIds.includes(e.memberId)).map((e) => ({
         ...e,
-        memberIndex: memberIndexById.get(e.memberId) ?? 0,
+        memberIndex: activeIds.indexOf(e.memberId),
         memberName: detail?.members.find((m) => m.id === e.memberId)?.name,
         kind: 'class' as const,
         subtitle:
@@ -256,8 +257,8 @@ export default function MeetingDetail() {
           subtitle: fmtDate(r.date),
           kind: 'reservation' as const,
         })),
-    ];
-  }, [memberEntries, memberIndexById, reservations, detail, weekStart]);
+    ]);
+  }, [memberEntries, reservations, detail, weekStart, activeIds]);
 
   /* ── 동작 ── */
   async function copyCode() {
@@ -295,7 +296,7 @@ export default function MeetingDetail() {
     setBookingOpen(false);
   }
 
-  // 4단계에서 "학교에 신청하기"를 누르면 예약 계획이 만들어지고, 곧바로 학교 신청 화면(미리보기 → 확인 → 제출)이 열린다.
+  // 확인 단계에서 "학교에 신청하기"를 누르면 예약 계획이 만들어지고, 곧바로 학교 신청 화면(미리보기 → 확인 → 제출)이 열린다.
   function handleBooked(created: Reservation) {
     setCheckNote(null);
     setBookingOpen(false);
@@ -482,7 +483,6 @@ export default function MeetingDetail() {
   const isOwner = user !== null && detail.ownerId === user.id;
   const syncFailed = loadError !== null || reservationsFailed || timetableFailed;
   const noParticipants = activeIds.length === 0;
-  const colorOf = (index: number) => MEMBER_COLORS[index % MEMBER_COLORS.length];
 
   return (
     <>
@@ -506,11 +506,11 @@ export default function MeetingDetail() {
 
         {/* ① 회의 코드 */}
         <section className="section" aria-labelledby="mtg-code-title">
-          <div className="card mtg-code">
-            <h2 className="mtg-code__label" id="mtg-code-title">
-              회의 코드
-            </h2>
+          <div className="mtg-code">
             <div className="mtg-code__row">
+              <h2 className="mtg-code__label" id="mtg-code-title">
+                회의 코드
+              </h2>
               {copyState === 'failed' ? (
                 <input
                   ref={codeInputRef}
@@ -526,9 +526,9 @@ export default function MeetingDetail() {
                   <span className="sr-only">{detail.code.split('').join(' ')}</span>
                 </p>
               )}
-              <Button variant="secondary" onClick={copyCode}>
+              <Button variant="text" size="sm" onClick={copyCode} className="mtg-code__copy" aria-label={copyState === 'copied' ? '회의 코드 복사됨' : '회의 코드 복사'}>
                 <Icon name={copyState === 'copied' ? 'check' : 'copy'} className="btn__icon" />
-                {copyState === 'copied' ? '복사됨' : '코드 복사하기'}
+                {copyState === 'copied' ? '복사됨' : '복사'}
               </Button>
             </div>
             {copyState === 'failed' && (
@@ -536,9 +536,6 @@ export default function MeetingDetail() {
                 자동으로 복사하지 못했습니다. 위 코드를 길게 눌러 복사해 주세요.
               </p>
             )}
-            <p className="text-sub text-sm">
-              회의 코드를 팀원에게 공유하면 함께 시간을 맞출 수 있습니다.
-            </p>
           </div>
         </section>
 
@@ -549,16 +546,12 @@ export default function MeetingDetail() {
             size="lg"
             block
             onClick={openBooking}
-            aria-disabled={noParticipants || undefined}
-            aria-describedby="mtg-book-help"
+            disabled={noParticipants || school.loading}
+            aria-describedby={noParticipants ? 'mtg-book-help' : undefined}
           >
             회의 예약하기
           </Button>
-          <p className="text-sub text-sm mtg-book-help" id="mtg-book-help">
-            {noParticipants
-              ? '참여할 팀원을 한 명 이상 선택하면 예약할 수 있습니다.'
-              : `참여 ${activeIds.length}명이 모두 비는 시간을 찾고, 날짜와 시설을 고른 뒤 학교에 바로 신청합니다.`}
-          </p>
+          {noParticipants && <p className="text-sub text-sm mtg-book-help" id="mtg-book-help">참여할 팀원을 선택해 주세요.</p>}
 
           {!school.loading && (!school.linked || !school.canUse) && (
             <div className="mtg-result">
@@ -570,9 +563,7 @@ export default function MeetingDetail() {
                     {school.linked ? '다시 연동하기' : '학교 계정 연동하기'}
                   </Button>
                 }
-              >
-                시설 예약은 학교에 바로 신청하는 방식으로만 할 수 있어요.
-              </Alert>
+              />
             </div>
           )}
         </section>
@@ -581,43 +572,20 @@ export default function MeetingDetail() {
         <section className="section" aria-labelledby="mtg-members-title">
           <div className="section__head">
             <h2 className="section__title" id="mtg-members-title">
-              팀원 {detail.members.length}명
+              참여 인원
             </h2>
             <p className="text-sub text-sm" aria-live="polite" aria-atomic="true">
-              회의에 참여할 사람 {activeIds.length}명
+              <strong className="mtg-members__count">{activeIds.length}명</strong> / {detail.members.length}명
             </p>
           </div>
           <p className="section__sub mtg-members__sub">
-            이름을 눌러 이번 회의에서 빼거나 다시 넣을 수 있습니다. 빠진 사람의 수업은 시간 계산에
-            반영되지 않습니다.
+            선택한 팀원의 시간표만 반영합니다.
           </p>
-          <div className="tag-group" role="group" aria-label="회의에 참여할 팀원">
-            {detail.members.map((m, i) => {
-              const on = activeIds.includes(m.id);
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  className={`tag mtg-chip${on ? '' : ' is-off'}`}
-                  aria-pressed={on}
-                  onClick={() => toggleParticipant(m.id)}
-                >
-                  {on && <Icon name="check" className="tag__check" />}
-                  <span
-                    className="tag__dot"
-                    style={{ background: on ? colorOf(i) : 'var(--gray-30)' }}
-                    aria-hidden="true"
-                  />
-                  <span>{m.name}</span>
-                  {m.isOwner ? <span className="mtg-chip__role">방장</span> : null}
-                </button>
-              );
-            })}
-          </div>
+          <MeetingParticipants members={detail.members} activeIds={activeIds} onToggle={toggleParticipant} />
           {noParticipants && (
             <p className="field__error mtg-members__warn" role="status">
               <Icon name="alert" />
-              <span>참여할 사람이 없으면 시간을 계산할 수 없습니다. 이름을 눌러 다시 넣어 주세요.</span>
+              <span>팀원을 한 명 이상 선택해 주세요.</span>
             </p>
           )}
         </section>
@@ -638,7 +606,7 @@ export default function MeetingDetail() {
               onToday={isCurrentWeek(weekStart) ? undefined : week.goToday}
             />
           </div>
-          {memberEntries.length === 0 ? (
+          {memberEntries.length === 0 && gridEntries.length === 0 && !noParticipants ? (
             <div className="card card--flat">
               <EmptyState
                 icon="calendar"
@@ -653,27 +621,16 @@ export default function MeetingDetail() {
             </div>
           ) : (
             <div className="stack">
-              <ul className="mtg-legend" aria-label="팀원별 색 안내">
-                {detail.members.map((m, i) => (
-                  <li key={m.id} className={`mtg-legend__item${activeIds.includes(m.id) ? '' : ' is-off'}`}>
-                    <span
-                      className="mtg-legend__dot"
-                      style={{ background: activeIds.includes(m.id) ? colorOf(i) : 'var(--gray-30)' }}
-                      aria-hidden="true"
-                    />
-                    {m.name}
-                  </li>
-                ))}
+              {reservations.some((r) => weekDates(weekStart).includes(r.date)) && <ul className="mtg-legend" aria-label="시간표 범례">
                 <li className="mtg-legend__item">
                   <span className="tt-swatch tt-swatch--res" aria-hidden="true" />
-                  회의 예약 (팀원 전체 표시)
+                  회의 예약
                 </li>
-              </ul>
+              </ul>}
               <div className="mtg-grid">
                 <TimetableGrid
                   entries={gridEntries}
-                  laneCount={detail.members.length}
-                  compact
+                  listPosition="hidden"
                   weekStart={weekStart}
                   slide={week.slide}
                 />
@@ -734,7 +691,7 @@ export default function MeetingDetail() {
                 title="아직 예약된 시설이 없습니다."
                 description="팀원이 모두 비는 시간에 시설을 예약해 보세요."
                 action={
-                  <Button variant="secondary" onClick={openBooking} aria-disabled={noParticipants || undefined}>
+                  <Button variant="secondary" onClick={openBooking} disabled={noParticipants || school.loading}>
                     예약 시작하기
                   </Button>
                 }
@@ -842,6 +799,7 @@ export default function MeetingDetail() {
         meetingId={detail.id}
         members={detail.members}
         activeIds={activeIds}
+        onToggleParticipant={toggleParticipant}
         gridEntries={gridEntries}
         week={week}
         onBooked={handleBooked}

@@ -5,6 +5,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-5);
+  border: 1px solid var(--c-panel-border);
+  border-radius: var(--r-panel);
+  background: var(--c-panel);
 }
 
 .mtg-code__label {
@@ -16,14 +20,13 @@
 .mtg-code__row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--sp-4) var(--sp-5);
 }
 
 .mtg-code__value,
 .input.mtg-code__input {
-  font-size: 3.6rem;
+  font-size: var(--fs-h2);
   line-height: 1.2;
   font-weight: var(--fw-bold);
   color: var(--c-text);
@@ -33,13 +36,16 @@
   margin: 0;
   user-select: all;
   -webkit-user-select: all;
+  letter-spacing: 0.12em;
 }
 
+.mtg-code__copy.btn { margin-left: auto; min-width: 8rem; min-height: var(--touch); }
+
 .input.mtg-code__input {
-  flex: 1 1 12rem;
+  flex: 0 1 8rem;
   width: auto;
   min-width: 0;
-  min-height: var(--h-lg);
+  min-height: var(--touch);
 }
 
 /* ── ② 예약하기 ──────────────────────────────────────────────── */
@@ -62,14 +68,30 @@
 
 .mtg-chip {
   min-height: var(--touch);
+  gap: var(--sp-2);
+  padding-inline: var(--sp-5);
+  border-radius: var(--r);
+  font-size: var(--fs-sm);
+  transition: background-color var(--t-base), border-color var(--t-base);
 }
+
+.mtg-chip__check { display: inline-flex; width: 1.8rem; height: 1.8rem; flex: none; }
+.mtg-chip__check svg { width: 100%; height: 100%; }
+.mtg-members__count { color: var(--c-action-text); }
+.mtg-chip.is-off .tag__dot { opacity: 0.5; }
+.mtg-members .mtg-chip:disabled { cursor: not-allowed; }
+
+@media (hover: hover) {
+  .mtg-members .mtg-chip:not(:disabled):hover { background: var(--c-action-bg-strong); }
+}
+.mtg-members .mtg-chip:not(:disabled):active { background: var(--c-action-bg-strong); }
 
 .mtg-chip__role {
   font-size: var(--fs-xs);
-  font-weight: 500;
+  font-weight: var(--fw-regular);
   color: var(--c-text-sub);
 }
-.mtg-chip__role::before { content: "·"; margin-right: 5px; }
+.mtg-chip__role::before { content: "·"; margin-right: var(--sp-2); }
 .mtg-legend__item.is-off { color: var(--c-text-muted); }
 
 .mtg-members__warn {
@@ -104,6 +126,24 @@
 
 .mtg-grid {
   min-width: 0;
+}
+
+.mtg-grid .tt .tt-grid {
+  border-radius: 0;
+}
+/* 수업·겹치는 시간 블록: 시간표 탭 강의 블록과 같은 아주 살짝 둥근 모서리 */
+.mtg-grid .tt .tt-entry {
+  border-radius: var(--r-xs);
+}
+
+/* 회의 시간표의 팀원 일정은 왼쪽 장식 바 없이 회색 박스만 표시한다. */
+.mtg-grid .tt .tt-entry--meeting {
+  padding-left: 0.8rem;
+  border-left: 0;
+}
+.mtg-grid .tt .tt-entry--meeting .tt-entry__names {
+  align-items: flex-start;
+  text-align: left;
 }
 
 /* ── ⑤ 예약 현황 ─────────────────────────────────────────────── */
@@ -192,10 +232,25 @@
   top: calc(var(--sp-6) * -1);
   z-index: 3;
   margin: calc(var(--sp-6) * -1) calc(var(--gutter) * -1) var(--sp-6);
-  padding: var(--sp-5) var(--gutter);
+  padding: var(--sp-4) var(--gutter);
   background: var(--c-bg);
   border-bottom: 1px solid var(--c-divider);
 }
+
+.mtg-flow__steps .stepper__dot { width: 2.8rem; height: 2.8rem; font-size: var(--fs-sm); }
+.mtg-flow__steps .stepper__step { font-size: var(--fs-xs); gap: var(--sp-2); }
+.mtg-flow__steps .stepper__step::before { top: 1.4rem; }
+.mtg-time-step { display: flex; flex-direction: column; gap: var(--sp-5); }
+.mtg-time-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); }
+.mtg-time-head > div { flex: 1; min-width: 0; }
+.mtg-time-head > .btn { flex: none; min-height: var(--touch); padding-inline: var(--sp-2); }
+.mtg-time-head .section__sub { margin-top: var(--sp-2); }
+.mtg-flow-members:not([hidden]) { display: flex; flex-direction: column; gap: var(--sp-3); }
+.mtg-time-legend { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.mtg-time-legend .tt-legend { margin: 0; gap: var(--sp-3); font-size: var(--fs-sm); }
+.mtg-time-legend .tt-swatch { width: 1.6rem; height: 1.2rem; }
+.mtg-more > summary:hover { background: var(--c-surface); }
+.mtg-more > summary:active { background: var(--c-panel); }
 
 .mtg-flow__steps--static {
   position: static;
@@ -236,48 +291,7 @@
   flex: 2 1 0;
 }
 
-/* 1단계: 함께 비는 시간 (요일별 구간 버튼) */
-.mtg-slots {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-6);
-}
-
-.mtg-slots__day {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.mtg-slots__label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-bold);
-  color: var(--c-text-sub);
-}
-
-.mtg-slots__help {
-  margin-top: var(--sp-5);
-}
-
-.mtg-grid__help {
-  margin-bottom: var(--sp-4);
-}
-
-.mtg-slot,
-.mtg-date {
-  min-height: var(--touch);
-}
-
-.mtg-slot .tag__check,
-.mtg-date .tag__check {
-  margin-left: calc(var(--sp-2) * -1);
-}
-
-.mtg-flow-legend {
-  margin-top: var(--sp-5);
-}
-
-/* 3단계: 시설 카드 */
+/* 2단계: 시설 카드 */
 .mtg-fac-list {
   display: flex;
   flex-direction: column;
@@ -408,7 +422,7 @@
   margin-top: var(--sp-5);
 }
 
-/* 4단계: 확인 */
+/* 3단계: 확인 */
 .mtg-summary dl {
   margin: 0;
 }

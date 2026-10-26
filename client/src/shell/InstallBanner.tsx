@@ -63,14 +63,15 @@ if (typeof window !== 'undefined') {
 export const isStandalone = () =>
   window.matchMedia?.('(display-mode: standalone)').matches ||
   (navigator as Navigator & { standalone?: boolean }).standalone === true;
-const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+export const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isMobile = () => /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 
 /**
- * big: 설치 전용 사이트의 큰 버튼. PC 에서도 보이고, 설명 문구 없이 버튼만 둔다.
+ * big: 설치 화면의 큰 버튼. PC 에서도 보인다. 설치 방법 설명은 설치 화면(DownloadPage)이 따로 보여 준다.
  * 브라우저가 설치 창을 띄울 수 있으면 화면 어디를 눌러도 바로 설치 창이 뜬다.
+ * onIosHelp: 아이폰에서 누르면 부른다 (사파리는 설치 창을 줄 수 없어 공유 버튼을 가리켜 준다).
  */
-export default function InstallButton({ big = false }: { big?: boolean }) {
+export default function InstallButton({ big = false, onIosHelp }: { big?: boolean; onIosHelp?: () => void }) {
   const [, rerender] = useState(0);
   const [hidden, setHidden] = useState(() => isStandalone() || (!big && !isMobile()));
   const [showHelp, setShowHelp] = useState(false);
@@ -91,8 +92,7 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
     if (!big) return;
     // 설치 창은 사용자가 화면을 누른 순간에만 띄울 수 있어, 어디를 누르든 그 한 번으로 띄운다
     const onTap = (e: MouseEvent) => {
-      // "웹에서 사용하기"를 누른 것은 설치로 치지 않는다
-      if (!deferred || (e.target as HTMLElement).closest('.install-cta, .download-web')) return;
+      if (!deferred || (e.target as HTMLElement).closest('.install-cta')) return;
       void install();
     };
     document.addEventListener('click', onTap);
@@ -105,8 +105,9 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
   async function install() {
     if (!deferred) {
       // 크롬이 설치 창을 아직 줄 수 없으면(방금 지운 앱·닫은 설치 창 등) 메뉴로 설치하는 방법을 펼친다.
-      // 설치 사이트(big)에서는 설명 문구를 띄우지 않는다
+      // 설치 화면(big)은 설명이 화면에 이미 있다. 아이폰은 사파리가 설치 창을 줄 수 없어 공유 버튼을 가리켜 준다
       if (!big) setShowHelp(true);
+      else if (isIos()) onIosHelp?.();
       return;
     }
     if (big) setPressed(true);
@@ -134,11 +135,8 @@ export default function InstallButton({ big = false }: { big?: boolean }) {
         aria-label={pressed && !done ? '설치하는 중' : undefined}
         aria-expanded={big ? undefined : showHelp}
       >
-        {done ? '완료' : !pressed && (big ? '웹앱으로 설치하기' : '앱 설치하기')}
+        {done ? '완료' : !pressed && '앱 설치하기'}
       </Button>
-      {big && (
-        <p className="install-cta__note">안전하지 않은 앱 차단됨 시 &gt; 세부 정보 더 보기 &gt; 무시하고 설치하기</p>
-      )}
       {showHelp && isMobile() && (
         <p className="install-cta__help">
           {ios ? (

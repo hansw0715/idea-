@@ -30,7 +30,7 @@ export const MEMBER_COLORS = [
   'var(--m-6)',
   'var(--m-7)',
   'var(--m-8)',
-];
+].map((color) => `color-mix(in srgb, ${color} 60%, var(--c-text) 40%)`);
 
 export interface GridEntry {
   id: number;
@@ -41,6 +41,8 @@ export interface GridEntry {
   place?: string;
   /** 여러 명을 겹쳐 그릴 때: 색·레인 배정용 인덱스 */
   memberIndex?: number;
+  /** 회의에서 합쳐 표시한 구간의 원래 일정. 눌렀을 때 상세 정보로 보여 준다. */
+  sourceEntries?: GridEntry[];
   /** 'reservation'이면 확정된 회의 예약으로 구분해 그린다. */
   kind?: 'class' | 'reservation';
   /** 예약 블록에 함께 보여줄 날짜·장소 등의 부가 설명 */
@@ -74,6 +76,10 @@ interface Props {
   pendingRange?: SelectedRange | null;
   /** 팀원 모두가 비는 시간대를 배경으로 강조한다. */
   freeRanges?: SelectedRange[];
+  /** 시간표 탭처럼 빈 칸은 기본 배경으로 두는 표시 방식. 선택 가능 여부에는 영향이 없다. */
+  highlightFreeRanges?: boolean;
+  /** 시각 눈금은 선택 단위와 별개로 30분 보조선을 표시할 수 있다. */
+  halfHourLines?: boolean;
   /** 보고 있는 주의 월요일 'YYYY-MM-DD'. 주면 머리글에 날짜가 함께 나온다. */
   weekStart?: string;
   /** 주를 넘기는 화살표. 둘 다 없으면 이동 바를 그리지 않는다. */
@@ -85,14 +91,24 @@ interface Props {
   step?: number;
   /** 격자가 끝나는 시각(분). 기본은 22:00 — 시간표 화면은 일정에 맞춰 줄이거나 늘려서 넘긴다. */
   closeMin?: number;
+  /** 보조 일정 목록의 위치. 회의 화면은 시간표만 표시한다. */
+  listPosition?: 'before' | 'after' | 'hidden';
 }
 
 /** 길게 눌러야 범위 선택이 시작되는 시간 (그 전에 움직이면 스크롤로 본다) */
 const LONG_PRESS_MS = 350;
 /** 누른 채 이만큼(px) 움직이면 스크롤 의도로 본다 */
 const MOVE_SLOP_PX = 10;
-/** 블록 글자 한 줄 높이(rem) = 1.3rem × 1.25 */
-const TEXT_LINE_REM = 1.625;
+/** 강의명 한 줄 높이(rem) = 1.1rem × 1.2 (timetable.css 의 .tt-entry__title) */
+const TEXT_LINE_REM = 1.32;
+/** 겹치는 칸의 팀원 이름 한 줄 높이(rem) = 1.2rem × 1.25 (timetable.css 의 .tt-entry__names) */
+const NAME_LINE_REM = 1.5;
+/** 이름 사이 · 이름과 시간 사이 간격(rem) */
+const NAME_GAP_REM = 0.4;
+/** 겹치는 칸 아래 시간("09:00 - 12:00") 한 줄 높이(rem) = 0.9rem × 1.25 */
+const RANGE_LINE_REM = 1.125;
+/** 장소 글자 한 줄 높이(rem) = 0.8rem × 1.25 */
+const SUB_LINE_REM = 1;
 
 /* ─────────────────────────────────────────────────────────────
    겹침 배치
@@ -156,9 +172,24 @@ function entryLabel(e: GridEntry): string {
   return parts.join(', ');
 }
 
+/** 회의 시간표의 합친 칸: 그 시간에 일정이 있는 팀원 이름 (중복 없이, 나온 순서대로) */
+function memberNames(sources: GridEntry[]): string[] {
+  return [...new Set(sources.map((s) => s.memberName).filter((n): n is string => Boolean(n)))];
+}
+
+/** 겹치는 칸에 보여 줄 이름: 칸 높이(rem)에 들어가는 만큼 앞사람부터, 넘치면 마지막 줄에 "+N명" */
+function nameLayout(names: string[], heightRem: number): { shown: string[]; more: number } {
+  const fitCount = Math.max(1, Math.floor((heightRem + NAME_GAP_REM) / (NAME_LINE_REM + NAME_GAP_REM)));
+  if (names.length <= fitCount) return { shown: names, more: 0 };
+  // "+N명" 줄 하나를 남기고 들어가는 만큼만
+  const count = Math.max(1, fitCount - 1);
+  return { shown: names.slice(0, count), more: names.length - count };
+}
+
 /** 블록 높이(분)에 글자가 몇 줄 들어가는지 */
-function textLines(minutes: number, hourRem: number): number {
-  return Math.max(1, Math.floor(((minutes / 60) * hourRem - 0.5) / TEXT_LINE_REM));
+function textLines(minutes: number, hourRem: number, reserveRem = 0): number {
+  // 0.7rem = 블록 안쪽 여백(위 0.5rem, 아래 0.1rem) + 여유
+  return Math.max(1, Math.floor(((minutes / 60) * hourRem - 0.7 - reserveRem) / TEXT_LINE_REM));
 }
 
 /** 손가락을 뗀 뒤 뒤늦게 오는 click 이 방금 열린 시트 위에 떨어지지 않도록 한 번 삼킨다. */
@@ -234,10 +265,11 @@ export function WeekNav({ label, sub, onPrev, onNext, onToday, busy, compact }: 
   );
 }
 
-type LegendItem = 'class' | 'reservation' | 'free' | 'pending';
+type LegendItem = 'class' | 'busy' | 'reservation' | 'free' | 'pending';
 
 const LEGEND_TEXT: Record<LegendItem, string> = {
   class: '내 수업·일정',
+  busy: '팀원 일정',
   reservation: '회의 예약과 계획',
   free: '모두 비는 시간',
   pending: '선택한 시간',
@@ -289,6 +321,7 @@ export function EntryInfoSheet({ entry, onClose, footer, children }: EntryInfoSh
 
   const isReservation = shown.kind === 'reservation';
   const color = MEMBER_COLORS[(shown.memberIndex ?? 0) % MEMBER_COLORS.length];
+  const source = shown.sourceEntries?.length === 1 ? shown.sourceEntries[0] : shown;
 
   return (
     <Sheet
@@ -313,16 +346,29 @@ export function EntryInfoSheet({ entry, onClose, footer, children }: EntryInfoSh
         </div>
         <div className="kv">
           <span className="tt-info__key">시간</span>
-          <span className="tt-info__val">{entryTimeText(shown)}</span>
+          <span className="tt-info__val">{entryTimeText(source)}</span>
         </div>
         {shown.memberName && (
           <div className="kv">
             <span className="tt-info__key">팀원</span>
             <span className="tt-info__val">
-              <span className="tt-dot" style={{ background: color }} aria-hidden="true" />
+              {!shown.sourceEntries && <span className="tt-dot" style={{ background: color }} aria-hidden="true" />}
               {shown.memberName}
             </span>
           </div>
+        )}
+        {shown.sourceEntries && shown.sourceEntries.length > 1 && (
+          <ul className="tt-overlap-details" aria-label="겹치는 일정">
+            {shown.sourceEntries.map((item, index) => (
+              <li key={index}>
+                <p className="bold">{item.memberName ?? '팀원'}</p>
+                <p>{item.title}</p>
+                <p className="text-sub text-sm">
+                  {fmtMin(item.startMin)}~{fmtMin(item.endMin)}{item.place ? ' · ' + item.place : ''}
+                </p>
+              </li>
+            ))}
+          </ul>
         )}
         {/* 부제가 장소와 같으면(팀원 시간표) 같은 말을 두 번 보이지 않는다. */}
         {shown.subtitle && shown.subtitle !== shown.place && (
@@ -414,11 +460,6 @@ function EntryList({ entries, multi, onPick }: EntryListProps) {
   return (
     // 팀원 시간표는 늘 보이고, 개인 시간표는 칸에 글자가 안 들어갈 만큼 좁을 때만 보인다. (css 컨테이너 쿼리)
     <div className={`tt-list${multi ? '' : ' tt-list--narrow'}`}>
-      <p className="tt-list__hint">
-        {multi
-          ? '팀원 칸은 좁아서 글자를 쓰지 않았습니다. 칸을 누르거나 목록으로 확인해 주세요.'
-          : '글자가 커서 칸 안에 일정 이름을 쓰지 않았습니다. 칸을 누르거나 목록으로 확인해 주세요.'}
-      </p>
       <Button
         variant="tertiary"
         block
@@ -501,18 +542,22 @@ export default function TimetableGrid({
   onSelectRange,
   pendingRange = null,
   freeRanges,
+  highlightFreeRanges = true,
   weekStart,
   onPrevWeek,
   onNextWeek,
   slide = null,
   step = STEP_MIN,
+  halfHourLines = step < 60,
   closeMin = RESERVE_CLOSE_MIN,
+  listPosition = 'before',
 }: Props) {
   const totalMin = closeMin - OPEN_MIN;
   const clampMinute = (value: number): number => Math.min(closeMin, Math.max(OPEN_MIN, value));
   // 시간당 높이(rem). 글자 줄 수 계산에도 쓴다.
   // 홈처럼 줄인 격자도 정각 1시간 블록(수업·예약)이 터치 대상 최소 높이(--touch, 4.4rem)를 채우도록 한다.
-  const hourRem = compact ? 4.4 : 4.6;
+  // timetable.css 의 --tt-hour(3.7rem)와 같아야 강의명 줄 수가 칸 높이에 맞는다 (다르면 글자가 중간에 잘린다)
+  const hourRem = compact ? 4.4 : 3.7;
   const cells = Math.ceil(totalMin / step);
 
   // 시각 글자는 각 시간 칸의 맨 위(눈금선 바로 아래)에 같은 방식으로 붙인다. 마감(22:00)은 칸이 아니라 끝선이라 글자를 달지 않는다.
@@ -571,21 +616,25 @@ export default function TimetableGrid({
   /** 끄는 손가락이 화면 위·아래 가장자리에 닿으면 페이지를 같이 넘겨, 화면보다 긴 범위도 고를 수 있게 한다. */
   function startAutoScroll() {
     stopAutoScroll();
+    // 예약 시트는 문서 대신 시트 본문이 스크롤을 소유한다.
+    const scroller = rootRef.current?.closest<HTMLElement>('.sheet__body');
     const tick = () => {
       const d = dragRef.current;
       const col = dragColRef.current;
       if (!d || !col) return;
       const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 10;
-      const edgeTop = 10 * rem; // 머리글 아래
-      const edgeBottom = window.innerHeight - 12 * rem; // 탭바 위
+      const bounds = scroller?.getBoundingClientRect();
+      const edgeTop = bounds ? bounds.top + Math.min(10 * rem, bounds.height / 4) : 10 * rem;
+      const edgeBottom = bounds ? bounds.bottom - Math.min(6 * rem, bounds.height / 4) : window.innerHeight - 12 * rem;
       const y = lastYRef.current;
       let dy = 0;
       if (y < edgeTop) dy = -Math.min(16, (edgeTop - y) / 4 + 2);
       else if (y > edgeBottom) dy = Math.min(16, (y - edgeBottom) / 4 + 2);
       if (dy !== 0) {
-        const before = window.scrollY;
-        window.scrollBy(0, dy);
-        if (window.scrollY !== before) {
+        const before = scroller?.scrollTop ?? window.scrollY;
+        if (scroller) scroller.scrollBy(0, dy);
+        else window.scrollBy(0, dy);
+        if ((scroller?.scrollTop ?? window.scrollY) !== before) {
           const cell = cellAt(y, col);
           if (cell !== d.to) commitDrag({ ...d, to: cell });
         }
@@ -763,13 +812,13 @@ export default function TimetableGrid({
     <div
       ref={rootRef}
       className={`tt${compact ? ' tt--compact' : ''}${multi ? ' tt--multi' : ''}${
-        step < 60 ? ' tt--half' : ''
+        halfHourLines ? ' tt--half' : ''
       }`}
       style={{ '--tt-hours': totalMin / 60 } as CSSProperties}
     >
       {hasNav && <WeekNav compact sub={weekRange} onPrev={onPrevWeek} onNext={onNextWeek} />}
 
-      <EntryList entries={drawnEntries} multi={multi} onPick={pickEntry} />
+      {listPosition === 'before' && <EntryList entries={drawnEntries} multi={multi} onPick={pickEntry} />}
 
       <div className="tt-clip">
         <div className="tt-slide" key={slideKey} data-dir={slide?.dir}>
@@ -819,7 +868,8 @@ export default function TimetableGrid({
                     className="tt-time-label"
                     style={{ top: top(m) }}
                   >
-                    {fmtMin(m)}
+                    {/* '09:00' 대신 시만 두 자리로 ('09') — 시각 칸을 좁혀 요일 칸을 넓힌다 */}
+                    {String(Math.floor(m / 60)).padStart(2, '0')}
                   </span>
                 ))}
               </div>
@@ -841,7 +891,7 @@ export default function TimetableGrid({
                     onPointerCancel={selectable ? cancelAll : undefined}
                     onClick={selectable ? (e) => onColClick(day, e) : undefined}
                   >
-                    {freeRanges
+                    {highlightFreeRanges && freeRanges
                       ?.filter((r) => r.day === day)
                       .map((r) => (
                         <div
@@ -898,19 +948,17 @@ export default function TimetableGrid({
                       // 예약은 팀원 전원에게 해당하므로 팀원 시간표에서도 하루 전체 너비로 그린다.
 
                       const lane = multi && !isReservation;
-                      const showText = !lane;
+                      const showText = !lane && !e.sourceEntries;
                       const sub = e.subtitle ?? e.place;
                       const showSub = showText && minutes >= 60 && Boolean(sub);
-                      const titleLines = Math.max(
-                        1,
-                        textLines(minutes, hourRem) - (showSub ? 1 : 0),
-                      );
+                      // 장소 줄은 강의명보다 작은 글자(0.8rem × 1.25)라 그 높이만큼만 비워 둔다
+                      const titleLines = textLines(minutes, hourRem, showSub ? SUB_LINE_REM : 0);
 
                       return (
                         <button
                           key={`${isReservation ? 'r' : 'c'}-${e.memberIndex ?? 0}-${e.id}`}
                           type="button"
-                          className={`tt-entry${isReservation ? ' tt-entry--res' : ''}${
+                          className={`tt-entry${isReservation ? ' tt-entry--res' : e.sourceEntries ? ' tt-entry--meeting' : ''}${
                             lane ? ' tt-entry--lane' : ''
                           }`}
                           style={
@@ -929,6 +977,31 @@ export default function TimetableGrid({
                             pickEntry(e);
                           }}
                         >
+                          {!lane &&
+                            e.sourceEntries &&
+                            (() => {
+                              // 겹치는 칸: 일정이 있는 팀원 이름을 한 줄에 한 명씩, 그 아래 시간 — 칸 정가운데에
+                              // 블록 안쪽 여백·여유(0.7rem) + 이름 묶음 위 여백(0.2rem)
+                              const room = (minutes / 60) * hourRem - 0.9;
+                              const showRange = room >= NAME_LINE_REM + NAME_GAP_REM + RANGE_LINE_REM;
+                              const { shown, more } = nameLayout(
+                                memberNames(e.sourceEntries),
+                                showRange ? room - NAME_GAP_REM - RANGE_LINE_REM : room,
+                              );
+                              return (
+                                <span className="tt-entry__names">
+                                  {shown.map((name) => (
+                                    <span key={name}>{name}</span>
+                                  ))}
+                                  {more > 0 && <span>+{more}명</span>}
+                                  {showRange && (
+                                    <span className="tt-entry__range">
+                                      {fmtMin(startMin)} - {fmtMin(endMin)}
+                                    </span>
+                                  )}
+                                </span>
+                              );
+                            })()}
                           {showText && (
                             <>
                               <span className="tt-entry__title" style={{ WebkitLineClamp: titleLines }}>
@@ -950,6 +1023,7 @@ export default function TimetableGrid({
       </div>
 
       {/* 시트는 슬라이드 애니메이션 바깥에 둔다. */}
+      {listPosition === 'after' && <EntryList entries={drawnEntries} multi={multi} onPick={pickEntry} />}
       {!onEntryClick && <EntryInfoSheet entry={info} onClose={() => setInfo(null)} />}
     </div>
   );

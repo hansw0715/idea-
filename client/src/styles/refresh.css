@@ -229,15 +229,17 @@
   animation-duration: 240ms;
   animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-/* Login must remain scrollable when text is enlarged or a phone keyboard opens. */
-html.no-scroll,
-html.no-scroll body {
-  height: auto;
-  overflow: auto;
-}
-html.no-scroll .auth-main {
-  height: auto;
-  min-height: calc(100dvh - var(--header-h) - var(--safe-top));
+/* 로그인은 한 화면에 고정(스크롤 없음, auth.css). 화면이 낮을 때(키보드가 올라오거나 글씨를 키운 경우)만 스크롤을 허용한다 */
+@media (max-height: 640px) {
+  html.no-scroll,
+  html.no-scroll body {
+    height: auto;
+    overflow: auto;
+  }
+  html.no-scroll .auth-main {
+    height: auto;
+    min-height: calc(100dvh - var(--header-h) - var(--safe-top));
+  }
 }
 .auth-card {
   border-color: var(--c-divider);

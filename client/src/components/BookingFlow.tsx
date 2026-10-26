@@ -1,14 +1,14 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
-import TimetableGrid, { GridLegend, MEMBER_COLORS, WeekNav } from './TimetableGrid';
+import TimetableGrid, { GridLegend, WeekNav } from './TimetableGrid';
 import type { GridEntry, SelectedRange } from './TimetableGrid';
+import MeetingParticipants from './MeetingParticipants';
 import {
   Alert,
   Badge,
   Button,
   Icon,
   LoadingBlock,
-  SelectField,
   Sheet,
   Stepper,
   useDisplay,
@@ -16,17 +16,14 @@ import {
 } from '../ui';
 import { useHideTabBar } from '../shell/Shell';
 import {
-  DAY_NAMES,
   MAX_DAYS_AHEAD,
   addDaysStr,
   fmtDate,
   fmtDayHeader,
   fmtDuration,
-  fmtMin,
   fmtRange,
   fmtWeekLabel,
   isCurrentWeek,
-  nextDatesForDay,
   nowMinutes,
   todayStr,
 } from '../time';
@@ -34,14 +31,11 @@ import type { WeekSlide } from '../useWeek';
 import type { Facility, FacilityResponse, FreeSlot, Member, Reservation } from '../types';
 import '../pages/meeting-detail.css';
 
-const STEPS = ['시간', '날짜', '시설', '확인'];
+const STEPS = ['시간', '시설', '확인'];
 /** 학교 시설은 모두 1시간 단위(정각 시작)로 신청한다 — 회의 예약도 1시간 단위로 고른다 */
 const STEP_MIN = 60;
-/** 학교 규정: 하루 최대 3시간 */
 /** 한 번에 잡을 수 있는 최대 시간. 시설마다 더 짧을 수 있다(대부분 3시간, 코딩라운지 6시간) — 시설 단계에서 안내한다 */
 const MAX_RESERVATION_MIN = 360;
-/** 날짜 고르기에서 보여 줄 기간(일). 7일보다 먼 날짜는 시설 없이만 잡을 수 있다 */
-const DATE_WINDOW_DAYS = 28;
 
 export interface WeekControls {
   weekStart: string;
@@ -58,6 +52,7 @@ interface BookingFlowProps {
   members: Member[];
   /** 이번 회의에 참여하는 팀원 id */
   activeIds: number[];
+  onToggleParticipant: (id: number) => void;
   /** 팀원 수업 + 이 회의의 예약을 합친 시간표 항목 */
   gridEntries: GridEntry[];
   week: WeekControls;
@@ -70,10 +65,6 @@ function sameRange(a: SelectedRange | null, b: SelectedRange | null): boolean {
   return Boolean(a && b && a.day === b.day && a.startMin === b.startMin && a.endMin === b.endMin);
 }
 
-function dayText(day: number): string {
-  return `${DAY_NAMES[day]}요일`;
-}
-
 function capacityText(f: Facility): string {
   if (f.minCapacity !== null && f.capacity !== null) return `${f.minCapacity}~${f.capacity}명`;
   if (f.capacity !== null) return `최대 ${f.capacity}명`;
@@ -81,7 +72,7 @@ function capacityText(f: Facility): string {
   return '인원 기준 없음';
 }
 
-/** 서버가 30분 단위가 아닌 경계를 주더라도 예약 가능한 30분 칸으로 맞춘다. */
+/** 서버의 여유 구간을 학교 시설의 정각 1시간 단위로 맞춘다. */
 function alignSlots(slots: FreeSlot[]): FreeSlot[] {
   return slots
     .map((s) => ({
@@ -106,7 +97,7 @@ function FacilityStatus({ f }: { f: Facility }) {
 }
 
 /**
- * 단계별 회의 예약 흐름 (전체 화면 시트): 시간 → 날짜 → 시설 → 확인.
+ * 단계별 회의 예약 흐름 (전체 화면 시트): 시간 → 시설 → 확인.
  * 부모가 key 를 바꿔 다시 마운트하면 선택 상태가 모두 처음으로 돌아간다. (cody 의 resetFlow)
  */
 export default function BookingFlow({
@@ -115,6 +106,7 @@ export default function BookingFlow({
   meetingId,
   members,
   activeIds,
+  onToggleParticipant,
   gridEntries,
   week,
   onBooked,
@@ -136,7 +128,7 @@ export default function BookingFlow({
   const [range, setRange] = useState<SelectedRange | null>(null);
   const [pickError, setPickError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const selectedDate = range ? addDaysStr(week.weekStart, range.day) : null;
   const [facilities, setFacilities] = useState<Facility[] | null>(null);
   const [facilitiesError, setFacilitiesError] = useState<string | null>(null);
   const [facilitiesTick, setFacilitiesTick] = useState(0);
@@ -147,17 +139,32 @@ export default function BookingFlow({
   const [noFacility, setNoFacility] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [editingMembers, setEditingMembers] = useState(false);
+  const [slotsContext, setSlotsContext] = useState('');
 
   const activeKey = activeIds.join(',');
   const peopleCount = activeIds.length;
+  const scheduleKey = JSON.stringify(gridEntries.map((e) => [e.kind, e.memberIndex, e.day, e.startMin, e.endMin]));
+  const availabilityKey = `${meetingId}|${week.weekStart}|${activeKey}|${scheduleKey}`;
+  const currentSlots = slotsContext === availabilityKey ? slots : null;
 
-  const alignedSlots = useMemo(() => alignSlots(slots ?? []), [slots]);
+  const alignedSlots = useMemo(() => {
+    const today = todayStr();
+    return alignSlots(currentSlots ?? []).flatMap((slot) => {
+      const date = addDaysStr(week.weekStart, slot.day);
+      if (date < today) return [];
+      const start = date === today
+        ? Math.max(slot.start, (Math.floor(nowMinutes() / STEP_MIN) + 1) * STEP_MIN)
+        : slot.start;
+      return slot.end - start >= STEP_MIN ? [{ ...slot, start }] : [];
+    });
+  }, [currentSlots, week.weekStart]);
   const freeRanges: SelectedRange[] = useMemo(
     () => alignedSlots.map((s) => ({ day: s.day, startMin: s.start, endMin: s.end })),
     [alignedSlots],
   );
 
-  /** 선택한 시간이 들어 있는 여유 구간 (시작·종료 시각 목록의 범위) */
+  /** 선택한 시간이 들어 있는 여유 구간 */
   const activeSlot = useMemo(
     () =>
       range
@@ -168,15 +175,6 @@ export default function BookingFlow({
     [alignedSlots, range],
   );
 
-  /**
-   * 고를 수 있는 날짜: 앞으로 4주 안의 같은 요일. 학교 시설은 이용일 MAX_DAYS_AHEAD 일 전부터 신청할 수 있어
-   * 그보다 먼 날짜는 "시설 없이"로만 잡을 수 있다 (고르면 굵은 안내가 나온다).
-   */
-  const bookableDates = useMemo(() => {
-    if (!range) return [];
-    const today = todayStr();
-    return nextDatesForDay(range.day, DATE_WINDOW_DAYS).filter((d) => d !== today || range.startMin > nowMinutes());
-  }, [range]);
   /** 고른 날짜가 학교 시설 신청 기간(7일)보다 멀다 → 시설 없이만 잡을 수 있다 */
   const beyondFacilityWindow = selectedDate !== null && selectedDate > addDaysStr(todayStr(), MAX_DAYS_AHEAD);
 
@@ -195,10 +193,11 @@ export default function BookingFlow({
     let cancelled = false;
     // 새 결과가 오기 전에 옛 여유 시간을 보여 주면 오해하기 쉬워 먼저 비운다.
     setSlots(null);
+    setSlotsContext(availabilityKey);
     setSlotsError(null);
     api
       .get<FreeSlot[]>(
-        `/meetings/${meetingId}/free-slots?duration=30&week=${week.weekStart}&members=${activeKey}`,
+        `/meetings/${meetingId}/free-slots?duration=${STEP_MIN}&week=${week.weekStart}&members=${activeKey}`,
       )
       .then((s) => {
         if (!cancelled) setSlots(s);
@@ -210,26 +209,27 @@ export default function BookingFlow({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, meetingId, week.weekStart, activeKey, slotsTick]);
+  }, [open, availabilityKey, slotsTick]);
 
   /* ── 열려 있는 동안 팀원 구성이 바뀌면(누가 참가·퇴장) 선택을 처음부터 다시 시작 ── */
-  const prevKey = useRef(activeKey);
+  const prevKey = useRef(availabilityKey);
   useEffect(() => {
-    if (prevKey.current === activeKey) return;
-    prevKey.current = activeKey;
+    if (prevKey.current === availabilityKey) return;
+    prevKey.current = availabilityKey;
     setRange(null);
-    setSelectedDate(null);
     setFacilities(null);
     setSelectedFacility(null);
     setPickError(null);
+    setNoFacility(false);
+    setFacilitiesError(null);
     setSubmitError(null);
     setStep(1);
     if (openRef.current) {
       setNotice(
-        '팀원 구성이 바뀌어 선택을 처음부터 다시 시작합니다. 바뀐 참여 인원으로 여유 시간을 다시 계산했습니다.',
+        '인원 또는 시간표가 바뀌었습니다. 시간을 다시 선택해 주세요.',
       );
     }
-  }, [activeKey]);
+  }, [availabilityKey]);
 
   /* ── 날짜와 시간이 정해지면 이용할 수 있는 시설을 조회 ── */
   useEffect(() => {
@@ -265,7 +265,7 @@ export default function BookingFlow({
 
   // 시설 선택이 사라졌는데(목록을 다시 불러옴) 확인 단계에 있으면 시설 단계로 돌린다.
   useEffect(() => {
-    if (step === 4 && !selectedFacilityInfo && !noFacility) setStep(3);
+    if (step === 3 && !selectedFacilityInfo && !noFacility) setStep(2);
   }, [step, selectedFacilityInfo, noFacility]);
 
   // 단계가 바뀌면 새 단계의 제목으로 포커스를 옮기고 맨 위로 보낸다.
@@ -280,15 +280,14 @@ export default function BookingFlow({
     heading?.focus({ preventScroll: true });
   }, [step]);
 
-  /* ── 시간 고르기 ── */
+  /* ── 시간 선택 ── */
   function applyRange(next: SelectedRange) {
     setPickError(null);
     setSubmitError(null);
     setNotice(null);
     if (sameRange(range, next)) return;
     setRange(next);
-    // 시간이 바뀌면 날짜·시설은 다시 고른다.
-    setSelectedDate(null);
+    // 날짜는 보고 있는 주와 선택한 열에서 정하고, 시설 선택만 초기화한다.
     setFacilities(null);
     setSelectedFacility(null);
   }
@@ -303,6 +302,11 @@ export default function BookingFlow({
   function pickFromGrid(picked: SelectedRange) {
     setPickError(null);
     const startMin = Math.floor(picked.startMin / STEP_MIN) * STEP_MIN;
+    const date = addDaysStr(week.weekStart, picked.day);
+    if (date < todayStr() || (date === todayStr() && startMin <= nowMinutes())) {
+      setPickError('이미 지난 시간입니다. 시간표에서 앞으로의 시간을 선택해 주세요.');
+      return;
+    }
     const next: SelectedRange = {
       day: picked.day,
       startMin,
@@ -310,7 +314,7 @@ export default function BookingFlow({
     };
     if (!isWithinFree(next)) {
       setPickError(
-        '참여자 중 수업이 있거나 예약할 수 없는 시간입니다. 시간표에서 배경이 칠해진 “모두 비는 시간” 구간 안에서 선택해 주세요.',
+        '참여자의 일정이 있거나 예약할 수 없는 시간입니다. 빈 칸에서 시간을 다시 선택해 주세요.',
       );
       return;
     }
@@ -321,32 +325,13 @@ export default function BookingFlow({
     applyRange(next);
   }
 
-  function changeStart(value: number) {
-    if (!range || !activeSlot) return;
-    const duration = range.endMin - range.startMin;
-    const maxEnd = Math.min(activeSlot.end, value + MAX_RESERVATION_MIN);
-    let end = range.endMin;
-    if (end <= value) end = Math.min(maxEnd, value + duration);
-    if (end > maxEnd) end = maxEnd;
-    applyRange({ day: range.day, startMin: value, endMin: end });
-  }
-
-  function changeEnd(value: number) {
-    if (!range) return;
-    applyRange({ ...range, endMin: value });
-  }
-
-  const startOptions: number[] = [];
-  const endOptions: number[] = [];
-  if (range && activeSlot) {
-    for (let m = activeSlot.start; m <= activeSlot.end - STEP_MIN; m += STEP_MIN) startOptions.push(m);
-    const maxEnd = Math.min(activeSlot.end, range.startMin + MAX_RESERVATION_MIN);
-    for (let m = range.startMin + STEP_MIN; m <= maxEnd; m += STEP_MIN) endOptions.push(m);
-  }
-
   /* ── 예약하기 ── */
   async function submit() {
     if (pendingRef.current || !range || !selectedDate) return;
+    if (selectedDate < todayStr() || (selectedDate === todayStr() && range.startMin <= nowMinutes())) {
+      setSubmitError('선택한 시간이 지났습니다. 이전 단계에서 시간을 다시 선택해 주세요.');
+      return;
+    }
     const facility = noFacility ? null : selectedFacilityInfo;
     if (!noFacility && !facility) return;
     pendingRef.current = true;
@@ -376,12 +361,10 @@ export default function BookingFlow({
   /* ── 하단 버튼 ── */
   const canNext =
     step === 1
-      ? range !== null
+      ? range !== null && activeSlot !== null && peopleCount > 0 && !slotsError
       : step === 2
-        ? selectedDate !== null
-        : step === 3
-          ? noFacility || selectedFacilityInfo !== null
-          : !pending;
+        ? noFacility || selectedFacilityInfo !== null
+        : !pending;
 
   function goStep(next: number) {
     setSubmitError(null);
@@ -390,8 +373,13 @@ export default function BookingFlow({
 
   function onNext() {
     if (!canNext) return;
-    if (step === 4) {
+    if (step === 3) {
       void submit();
+      return;
+    }
+    if (step === 1 && selectedDate && range &&
+        (selectedDate < todayStr() || (selectedDate === todayStr() && range.startMin <= nowMinutes()))) {
+      setPickError('선택한 시간이 지났습니다. 시간을 다시 선택해 주세요.');
       return;
     }
     goStep(step + 1);
@@ -403,21 +391,16 @@ export default function BookingFlow({
   }
 
   const durationText = range ? fmtDuration(range.endMin - range.startMin) : '';
-  const rangeText = range ? `${dayText(range.day)} ${fmtRange(range.startMin, range.endMin)}` : '';
+  const rangeText = range && selectedDate ? `${fmtDate(selectedDate)} ${fmtRange(range.startMin, range.endMin)}` : '';
 
   let hint: string;
   if (step === 1) {
-    if (range) hint = `선택한 시간: ${rangeText} (${durationText})`;
-    else if (peopleCount === 0) hint = '회의에 참여할 팀원이 없어 시간을 고를 수 없습니다.';
-    else if (slots !== null && alignedSlots.length === 0)
-      hint = '함께 비는 시간이 없어 다음으로 갈 수 없습니다.';
-    else hint = '시간을 고르면 다음으로 갈 수 있습니다.';
+    if (range && activeSlot) hint = `${rangeText} · ${durationText}`;
+    else if (peopleCount === 0) hint = '참여할 팀원을 선택해 주세요.';
+    else if (currentSlots !== null && alignedSlots.length === 0)
+      hint = '다른 주나 참여 인원을 확인해 주세요.';
+    else hint = '시간을 선택해 주세요.';
   } else if (step === 2) {
-    hint =
-      selectedDate && range
-        ? `선택한 날짜: ${fmtDate(selectedDate)} ${fmtRange(range.startMin, range.endMin)}`
-        : '날짜를 골라 주세요.';
-  } else if (step === 3) {
     hint = noFacility
       ? '시설 없이 회의 시간만 잡아요.'
       : selectedFacilityInfo
@@ -438,7 +421,7 @@ export default function BookingFlow({
   return (
     <Sheet
       open={open}
-      onClose={onClose}
+      onClose={() => { if (!pendingRef.current) onClose(); }}
       title="회의 예약"
       full
       initialFocus=".mtg-step-title"
@@ -455,11 +438,11 @@ export default function BookingFlow({
               variant="primary"
               size="lg"
               onClick={onNext}
-              aria-disabled={!canNext || undefined}
+              disabled={!canNext && !pending}
               aria-describedby={hintId}
               loading={pending}
             >
-              {step === 4 ? (pending ? '준비 중…' : noFacility ? '예약하기' : '학교에 신청하기') : '다음'}
+              {step === 3 ? (pending ? '준비 중…' : noFacility ? '예약하기' : '학교에 신청하기') : ['시설 선택', '예약 확인'][step - 1]}
             </Button>
           </div>
         </div>
@@ -470,195 +453,73 @@ export default function BookingFlow({
         <Stepper steps={STEPS} current={step} />
       </div>
 
-      {/* ─────────── 1단계 시간 ─────────── */}
+      {/* 시간: 설명보다 선택 가능한 시간표를 먼저 보여 준다. */}
       {step === 1 && (
-        <div className="stack-lg">
-          <div>
-            <h3 className="section__title mtg-step-title" tabIndex={-1} ref={headingRef}>
-              시간 고르기
-            </h3>
-            <p className="section__sub">
-              팀원이 모두 비는 시간 안에서 고릅니다. 하루 최대 {MAX_RESERVATION_MIN / 60}시간까지
-              이용할 수 있습니다.
-            </p>
+        <div className="mtg-time-step">
+          <div className="mtg-time-head">
+            <div>
+              <h3 className="section__title mtg-step-title" tabIndex={-1} ref={headingRef}>시간 선택</h3>
+              <p className="section__sub">원하는 날짜의 빈 시간을 끌어 선택하세요.</p>
+            </div>
+            <Button variant="text" size="sm" aria-expanded={editingMembers}
+              aria-controls={hintId + '-members'} onClick={() => setEditingMembers((v) => !v)}>
+              <Icon name="users" className="btn__icon" />
+              <span aria-live="polite">{peopleCount}명</span>
+              <Icon name={editingMembers ? 'chevron-up' : 'chevron-down'} className="btn__icon" />
+              <span className="sr-only">참여 인원 변경</span>
+            </Button>
+          </div>
+          <div id={hintId + '-members'} hidden={!editingMembers} className="mtg-flow-members">
+            <p className="field__help">선택한 팀원의 시간표만 반영합니다.</p>
+            <MeetingParticipants members={members} activeIds={activeIds} onToggle={onToggleParticipant} />
           </div>
 
-          {notice && <Alert tone="info">{notice}</Alert>}
+          {notice && <p className="field__help" role="status">{notice}</p>}
           {pickError && <Alert tone="danger">{pickError}</Alert>}
 
-          <WeekNav
-            label={fmtWeekLabel(week.weekStart)}
-            sub={`${fmtDayHeader(week.weekStart)} ~ ${fmtDayHeader(weekEnd)}`}
-            onPrev={week.prevWeek}
-            onNext={week.nextWeek}
-            onToday={isCurrentWeek(week.weekStart) ? undefined : week.goToday}
-          />
+          <WeekNav label={fmtWeekLabel(week.weekStart)}
+            sub={fmtDayHeader(week.weekStart) + ' ~ ' + fmtDayHeader(weekEnd)}
+            onPrev={week.prevWeek} onNext={week.nextWeek}
+            onToday={isCurrentWeek(week.weekStart) ? undefined : week.goToday} />
 
           {peopleCount === 0 ? (
-            <Alert tone="warning">
-              회의에 참여할 팀원이 없습니다. 창을 닫고 팀원 이름을 눌러 다시 넣어 주세요.
-            </Alert>
+            <Alert tone="warning">참여할 팀원을 한 명 이상 선택해 주세요.</Alert>
           ) : slotsError ? (
-            // 알림 안의 다시 시도 버튼도 터치 대상 최소 44px 를 지켜야 하므로 sm(40) 이 아닌 기본(48) 크기를 쓴다.
-            // (이 파일의 다른 알림 버튼도 같은 이유로 기본 크기다.)
-            <Alert
-              tone="danger"
-              title="여유 시간을 계산하지 못했습니다."
-              actions={
-                <Button variant="secondary" onClick={() => setSlotsTick((n) => n + 1)}>
-                  다시 시도하기
-                </Button>
-              }
-            >
+            <Alert tone="danger" title="빈 시간을 불러오지 못했습니다."
+              actions={<Button variant="secondary" onClick={() => setSlotsTick((n) => n + 1)}>다시 시도하기</Button>}>
               {slotsError}
             </Alert>
-          ) : slots === null ? (
-            <LoadingBlock>공통 여유 시간을 계산하는 중입니다.</LoadingBlock>
+          ) : currentSlots === null ? (
+            <LoadingBlock>함께 비는 시간을 확인하고 있습니다.</LoadingBlock>
           ) : alignedSlots.length === 0 ? (
-            <Alert tone="warning">
-              모든 팀원이 함께 비는 시간이 없습니다. 팀원 시간표를 확인해 보세요. 다른 주로 넘겨
-              보거나, 참여하지 않는 팀원을 뺄 수도 있습니다.
-            </Alert>
+            <Alert tone="warning">함께 비는 시간이 없습니다. 다른 주나 참여 인원을 확인해 주세요.</Alert>
           ) : null}
 
-          {range && activeSlot && (
-            <section aria-labelledby={`${hintId}-adjust`}>
-              <h4 className="mtg-sub-title" id={`${hintId}-adjust`}>
-                시작·종료 시각
-              </h4>
-              <div className="form-row">
-                <SelectField
-                  label="시작 시각"
-                  value={range.startMin}
-                  onChange={(e) => changeStart(Number(e.target.value))}
-                >
-                  {startOptions.map((m) => (
-                    <option key={m} value={m}>
-                      {fmtMin(m)}
-                    </option>
-                  ))}
-                </SelectField>
-                <SelectField
-                  label="종료 시각"
-                  value={range.endMin}
-                  onChange={(e) => changeEnd(Number(e.target.value))}
-                >
-                  {endOptions.map((m) => (
-                    <option key={m} value={m}>
-                      {fmtMin(m)} ({fmtDuration(m - range.startMin)})
-                    </option>
-                  ))}
-                </SelectField>
-              </div>
-            </section>
-          )}
-
           {peopleCount > 0 && !slotsError && (
-            <section aria-labelledby={`${hintId}-grid`}>
-              <h4 className="mtg-sub-title" id={`${hintId}-grid`}>
-                시간표에서 고르기
-              </h4>
-              <p className="field__help mtg-grid__help">
-                {alignedSlots.length > 0
-                  ? '“모두 비는 시간”으로 칠해진 구간 안을 눌러 고를 수 있습니다. 학교 시설은 1시간 단위라 한 번 누르면 1시간이 선택되고, 길게 눌러 끌면 범위를 고를 수 있습니다.'
-                  : '팀원 수업이 겹치는 시간표입니다.'}
-              </p>
-              {alignedSlots.length > 0 && <GridLegend items={['free', 'pending']} />}
+            <section aria-label="예약 시간표" aria-busy={currentSlots === null}>
+              <div className="mtg-time-legend">
+                <GridLegend items={['busy', 'pending']} />
+              </div>
               <div className="mtg-grid">
-                <TimetableGrid
-                  entries={gridEntries}
-                  laneCount={members.length}
-                  freeRanges={freeRanges}
-                  selectable={alignedSlots.length > 0}
-                  onSelectRange={pickFromGrid}
-                  pendingRange={range}
-                  weekStart={week.weekStart}
-                  slide={week.slide}
-                />
+                <TimetableGrid entries={gridEntries}
+                  listPosition="hidden" freeRanges={freeRanges} highlightFreeRanges={false}
+                  step={STEP_MIN} halfHourLines
+                  selectable={currentSlots !== null && alignedSlots.length > 0}
+                  onSelectRange={pickFromGrid} pendingRange={activeSlot ? range : null}
+                  weekStart={week.weekStart} slide={week.slide} />
               </div>
-              <ul className="mtg-legend mtg-flow-legend" aria-label="팀원별 색 안내">
-                {members.map((m, i) => (
-                  <li key={m.id} className="mtg-legend__item">
-                    <span
-                      className="mtg-legend__dot"
-                      style={{ background: MEMBER_COLORS[i % MEMBER_COLORS.length] }}
-                      aria-hidden="true"
-                    />
-                    {m.name}
-                  </li>
-                ))}
-              </ul>
             </section>
           )}
+
         </div>
       )}
 
-      {/* ─────────── 2단계 날짜 ─────────── */}
-      {step === 2 && range && (
+      {/* ─────────── 2단계 시설 ─────────── */}
+      {step === 2 && range && selectedDate && (
         <div className="stack-lg">
           <div>
             <h3 className="section__title mtg-step-title" tabIndex={-1} ref={headingRef}>
-              날짜 고르기
-            </h3>
-            <p className="section__sub">
-              {rangeText} ({durationText})에 이용할 날짜를 골라 주세요.
-            </p>
-          </div>
-
-          {bookableDates.length === 0 ? (
-            <Alert
-              tone="warning"
-              actions={
-                <Button variant="secondary" onClick={() => goStep(1)}>
-                  시간 다시 고르기
-                </Button>
-              }
-            >
-              이 요일은 앞으로 고를 수 있는 날이 없습니다. 다른 요일을 골라 주세요.
-            </Alert>
-          ) : (
-            <section>
-              <div className="tag-group" role="group" aria-label="이용 날짜">
-                {bookableDates.map((d) => {
-                  const chosen = selectedDate === d;
-                  return (
-                    <button
-                      key={d}
-                      type="button"
-                      className="tag mtg-date"
-                      aria-pressed={chosen}
-                      onClick={() => {
-                        setSubmitError(null);
-                        setSelectedDate(d);
-                      }}
-                    >
-                      {chosen && <Icon name="check" className="tag__check" />}
-                      {fmtDate(d)}
-                      {d === todayStr() && <span className="text-sm">오늘</span>}
-                    </button>
-                  );
-                })}
-              </div>
-              {beyondFacilityWindow ? (
-                <p className="mtg-date-limit" role="status">
-                  학교 규정상 시설은 이용일 {MAX_DAYS_AHEAD}일 전부터 예약할 수 있어요. 이 날짜는 시설 없이만 잡을 수 있어요.
-                </p>
-              ) : (
-                <p className="field__help mtg-slots__help">
-                  학교 시설은 이용일 {MAX_DAYS_AHEAD}일 전부터 예약할 수 있어요.
-                </p>
-              )}
-            </section>
-          )}
-        </div>
-      )}
-
-      {/* ─────────── 3단계 시설 ─────────── */}
-      {step === 3 && range && selectedDate && (
-        <div className="stack-lg">
-          <div>
-            <h3 className="section__title mtg-step-title" tabIndex={-1} ref={headingRef}>
-              시설 고르기
+              시설 선택
             </h3>
             <p className="section__sub">
               {fmtDate(selectedDate)} {fmtRange(range.startMin, range.endMin)} · 참여 {peopleCount}명
@@ -681,7 +542,7 @@ export default function BookingFlow({
               <span className="mtg-fac__name">시설 없이 예약하기</span>
               {noFacility && <Badge tone="primary">선택함</Badge>}
             </span>
-            <span className="mtg-fac__meta">장소가 필요 없는 회의예요. 학교에 신청하지 않고 회의 시간만 잡아요.</span>
+            <span className="mtg-fac__meta">회의 시간만 예약합니다.</span>
           </button>
 
           {beyondFacilityWindow ? (
@@ -725,8 +586,8 @@ export default function BookingFlow({
                   <Alert
                     tone="warning"
                     actions={
-                      <Button variant="secondary" onClick={() => goStep(2)}>
-                        날짜 다시 고르기
+                      <Button variant="secondary" onClick={() => goStep(1)}>
+                        시간 다시 선택하기
                       </Button>
                     }
                   >
@@ -771,8 +632,8 @@ export default function BookingFlow({
         </div>
       )}
 
-      {/* ─────────── 4단계 확인 ─────────── */}
-      {step === 4 && range && selectedDate && (noFacility || selectedFacilityInfo) && (
+      {/* ─────────── 3단계 확인 ─────────── */}
+      {step === 3 && range && selectedDate && (noFacility || selectedFacilityInfo) && (
         <div className="stack-lg">
           <div>
             <h3 className="section__title mtg-step-title" tabIndex={-1} ref={headingRef}>

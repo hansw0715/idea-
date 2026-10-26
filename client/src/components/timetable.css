@@ -8,7 +8,7 @@
 
 /* ── 격자 ─────────────────────────────────────────────────────── */
 .tt {
-  --tt-axis: 4.2rem; /* 시각 축 폭: 글자("10:00")를 가운데에 두어도 양쪽 선에 닿지 않을 만큼 (기존 4.8rem 에서 줄임) */
+  --tt-axis: 2.8rem; /* 시각 축 폭: 시만 두 자리("09")로 적으니 좁게 — 남는 폭은 요일 칸으로 (기존 4.2rem) */
   --tt-hour: 3.7rem; /* 1시간 높이 (기존 4.6rem 의 80%) */
   --tt-hours: 13; /* 09:00 ~ 22:00 (JS 에서 덮어쓴다) */
 
@@ -280,7 +280,8 @@
   gap: 0;
   min-width: 0;
   margin: 0;
-  padding: 0.1rem 0.3rem 0.1rem 0.4rem;
+  /* 위 여백을 살짝 두어 강의명이 칸 천장에 붙지 않게 */
+  padding: 0.5rem 0.3rem 0.1rem 0.4rem;
   border: 0;
   border-left: 0.3rem solid var(--tt-class-bar);
   border-radius: var(--r);
@@ -339,16 +340,20 @@
   color: var(--tt-res-text);
 }
 
-/* 팀원 시간표: 사람마다 세로 레인 + 사람 색 (글자 없이 색 블록) */
+/* 팀원 시간표: 사람마다 세로 레인 (글자 없이 구분 블록) */
 .tt .tt-entry--lane {
   z-index: 2;
   --lane: var(--m-1);
-  padding: 0;
   border-left: 0.3rem solid var(--lane);
   background: var(--tt-class-bg);
   background: color-mix(in srgb, var(--lane) 22%, var(--c-bg));
   box-shadow: inset 0 0 0 1px var(--lane);
 }
+
+.tt .tt-entry--lane { padding: 0; }
+
+.tt-overlap-details { list-style: none; margin: 0; padding: 0; }
+.tt-overlap-details > li { padding: var(--sp-5) 0; border-top: 1px solid var(--c-divider); }
 
 /* 레인 블록은 폭이 20px 안팎이다. 눌리는 영역을 자기 레인 칸(좌우 여백 0.2rem 씩)까지 넓혀 빈틈을 없애되
    옆 사람의 칸은 침범하지 않는다. 44px 에 못 미치는 폭은 "일정 목록"이 같은 일을 큰 버튼으로 대신한다. */
@@ -377,6 +382,9 @@
 
 .tt .tt-entry__title {
   display: -webkit-box;
+  /* 1시간 30분 수업에 강의명 3줄 + 장소 1줄이 들어가는 크기 (TimetableGrid 의 TEXT_LINE_REM 과 맞춘다) */
+  font-size: 1.1rem;
+  line-height: 1.2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-width: 0;
@@ -384,6 +392,39 @@
   color: var(--c-text);
   word-break: keep-all;
   overflow-wrap: anywhere;
+}
+
+/* 겹치는 칸: 팀원 이름을 굵게 한 줄에 한 명씩, 그 아래 작은 회색 시간. 칸 정가운데에 모은다.
+   줄 높이·간격은 TimetableGrid 의 NAME_LINE_REM · NAME_GAP_REM · RANGE_LINE_REM 과 맞춘다 */
+.tt .tt-entry__names {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 0.2rem;
+  text-align: center;
+}
+.tt .tt-entry__names > span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--c-text);
+  font-size: 1.2rem;
+  font-weight: var(--fw-semibold, 600);
+  line-height: 1.25;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tt .tt-entry__names > .tt-entry__range {
+  color: var(--c-text-sub);
+  font-size: 0.9rem;
+  font-weight: var(--fw-regular);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .tt .tt-entry__tag {
@@ -396,6 +437,9 @@
   overflow: hidden;
   min-width: 0;
   color: var(--c-text-sub);
+  /* 장소("상상관308")는 강의명보다 작게 써서 한 줄에 다 들어가게 한다 */
+  font-size: 0.8rem;
+  letter-spacing: -0.02em;
   white-space: nowrap;
   text-overflow: ellipsis;
 }

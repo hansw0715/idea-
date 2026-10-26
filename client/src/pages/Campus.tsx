@@ -24,7 +24,7 @@ export default function Campus() {
           value={tab}
           onChange={(value) => setParams({ tab: value })}
           tabs={[
-            { value: "learning", label: "강의·과제" },
+            { value: "learning", label: "강의·과제 현황" },
             { value: "notices", label: "학교·학과 공지" },
           ]}
         />

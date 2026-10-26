@@ -14,99 +14,190 @@
   margin: 0;
   padding-left: var(--sp-5);
 }
-.school-eclass__filters {
-  display: grid;
-  gap: 0;
-}
-/* 항목 종류(강의/과제) 바로 아래에 개수 줄이 붙도록 필드의 아래 여백을 없앤다 */
-.school-eclass__filters > .field {
-  margin-bottom: var(--sp-2);
-}
-.school-eclass__toggle {
+/* 카드 맨 위 줄: 미수강 강의 · 미제출 과제. 제목은 위 탭("강의·과제 현황")이 대신한다 */
+.school-eclass__controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-1) var(--sp-4);
+  gap: 0 var(--sp-3);
 }
 .school-eclass__tally {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sp-1) var(--sp-3);
-  margin: 0;
-  font-size: var(--fs-xs);
+  gap: 0 var(--sp-3);
+  margin: 0 0 0 calc(-1 * var(--sp-1));
+}
+/* 마지막 확인 바로 위: 이번주 완료 보기 (오른쪽 끝) */
+.school-eclass__donerow {
+  display: flex;
+  justify-content: flex-end;
+  /* 위아래(목록 · 마지막 확인)와 조금만 띄운다 */
+  margin: calc(-1 * var(--sp-2)) 0;
+}
+.school-eclass__donerow .school-eclass__textbtn {
+  min-height: 2.4rem;
+}
+.school-eclass__done {
+  margin-right: calc(-1 * var(--sp-1));
+}
+.school-eclass__textbtn.school-eclass__kind {
   color: var(--c-text-sub);
 }
-.school-eclass__tally b {
-  margin-left: 0.15rem;
-  font-size: var(--fs-sm);
-  color: var(--c-text);
+.school-eclass__textbtn.school-eclass__kind[aria-pressed='true'] {
+  color: var(--c-action-text);
 }
+.school-eclass__kind b {
+  margin-left: 0.3rem;
+}
+
+/* 강좌 묶음: 위에 구분선, 강좌 이름 · "N개" · 접기 화살표, 그 아래 카드들 */
 .school-eclass__groups {
   display: grid;
-  gap: var(--sp-5);
+  gap: 0;
 }
 .school-eclass__group {
   display: grid;
   gap: var(--sp-2);
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--c-divider);
+}
+.school-eclass__group:last-child {
+  padding-bottom: var(--sp-2);
 }
 .school-eclass__course {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.school-eclass__course h3 {
+  flex: 1;
+  min-width: 0;
   margin: 0;
-  padding-bottom: var(--sp-2);
-  border-bottom: 2px solid var(--c-border);
-  font-size: var(--fs-sm);
+  font-size: 1.4rem;
   font-weight: var(--fw-bold);
+  color: var(--c-text);
+  overflow-wrap: anywhere;
+}
+.school-eclass__count {
+  flex: none;
+  padding: 0.2rem var(--sp-2);
+  border-radius: var(--r);
+  background: var(--c-panel);
+  color: var(--c-action-text);
+  font-size: 1.1rem;
+}
+.school-eclass__fold {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  margin-right: calc(-1 * var(--sp-2));
+  padding: 0;
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
   color: var(--c-text-sub);
+}
+.school-eclass__fold:hover {
+  color: var(--c-text);
+}
+.school-eclass__fold:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.school-eclass__fold svg {
+  width: 1.6rem;
+  height: 1.6rem;
 }
 .school-eclass__list {
   display: grid;
-  gap: 0;
+  gap: var(--sp-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .school-eclass__item {
-  display: grid;
-  gap: var(--sp-1);
-  padding: var(--sp-3) 0;
-  border-top: 1px solid var(--c-border);
+  border-radius: var(--r-panel);
 }
-.school-eclass__item:first-child {
-  border-top: 0;
-}
-.school-eclass__row {
+/* 강의·과제 카드: 왼쪽 남은 기간 칸 · 제목과 날짜 · 오른쪽 화살표 (카드 전체가 링크) */
+.school-eclass__card {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--c-divider);
+  border-radius: var(--r-panel);
+  background: var(--c-bg);
+  color: inherit;
+  text-decoration: none;
+}
+.school-eclass__card:hover {
+  background: var(--c-surface);
+}
+.school-eclass__card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* 남은 기간: 배경 칸 없이 글자만 (색으로 급한 정도) */
+.school-eclass__dday {
+  flex: none;
+  min-width: 3rem;
+  color: var(--c-action-text);
+  font-size: 1.2rem;
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+}
+.school-eclass__dday--warning {
+  color: var(--warning-60);
+}
+.school-eclass__dday--danger {
+  color: var(--c-danger-text);
+}
+.school-eclass__dday--success {
+  color: var(--c-success-text);
+}
+.school-eclass__body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
 }
 .school-eclass__title {
   min-width: 0;
   overflow-wrap: anywhere;
+  font-size: 1.3rem;
   font-weight: var(--fw-bold);
+  line-height: 1.35;
   color: var(--c-text);
-  text-decoration: none;
-}
-.school-eclass__title:hover {
-  text-decoration: underline;
-}
-.school-eclass__title:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-.school-eclass__row > :last-child {
-  flex: none;
 }
 .school-eclass__sub {
-  margin: 0;
-  font-size: var(--fs-sm);
+  font-size: 1.1rem;
+  color: var(--c-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+.school-eclass__go {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
   color: var(--c-text-sub);
 }
 .school-eclass__none {
+  /* 완료한 강의·과제가 없을 때: 강의 카드 한 장 높이만큼 자리를 두고 그 가운데에 안내 문구 */
+  display: grid;
+  place-items: center;
+  min-height: 5.6rem;
   margin: 0;
   color: var(--c-text-sub);
+  font-size: var(--fs-sm);
+  text-align: center;
 }
 .school-eclass__foot {
+  /* 2px 위로 */
+  margin-top: -0.2rem;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -160,6 +251,7 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .school-eclass__refresh[aria-busy='true'] .btn__icon {
-    animation: spin 0.9s linear infinite;
+    /* 새로고침 아이콘의 화살표가 시계 반대 방향이라 그 방향으로 돈다 */
+    animation: spin 0.9s linear infinite reverse;
   }
 }

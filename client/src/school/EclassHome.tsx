@@ -11,11 +11,9 @@ import { useAuth } from "../auth";
 import type { EclassItem, EclassSnapshot } from "../../../shared/school/eclass";
 import {
   Alert,
-  Badge,
   Button,
   Icon,
   LoadingBlock,
-  Segmented,
   btnClass,
 } from "../ui";
 import { schoolApi } from "./api";
@@ -57,10 +55,21 @@ function detailOf(item: EclassItem, now: number): string {
   if (item.completion === "completed") return "";
   const parts: string[] = [];
   if (item.completion === "unknown") parts.push("완료 여부 확인 필요");
-  if (item.dueAt) parts.push(`마감 ${formatDue(item.dueAt)}`);
+  if (item.dueAt) parts.push(formatDue(item.dueAt));
   if (item.kind === "lecture" && item.progress !== null && item.progress > 0)
     parts.push(`학습 ${Math.round(item.progress)}%`);
   return parts.join(" · ");
+}
+
+/** 카드 왼쪽에 쓰는 짧은 남은 기간: "5일 3시간 남음" → "D-5", 하루 안 남음("3시간 남음") → "D-DAY", "기한 지남" → "지남" */
+function shortDeadline(label: string): string {
+  const days = label.match(/^(\d+)일/);
+  if (days) return `D-${days[1]}`;
+  if (/^\d+(?:시간|분)/.test(label)) return "D-DAY";
+  if (label.endsWith("완료")) return "완료";
+  if (label === "기한 지남") return "지남";
+  if (label === "공개 예정") return "예정";
+  return "-";
 }
 
 const cacheKey = (userId: number) => `sangsang-booke:eclass:${userId}`;
@@ -203,6 +212,15 @@ export default function EclassHome() {
     }
     return [...map.values()];
   }, [visible, limit]);
+  // 접은 강좌 (강좌 이름 옆 화살표)
+  const [folded, setFolded] = useState<Set<string>>(() => new Set());
+  const toggleFold = (courseId: string) =>
+    setFolded((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseId)) next.delete(courseId);
+      else next.add(courseId);
+      return next;
+    });
   const syncedAt = ts(snapshot?.syncedAt ?? null);
   const stale = syncedAt === null || now - syncedAt > ECLASS_STALE_MS;
 
@@ -249,10 +267,12 @@ export default function EclassHome() {
   return (
     <section
       className="section"
-      aria-labelledby="eclass-title"
+      // 정보가 있으면 제목은 카드 안(강의/과제 선택 위)에 있다
+      aria-labelledby={snapshot ? undefined : "eclass-title"}
+      aria-label={snapshot ? "강의·과제 현황" : undefined}
       aria-busy={loading || undefined}
     >
-      {head}
+      {!snapshot && head}
 
       {error && (
         <Alert
@@ -317,48 +337,28 @@ export default function EclassHome() {
             </Alert>
           )}
 
-          <div className="school-eclass__filters">
-            {/* 항목 종류 줄 오른쪽 끝에 이번주 완료 보기(글자 버튼), 강의/과제 버튼 아래에 미수강·미제출 개수 */}
-            <Segmented<KindFilter>
-              label="항목 종류"
-              labelAction={
+          {/* 맨 위 줄: 미수강 강의 · 미제출 과제 (누르면 그 종류를 보여 줌) */}
+          <div className="school-eclass__controls">
+            <div className="school-eclass__tally" role="group" aria-label="볼 항목 고르기">
+              {(
+                [
+                  ["lecture", "미수강 강의", counts?.pendingLectures ?? 0],
+                  ["assignment", "미제출 과제", counts?.pendingAssignments ?? 0],
+                ] as const
+              ).map(([value, label, count]) => (
                 <button
+                  key={value}
                   type="button"
-                  className="school-eclass__textbtn"
-                  aria-pressed={showDone}
+                  className="school-eclass__textbtn school-eclass__kind"
+                  aria-pressed={kind === value}
                   onClick={() => {
-                    setShowDone((v) => !v);
+                    setKind(value);
                     setLimit(PAGE);
                   }}
                 >
-                  {showDone && <Icon name="check" className="btn__icon" />}
-                  이번주 완료 {kind === "lecture" ? "강의" : "과제"} 보기
+                  {label} <b className="tabular">{count}</b>
                 </button>
-              }
-              value={kind}
-              onChange={(v) => {
-                setKind(v);
-                setLimit(PAGE);
-              }}
-              options={[
-                { value: "lecture", label: "강의" },
-                { value: "assignment", label: "과제" },
-              ]}
-            />
-            <div className="school-eclass__toggle">
-              <p
-                className="school-eclass__tally"
-                aria-label="확인된 강의와 과제 요약"
-              >
-                <span>
-                  미수강 강의{" "}
-                  <b className="tabular">{counts?.pendingLectures ?? 0}</b>
-                </span>
-                <span>
-                  미제출 과제{" "}
-                  <b className="tabular">{counts?.pendingAssignments ?? 0}</b>
-                </span>
-              </p>
+              ))}
             </div>
           </div>
 
@@ -377,40 +377,60 @@ export default function EclassHome() {
                   className="school-eclass__group"
                   aria-label={group.name}
                 >
-                  <h3 className="school-eclass__course">{group.name}</h3>
-                  <ul className="school-eclass__list">
-                    {group.items.map((item) => {
-                      const d = deadlineOf(item, now);
-                      return (
-                        <li
-                          key={item.id}
-                          id={`eclass-item-${item.id}`}
-                          tabIndex={-1}
-                          className={`school-eclass__item${requestedItem === item.id ? " is-requested" : ""}`}
-                        >
-                          <div className="school-eclass__row">
+                  {/* 강좌 이름 · 남은 개수 · 접기 */}
+                  <div className="school-eclass__course">
+                    <h3>{group.name}</h3>
+                    <span className="school-eclass__count tabular">
+                      {group.items.length}개
+                    </span>
+                    <button
+                      type="button"
+                      className="school-eclass__fold"
+                      aria-expanded={!folded.has(group.courseId)}
+                      aria-label={`${group.name} ${folded.has(group.courseId) ? "펼치기" : "접기"}`}
+                      onClick={() => toggleFold(group.courseId)}
+                    >
+                      <Icon name={folded.has(group.courseId) ? "chevron-down" : "chevron-up"} />
+                    </button>
+                  </div>
+                  {!folded.has(group.courseId) && (
+                    <ul className="school-eclass__list">
+                      {group.items.map((item) => {
+                        const d = deadlineOf(item, now);
+                        const detail = detailOf(item, now);
+                        return (
+                          <li
+                            key={item.id}
+                            id={`eclass-item-${item.id}`}
+                            tabIndex={-1}
+                            className={`school-eclass__item${requestedItem === item.id ? " is-requested" : ""}`}
+                          >
+                            {/* 카드 전체가 e-class 로 가는 링크: 왼쪽 남은 기간 · 제목 · 날짜 · 화살표 */}
                             <a
-                              className="school-eclass__title"
+                              className="school-eclass__card"
                               href={safeEclassUrl(item.url)}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
-                              {item.title}
-                              <span className="sr-only">
-                                (e-class, 새 창으로 열림)
+                              <span
+                                className={`school-eclass__dday school-eclass__dday--${d.tone}`}
+                                title={d.label}
+                              >
+                                {shortDeadline(d.label)}
+                                <span className="sr-only"> ({d.label})</span>
                               </span>
+                              <span className="school-eclass__body">
+                                <span className="school-eclass__title">{item.title}</span>
+                                {detail && <span className="school-eclass__sub">{detail}</span>}
+                              </span>
+                              <Icon name="chevron-right" className="school-eclass__go" />
+                              <span className="sr-only">(e-class, 새 창으로 열림)</span>
                             </a>
-                            <Badge tone={d.tone}>{d.label}</Badge>
-                          </div>
-                          {detailOf(item, now) && (
-                            <p className="school-eclass__sub">
-                              {detailOf(item, now)}
-                            </p>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </section>
               ))}
             </div>
@@ -426,6 +446,23 @@ export default function EclassHome() {
               {visible.length})
             </Button>
           )}
+
+          {/* 마지막 확인 바로 위: 이번주 완료 보기 (오른쪽) */}
+
+          <div className="school-eclass__donerow">
+            <button
+              type="button"
+              className="school-eclass__textbtn school-eclass__done"
+              aria-pressed={showDone}
+              onClick={() => {
+                setShowDone((v) => !v);
+                setLimit(PAGE);
+              }}
+            >
+              {showDone && <Icon name="check" className="btn__icon" />}
+              이번주 완료 {kind === "lecture" ? "강의" : "과제"} 보기
+            </button>
+          </div>
 
           <div className="school-eclass__foot">
             <span className="school-eclass__stamp">

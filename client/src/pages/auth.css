@@ -148,7 +148,129 @@ html.no-scroll .auth-main {
   box-sizing: border-box;
 }
 
-/* 첫 화면: 파란 "웹앱으로 설치하기" 아래 흰 "웹에서 사용하기" */
-.download-web {
-  margin-top: var(--sp-3);
+/* 로그인·설치 화면: 위쪽 빈 머리줄 아래 구분선을 없앤다 */
+html.no-scroll .app-header {
+  border-bottom-color: transparent;
+}
+/* 스크롤이 없으니 화면이 조금 낮은 폰에서는 로고 크기는 그대로 두고 위아래 빈 여백만 줄여 한 화면에 넣는다 */
+@media (max-height: 810px) {
+  html.no-scroll .auth-main {
+    padding-top: 0;
+    padding-bottom: var(--sp-3);
+    row-gap: var(--sp-3);
+  }
+}
+/* 그래도 모자라는 아주 낮은 화면에서만 로고를 남는 높이에 맞춘다 */
+@media (max-height: 759px) {
+  html.no-scroll .auth-logo {
+    width: auto;
+    max-width: min(100%, 28rem);
+    max-height: calc(100dvh - var(--header-h) - var(--safe-top) - 48rem);
+  }
+}
+
+/* ── 설치 화면 (사이트는 앱 설치용): 큰 로고 → 앱 설치하기 → Android · iOS 설치 방법 ── */
+html.no-scroll .auth-main.download-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  row-gap: var(--sp-6);
+  padding-top: var(--sp-6);
+  padding-bottom: var(--sp-6);
+}
+.download-logo {
+  display: block;
+  /* 가로세로 비율은 그대로 두고 크기만 줄어든다 */
+  width: auto;
+  height: auto;
+  max-width: min(100%, 34rem);
+  align-self: center;
+  /* 화면이 낮으면 버튼·설명이 다 보이도록 로고만 줄어든다 */
+  max-height: calc(100dvh - var(--safe-top) - 44rem);
+  margin: 0 auto var(--sp-8);
+}
+.download-main > :not(.download-logo) {
+  width: 100%;
+}
+.install-guide {
+  display: grid;
+  gap: var(--sp-3);
+}
+.install-guide__item {
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--c-divider);
+  border-radius: var(--r-panel, var(--r));
+  color: var(--c-text-sub);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+/* 지금 보고 있는 폰의 설명은 테두리를 진하게 */
+.install-guide__item--mine {
+  border-color: var(--c-action);
+}
+.install-guide__os {
+  margin: 0 0 var(--sp-2);
+  color: var(--c-text);
+  font-size: 1.2rem;
+  font-weight: var(--fw-bold);
+}
+.install-guide ol {
+  margin: 0;
+  padding-left: 1.6rem;
+  list-style: decimal;
+}
+.install-guide strong {
+  color: var(--c-text);
+}
+.install-guide__share {
+  display: inline-block;
+  width: 1.2rem;
+  height: 1.2rem;
+  vertical-align: -0.2rem;
+  color: var(--c-action);
+}
+
+/* 아이폰: 버튼을 누르면 화면 아래 사파리 공유 버튼 쪽을 가리킨다 */
+.share-pointer {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.share-pointer__bubble {
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--r-pill);
+  background: var(--c-action);
+  color: var(--c-on-action);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  max-width: calc(100vw - 2 * var(--gutter));
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+}
+.share-pointer__bubble strong,
+.share-pointer__bubble .install-guide__share {
+  color: inherit;
+}
+.share-pointer__arrow {
+  color: var(--c-action);
+  font-size: 3.2rem;
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  animation: share-bounce 1s ease-in-out infinite;
+}
+@keyframes share-bounce {
+  50% {
+    transform: translateY(0.8rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .share-pointer__arrow {
+    animation: none;
+  }
 }
