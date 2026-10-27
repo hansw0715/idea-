@@ -159,7 +159,6 @@ export default function Account() {
       <main id="main" className="app-main">
         <div className="page-head">
           <h1 className="page-title">내 정보</h1>
-          <p className="page-lead">가입 정보를 확인하고 계정을 관리합니다.</p>
         </div>
 
         <section className="section" aria-labelledby="account-info-title">

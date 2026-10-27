@@ -481,7 +481,6 @@ export default function TimetablePage() {
         <div className="page-head tt-page__head">
           <div className="grow">
             <h1 className="page-title">내 시간표</h1>
-            <p className="page-lead">시간표를 확인하고 일정을 추가합니다.</p>
           </div>
           {/* 제목 오른쪽의 작은 "학교 시간표 가져오기" (연동돼 있을 때만). 가입 직후 ?school=import 로도 열린다 */}
           <SchoolTimetableAction onImported={reload} />

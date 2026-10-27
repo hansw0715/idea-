@@ -14,9 +14,6 @@ export default function Campus() {
       <main id="main" className="app-main campus-page">
         <div className="page-head">
           <h1 className="page-title">학사 알림</h1>
-          <p className="page-lead">
-            남은 강의와 과제, 학교 소식을 한곳에서 확인하세요.
-          </p>
         </div>
         <Tabs
           idBase="campus-tabs"

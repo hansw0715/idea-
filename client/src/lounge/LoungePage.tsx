@@ -37,7 +37,6 @@ export default function LoungePage() {
       <main id="main" className="app-main">
         <div className="page-head">
           <h1 className="page-title">라운지</h1>
-          <p className="page-lead">밥약부터 팀 회의, 함께하는 대화까지.</p>
         </div>
         <Tabs label="라운지 메뉴" value={tab} onChange={changeTab} idBase="lounge" tabs={[{ value: 'discover', label: '모임' }, { value: 'chats', label: '채팅' }]} />
         <div role="tabpanel" id={`lounge-panel-${tab}`} aria-labelledby={`lounge-tab-${tab}`} className="lounge-panel">
