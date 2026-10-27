@@ -177,7 +177,19 @@ export default function EclassHome() {
       now,
     );
   }, [snapshot, showDone, now]);
-  // 보이는 항목을 강좌별로 묶는다 (강좌 순서는 가장 급한 항목 기준). 한 강좌 안에서는 강의 밑에 과제
+  // 강좌 순서: 아직 안 한 것 목록에서 가장 급한 항목 기준으로 한 번 정하고,
+  // "이번주 완료 보기"를 켜도 같은 순서를 쓴다 (켜고 끌 때 강좌가 뒤섞이지 않게)
+  const courseOrder = useMemo(() => {
+    const order = new Map<string, number>();
+    if (!snapshot) return order;
+    const add = (items: EclassItem[]) => {
+      for (const i of items) if (!order.has(i.courseId)) order.set(i.courseId, order.size);
+    };
+    add(sortItems(snapshot.items.filter((i) => needsAttention(i, now)), now));
+    add(sortItems(snapshot.items, now));
+    return order;
+  }, [snapshot, now]);
+  // 보이는 항목을 강좌별로 묶는다 (강좌 순서는 위 courseOrder). 한 강좌 안에서는 강의 밑에 과제
   const groups = useMemo(() => {
     const map = new Map<
       string,
@@ -192,11 +204,13 @@ export default function EclassHome() {
       group.items.push(item);
       map.set(item.courseId, group);
     }
-    const groups = [...map.values()];
+    const groups = [...map.values()].sort(
+      (a, b) => (courseOrder.get(a.courseId) ?? 0) - (courseOrder.get(b.courseId) ?? 0),
+    );
     // 정렬은 안정적이라 같은 종류 안에서는 급한 순서가 그대로 남는다
     for (const g of groups) g.items.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "lecture" ? -1 : 1));
     return groups;
-  }, [visible, limit]);
+  }, [visible, limit, courseOrder]);
   // 접은 강좌 (강좌 이름 옆 화살표)
   const [folded, setFolded] = useState<Set<string>>(() => new Set());
   const toggleFold = (courseId: string) =>
