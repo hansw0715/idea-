@@ -21,8 +21,7 @@ import { useSchool } from "./SchoolContext";
 import "./eclass.css";
 
 /** 홈에서도 들어왔을 때 5분이 지났으면 한 번 새로 읽고(학사 알림과 같은 규칙), 오른쪽 위 버튼으로 바로 새로고침한다.
- *  강의·과제 각각 가장 급한 것 몇 개만 한 줄씩 (강의만 많아도 과제가 묻히지 않게 종류마다 따로 센다) */
-const SHOW_PER_KIND = 2;
+ *  안 한 강의·과제는 급한 순서로 전부 한 줄씩 */
 
 const KIND_LABEL = { lecture: "강의", assignment: "과제" } as const;
 
@@ -124,15 +123,8 @@ export default function EclassHomeCard() {
 
   const itemLink = (item: EclassItem) =>
     `/campus?tab=learning&item=${encodeURIComponent(item.id)}`;
-  const shown = items
-    ? sortItems(
-        [
-          ...items.filter((i) => i.kind === "lecture").slice(0, SHOW_PER_KIND),
-          ...items.filter((i) => i.kind === "assignment").slice(0, SHOW_PER_KIND),
-        ],
-        now,
-      )
-    : [];
+  // 안 한 강의·과제는 개수 칸과 맞게 전부 보여 준다 (이미 급한 순서로 정렬돼 있다)
+  const shown = items ?? [];
 
   let body;
   if (school.loading)
@@ -166,7 +158,7 @@ export default function EclassHomeCard() {
             </Link>
           ))}
         </div>
-        {/* 강의·과제 각각 가장 급한 것 한 줄씩: 남은 기간 · [강의/과제] 제목 */}
+        {/* 안 한 강의·과제 전부 급한 순서로 한 줄씩: 남은 기간 · [강의/과제] 제목 */}
         {shown.length === 0 ? (
           <p className="home-card__sub">남은 강의·과제가 없어요.</p>
         ) : (
