@@ -69,9 +69,9 @@
   line-height: 1;
   color: var(--c-text-sub);
 }
-/* 남은 게 있으면 숫자를 강조색으로 */
+/* 남은 게 있으면 숫자를 본문 글자색으로 (파란 원·파란 글자 없이, 다크에선 흰 숫자) */
 .school-eclass__tile.is-left strong {
-  color: var(--c-action-text);
+  color: var(--c-text);
 }
 /* 항목 제목 앞 종류 표시: "과제 - 중간 보고서 제출". 색 없이 본문 글자색으로 굵게 (홈 카드와 학사 알림 목록이 함께 쓴다) */
 .school-eclass__kindtag {
