@@ -16,8 +16,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>상상Book-E</title>
     <script>
-      // 정해 둔 브라우저가 아니면 들어오자마자 그 브라우저로 다시 연다 (카카오톡 등 앱 안 브라우저, 크롬, 구글 앱 모두).
-      // 안드로이드는 삼성 인터넷, 아이폰은 사파리. 없으면 그대로 둔다. 설치한 앱으로 연 화면은 넘기지 않는다.
+      // 정해 둔 브라우저가 아니면 들어오자마자 그 브라우저로 다시 연다 (카카오톡 등 앱 안 브라우저, 삼성 인터넷, 구글 앱 모두).
+      // 안드로이드는 크롬, 아이폰은 사파리. 없으면 그대로 둔다. 설치한 앱으로 연 화면은 넘기지 않는다.
+      // 안드로이드를 크롬으로 하는 이유: 삼성 인터넷은 다크 모드에서 사이트 색을 제멋대로 다시 칠한다(사이트가 막을 수 없음).
+      // 크롬은 color-scheme(light dark)을 지켜 앱이 정한 다크 색을 그대로 쓴다.
       (function () {
         var ua = navigator.userAgent || '';
         var url = location.href;
@@ -26,15 +28,15 @@
         var inApp = /KAKAOTALK|Line\/|NAVER|Instagram|FBAN|FBAV|everytimeApp|DaumApps|wv\)/i.test(ua);
         var installedApp =
           navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-        var samsung = /SamsungBrowser/i.test(ua) && !inApp;
+        var chrome = /Chrome\/[\d.]+/.test(ua) && !/SamsungBrowser|EdgA|OPR\/|Whale|YaBrowser|DuckDuckGo|GSA\/|Firefox/i.test(ua) && !inApp;
         var safari = /Version\/[\d.]+.*Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Whale|YaBrowser|DuckDuckGo/i.test(ua) && !inApp;
-        if (installedApp || (android && samsung) || (ios && safari)) return;
-        // 삼성 인터넷이 없어 되돌아온 경우(stay=1)에는 다시 넘기지 않는다 (무한 반복 방지)
+        if (installedApp || (android && chrome) || (ios && safari)) return;
+        // 크롬이 없어 되돌아온 경우(stay=1)에는 다시 넘기지 않는다 (무한 반복 방지)
         if (/[?&]stay=1/.test(url) || (!android && !ios && !inApp)) return;
         if (android) {
           location.href =
             'intent://' + url.replace(/^https?:\/\//, '') +
-            '#Intent;scheme=https;package=com.sec.android.app.sbrowser;S.browser_fallback_url=' +
+            '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' +
             encodeURIComponent(
               /KAKAOTALK/i.test(ua)
                 ? 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url)

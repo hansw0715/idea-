@@ -68,12 +68,26 @@
   height: 1.4rem;
   padding: 0 0.3rem;
   border-radius: var(--r-pill);
-  background: var(--c-action);
   color: var(--c-on-action);
   font-size: 0.95rem;
   font-weight: var(--fw-bold);
   line-height: 1.4rem;
   text-align: center;
+  /* 아래 ::before 원을 숫자 뒤에 깔기 위한 쌓임 맥락 */
+  z-index: 0;
+}
+/* 원은 바탕색 대신 위쪽 테두리 하나로 칠한다(높이 0 + 테두리 1.4rem = 같은 모양).
+   삼성 인터넷 다크 모드는 바탕색은 밝게 뒤집지만 테두리 색은 거의 그대로 두어, 안드로이드에서도 원래 파랑으로 보인다 */
+.school-eclass__badge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  height: 0;
+  border-top: 1.4rem solid var(--c-action);
+  border-radius: var(--r-pill);
 }
 
 /* 강좌 묶음: 위에 구분선, 강좌 이름 · "N개" · 접기 화살표, 그 아래 카드들 */
