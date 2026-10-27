@@ -91,7 +91,7 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
 /** 이 요소(또는 조상)가 가로로 스크롤되거나 끌기를 직접 다루면 화면 넘기기를 하지 않는다 */
 function handlesHorizontalGesture(start: EventTarget | null): boolean {
   for (let el = start instanceof Element ? start : null; el && el !== document.body; el = el.parentElement) {
-    if (el.matches('input, textarea, select, [contenteditable="true"], [data-no-swipe], .tt-grid')) return true;
+    if (el.matches('input, textarea, select, [contenteditable="true"], [data-no-swipe]')) return true;
     const style = getComputedStyle(el);
     if (/(auto|scroll)/.test(style.overflowX) && el.scrollWidth > el.clientWidth + 1) return true;
   }
@@ -116,7 +116,8 @@ function slideTo(go: () => void, direction: 'next' | 'prev') {
 
 /**
  * 작은 화면에서 좌우로 밀면 옆 탭으로 간다 (왼쪽으로 밀면 오른쪽 탭, 오른쪽으로 밀면 왼쪽 탭).
- * 탭 화면 자체에서만 동작하고, 화면 가장자리(휴대폰의 뒤로 가기 제스처)·가로 스크롤 영역·시간표 격자·열린 창에서는 하지 않는다.
+ * 탭 화면 자체에서만 동작하고, 화면 가장자리(휴대폰의 뒤로 가기 제스처)·가로 스크롤 영역·열린 창에서는 하지 않는다.
+ * 시간표 격자 위에서는 빠르게 민 경우만 넘긴다: 길게 눌러(350ms) 범위를 고르는 동작과 겹치지 않게.
  */
 function useTabSwipe(enabled: boolean) {
   const navigate = useNavigate();
@@ -125,7 +126,7 @@ function useTabSwipe(enabled: boolean) {
     if (!enabled) return;
     const index = TABS.findIndex((t) => t.to === pathname);
     if (index < 0) return;
-    let start: { x: number; y: number; t: number } | null = null;
+    let start: { x: number; y: number; t: number; grid: boolean } | null = null;
     const EDGE = 24;
     const onStart = (e: TouchEvent) => {
       start = null;
@@ -134,14 +135,16 @@ function useTabSwipe(enabled: boolean) {
       if (touch.clientX < EDGE || touch.clientX > window.innerWidth - EDGE) return;
       if (document.querySelector('[aria-modal="true"], dialog[open]')) return;
       if (handlesHorizontalGesture(e.target)) return;
-      start = { x: touch.clientX, y: touch.clientY, t: Date.now() };
+      const grid = e.target instanceof Element && e.target.closest('.tt-grid') !== null;
+      start = { x: touch.clientX, y: touch.clientY, t: Date.now(), grid };
     };
     const onEnd = (e: TouchEvent) => {
       if (!start) return;
       const touch = e.changedTouches[0];
       const dx = touch.clientX - start.x;
       const dy = touch.clientY - start.y;
-      const quick = Date.now() - start.t < 700;
+      // 시간표 격자에서는 길게 누르기(350ms)보다 짧게 민 것만 스와이프로 본다
+      const quick = Date.now() - start.t < (start.grid ? 350 : 700);
       start = null;
       // 충분히 길고, 세로보다 확실히 가로로 민 경우만
       if (!quick || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;

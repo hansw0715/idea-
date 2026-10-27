@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
 import { Icon } from "../ui";
@@ -12,12 +12,15 @@ import {
   shortDeadline,
   sortItems,
   deadlineOf,
+  ts,
 } from "./eclassLogic";
 import type { EclassCounts } from "./eclassLogic";
+import { schoolApi } from "./api";
+import { isCredentialFailure, needsRelink } from "./errors";
 import { useSchool } from "./SchoolContext";
 import "./eclass.css";
 
-/** 홈에는 최근 조회 요약만 두고 학교에 대한 새 요청은 학사 알림에서 수행한다.
+/** 홈에서도 들어왔을 때 5분이 지났으면 한 번 새로 읽고(학사 알림과 같은 규칙), 오른쪽 위 버튼으로 바로 새로고침한다.
  *  강의·과제 각각 가장 급한 것 몇 개만 한 줄씩 (강의만 많아도 과제가 묻히지 않게 종류마다 따로 센다) */
 const SHOW_PER_KIND = 2;
 
@@ -39,9 +42,19 @@ export function readEclassSnapshot(userId: number): EclassSnapshot | null {
   }
 }
 
+/** 새로 읽은 결과를 이 기기에 두고, 화면들(홈 카드 · 학사 알림)에 알린다 */
+function writeEclassSnapshot(userId: number, snapshot: EclassSnapshot): void {
+  try {
+    localStorage.setItem(cacheKey(userId), JSON.stringify(snapshot));
+  } catch {
+    /* 저장하지 못해도 이번 화면에서는 알림으로 다시 그린다 */
+  }
+  window.dispatchEvent(new Event(ECLASS_UPDATED_EVENT));
+}
+
 /**
- * 학사 알림 화면이 이 기기에 저장한 강의·과제 조회 결과를 요약한다.
- * 홈에서는 학교에 새로 요청하지 않으며, 캐시가 없으면 학사 알림으로 안내한다.
+ * 이 기기에 저장한 강의·과제 조회 결과를 요약한다. 결과가 없거나 5분이 지났으면 들어왔을 때 한 번 새로 읽는다.
+ * 인증 실패·다시 연동 필요 뒤에는 이 방문 동안 자동으로 다시 시도하지 않는다(학사 알림과 같은 규칙).
  */
 export default function EclassHomeCard() {
   const { user } = useAuth();
@@ -79,6 +92,36 @@ export default function EclassHomeCard() {
     };
   }, [user]);
 
+  // 학교에서 새로 읽기 (오른쪽 위 새로고침 · 들어왔을 때 자동)
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const inFlight = useRef(false);
+  const blocked = useRef(false);
+  const uid = user?.id ?? null;
+  const refresh = useCallback(async () => {
+    if (inFlight.current || uid === null) return;
+    inFlight.current = true;
+    setLoading(true);
+    setFailed(false);
+    try {
+      const next = await school.withCredentials((creds) => schoolApi.eclass(creds));
+      blocked.current = false;
+      writeEclassSnapshot(uid, next);
+    } catch (err) {
+      if (isCredentialFailure(err) || needsRelink(err)) blocked.current = true;
+      setFailed(true);
+    } finally {
+      inFlight.current = false;
+      setLoading(false);
+    }
+  }, [school, uid]);
+  useEffect(() => {
+    if (!school.canUse || blocked.current || uid === null) return;
+    const at = ts(readEclassSnapshot(uid)?.syncedAt ?? null);
+    if (at === null || Date.now() - at > ECLASS_STALE_MS) void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [school.canUse, uid]);
+
   const itemLink = (item: EclassItem) =>
     `/campus?tab=learning&item=${encodeURIComponent(item.id)}`;
   const shown = items
@@ -98,7 +141,9 @@ export default function EclassHomeCard() {
     body = <p className="home-card__sub">학교 계정을 연동하면 볼 수 있어요.</p>;
   else if (items === null || counts === null)
     body = (
-      <p className="home-card__sub">학사 알림에서 최신 현황을 확인하세요.</p>
+      <p className="home-card__sub">
+        {loading ? "e-class를 확인하는 중이에요." : "새로고침을 눌러 최신 현황을 확인하세요."}
+      </p>
     );
   else
     body = (
@@ -153,12 +198,27 @@ export default function EclassHomeCard() {
 
   return (
     <article className="home-panel home-learning">
-      <h2 className="home-sum__title">강의·과제</h2>
+      {/* 제목 줄 오른쪽 끝에 새로고침 (학사 알림은 맨 아래에 두지만, 홈 카드는 아래 공간이 없어 위로) */}
+      <div className="home-sum__head home-learning__head">
+        <h2 className="home-sum__title">강의·과제</h2>
+        {school.linked && (
+          <button
+            type="button"
+            className="school-eclass__textbtn school-eclass__refresh"
+            disabled={loading || !school.canUse}
+            aria-busy={loading || undefined}
+            onClick={() => void refresh()}
+          >
+            <Icon name="refresh" className="btn__icon" />
+            {loading ? "확인 중" : "새로고침"}
+          </button>
+        )}
+      </div>
       {body}
       <div className="home-learning__foot">
         {school.linked && syncedAt ? (
           <span className="home-learning__stamp">
-            {now - Date.parse(syncedAt) > ECLASS_STALE_MS ? "업데이트 필요 · " : ""}
+            {failed ? "새로 읽지 못했어요 · " : ""}
             {formatDue(syncedAt)} 확인
           </span>
         ) : (

@@ -251,7 +251,7 @@ const ISO_LOCAL = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/;
 /**
  * 개인시간표 응답(FullCalendar 이벤트 JSON 배열)을 수업 목록으로.
  *  - `start`/`end` 의 날짜·시각을 문자열 그대로 읽는다 (시간대 변환 없음 — 파이썬 fromisoformat 과 같은 결과).
- *  - 월~금만 수업으로 두고 주말은 skipped 에 이유를 남긴다.
+ *  - 토·일 수업도 그대로 둔다 (시간표가 주말 칸을 보여 준다).
  *  - `title` = "과목(분반)\n교수\n강의실". 같은 (요일·시작·끝·과목)은 하나로.
  * JSON 이 아니거나 배열이 아니거나, 이벤트가 있는데 하나도 읽지 못하면 null.
  */
@@ -283,10 +283,6 @@ export function parseTimetable(text: string): ParsedTimetable | null {
 
     const day = weekdayIndex(s[1]);
     if (day < 0) continue;
-    if (day > 4) {
-      skipped.push({ subject: subject || '(이름 없음)', reason: '주말 수업은 시간표에 넣을 수 없어요.' });
-      continue;
-    }
     const start = `${s[2]}:${s[3]}`;
     const end = `${en[2]}:${en[3]}`;
     const key = `${day}|${start}|${end}|${subject}`;
@@ -327,8 +323,8 @@ export function toGrid(classes: SchoolClass[]): {
     const label = c.subject || '(이름 없음)';
     const s0 = parseHm(c.start);
     const e0 = parseHm(c.end);
-    if (!Number.isInteger(c.day) || c.day < 0 || c.day > 4) {
-      skipped.push({ subject: label, reason: '주말 수업은 시간표에 넣을 수 없어요.' });
+    if (!Number.isInteger(c.day) || c.day < 0 || c.day > 6) {
+      skipped.push({ subject: label, reason: '요일을 읽을 수 없어요.' });
       continue;
     }
     if (s0 === null || e0 === null || e0 <= s0) {

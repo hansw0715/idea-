@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { AppHeader } from "../shell/Shell";
 import { useAuth } from "../auth";
@@ -12,6 +13,7 @@ import {
   weekDates,
   addDaysStr,
   fmtWeekLabel,
+  visibleDayCount,
 } from "../time";
 import { useWeek } from "../useWeek";
 import { homeWeekStart } from "../homeSchedule";
@@ -44,7 +46,8 @@ export default function Dashboard() {
       : weekStart === addDaysStr(currentWeek, 7)
         ? "다음 주 일정"
         : "주간 일정";
-  const dates = weekDates(weekStart);
+  // 주말 일정이 있으면 토·일 칸까지 보이므로, 날짜는 일주일 전부 들고 있다
+  const dates = weekDates(weekStart, DAY_NAMES.length);
   const today = todayStr();
   const [day, setDay] = useState(() => Math.max(0, dates.indexOf(today)));
   const [loaded, setLoaded] = useState<{
@@ -83,6 +86,17 @@ export default function Dashboard() {
     else if (direction === "next") nextWeek();
     else goToday();
   };
+
+  const dayCount = visibleDayCount([
+    ...(data?.timetable ?? [])
+      .filter((e) => e.repeatKind !== "once" || dates.includes(e.date ?? ""))
+      .map((e) => e.day),
+    ...(data?.weekReservations ?? []).map((r) => dates.indexOf(r.date)),
+  ]);
+  // 고른 날이 보이는 칸 밖(주말 칸이 사라진 주)이면 월요일로
+  useEffect(() => {
+    if (day >= dayCount) setDay(0);
+  }, [day, dayCount]);
 
   const classesFor = (index: number) =>
     (data?.timetable ?? []).filter(
@@ -203,8 +217,13 @@ export default function Dashboard() {
                 <Icon name="chevron-right" />
               </button>
             </div>
-            <div className="home-week" role="group" aria-label="일정을 볼 날짜">
-              {DAY_NAMES.map((name, i) => (
+            <div
+              className={`home-week${dayCount > 5 ? " home-week--weekend" : ""}`}
+              role="group"
+              aria-label="일정을 볼 날짜"
+              style={{ "--home-days": dayCount } as CSSProperties}
+            >
+              {DAY_NAMES.slice(0, dayCount).map((name, i) => (
                 <button
                   key={name}
                   type="button"

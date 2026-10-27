@@ -188,7 +188,7 @@ function NoticeTable({
   );
 }
 
-/** 공지 한 줄: 제목 · 날짜 · 오늘 올라온 글이면 N. 누르면 학교 홈페이지 원문이 새 창으로 열린다 */
+/** 공지 한 줄: (오늘 올라온 글이면 맨 앞에 동그라미 N) 제목 · 날짜. 누르면 학교 홈페이지 원문이 새 창으로 열린다 */
 function NoticeRow({ notice, isNew }: { notice: NoticeItem; isNew: boolean }) {
   return (
     <li>
@@ -200,16 +200,16 @@ function NoticeRow({ notice, isNew }: { notice: NoticeItem; isNew: boolean }) {
         title={notice.title}
       >
         <span className="home-table__preview home-notice__title">
+          {isNew && (
+            <span className="home-notice__new" role="img" aria-label="오늘 올라온 공지">
+              N
+            </span>
+          )}
           {notice.title}
         </span>
         <span className="home-notice__date tabular">
           {shortDate(notice.date)}
         </span>
-        {isNew && (
-          <span className="home-table__count" aria-label="오늘 올라온 공지">
-            N
-          </span>
-        )}
       </a>
     </li>
   );

@@ -92,7 +92,7 @@
 }
 .home-week {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--home-days, 5), minmax(0, 1fr));
   gap: 6px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--c-divider);
@@ -636,3 +636,40 @@
 .home-notifications__list a { padding: 16px; border-radius: inherit; }
 .home-notifications__body > .home-notifications__when { display: flex; align-items: flex-start; gap: 5px; color: var(--c-action-text); font-weight: 500; }
 .home-notifications__when > svg { width: 14px; height: 14px; flex: none; margin-top: 3px; }
+/* 강의·과제 제목 줄: 오른쪽 끝 새로고침 버튼 (높이는 제목 줄에 맞춘다) */
+.home-learning__head {
+  margin-bottom: 0;
+}
+.home-learning__head .school-eclass__refresh {
+  min-height: 3.2rem;
+  margin-right: calc(-1 * var(--sp-1));
+}
+/* 오늘 올라온 공지: 제목 맨 앞에 굵은 N + 동그라미 테두리 (테두리로 그려 삼성 인터넷 다크 모드에서도 색이 유지된다) */
+.home-notice__new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-right: 0.6rem;
+  border: 2px solid var(--c-action);
+  border-radius: 50%;
+  color: var(--c-action-text);
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: 0.1rem;
+}
+/* 주말 칸까지 6~7칸이면 좁은 휴대폰에서도 날짜가 한 줄에 들어가게 간격·글자를 줄인다 */
+.home-week__day strong {
+  white-space: nowrap;
+}
+.home-week--weekend {
+  gap: 2px;
+}
+.home-week--weekend .home-week__day {
+  padding-inline: 0;
+}
+.home-week--weekend .home-week__day strong {
+  font-size: 1.8rem;
+}

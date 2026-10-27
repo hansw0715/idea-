@@ -294,9 +294,9 @@ describe('시간표', () => {
     const { fake, svc } = setup(user);
     const res = await svc.timetablePreview(user.uid, creds(user));
     expect(res.profile).toMatchObject({ studentId: user.studentId, department: 'AI응용학과' });
-    expect(res.classes.map((c) => c.subject)).toEqual(['자료구조', '운영체제']);
+    expect(res.classes.map((c) => c.subject)).toEqual(['자료구조', '운영체제', '주말특강']);
     expect(res.adjusted).toBe(1); // 09:15~10:45 → 09:00~11:00
-    expect(res.skipped).toEqual([{ subject: '주말특강', reason: '주말 수업은 시간표에 넣을 수 없어요.' }]);
+    expect(res.skipped).toEqual([]);
     expect(fake.state.infoLogins).toBe(1);
     expect(await all('SELECT 1 FROM timetable_entries WHERE user_id = ?', [user.uid])).toHaveLength(0);
   });
@@ -311,7 +311,7 @@ describe('시간표', () => {
     const { svc } = setup(user);
 
     const first = await svc.timetableImport(user.uid, creds(user));
-    expect(first).toMatchObject({ imported: 2, replaced: 0, adjusted: 1 });
+    expect(first).toMatchObject({ imported: 3, replaced: 0, adjusted: 1 });
     const rows = await all<{ title: string; source: string; day: number; start_min: number; end_min: number; place: string; repeat_kind: string }>(
       'SELECT title, source, day, start_min, end_min, place, repeat_kind FROM timetable_entries WHERE user_id = ? ORDER BY day, start_min',
       [user.uid],
@@ -320,15 +320,16 @@ describe('시간표', () => {
       { title: '자료구조', source: 'school', day: 0, start_min: 540, end_min: 660, place: '공학관 B101', repeat_kind: 'weekly' },
       { title: '운영체제', source: 'school', day: 2, start_min: 780, end_min: 900, place: '상상관 201', repeat_kind: 'weekly' },
       { title: '동아리', source: 'manual', day: 4, start_min: 600, end_min: 660, place: '학생회관', repeat_kind: 'weekly' },
+      { title: '주말특강', source: 'school', day: 5, start_min: 600, end_min: 720, place: '상상관 301', repeat_kind: 'weekly' },
     ]);
 
     const second = await svc.timetableImport(user.uid, creds(user));
-    expect(second).toMatchObject({ imported: 2, replaced: 2 });
+    expect(second).toMatchObject({ imported: 3, replaced: 3 });
     const after = await all<{ id: number; title: string; source: string }>(
       'SELECT id, title, source FROM timetable_entries WHERE user_id = ? ORDER BY day, start_min',
       [user.uid],
     );
-    expect(after.map((r) => [r.title, r.source])).toEqual([['자료구조', 'school'], ['운영체제', 'school'], ['동아리', 'manual']]);
+    expect(after.map((r) => [r.title, r.source])).toEqual([['자료구조', 'school'], ['운영체제', 'school'], ['동아리', 'manual'], ['주말특강', 'school']]);
     expect(after.find((r) => r.title === '동아리')!.id).toBe(manualId);
     // 임시 표시가 남지 않는다
     expect(await all("SELECT 1 FROM timetable_entries WHERE source LIKE 'school-new%'")).toHaveLength(0);
@@ -340,7 +341,7 @@ describe('시간표', () => {
     await setup(user).svc.timetableImport(user.uid, creds(user));
     const empty = await setup(user, { timetable: [] }).svc.timetableImport(user.uid, creds(user));
     expect(empty).toMatchObject({ imported: 0, replaced: 0 });
-    expect(await all("SELECT 1 FROM timetable_entries WHERE user_id = ? AND source = 'school'", [user.uid])).toHaveLength(2);
+    expect(await all("SELECT 1 FROM timetable_entries WHERE user_id = ? AND source = 'school'", [user.uid])).toHaveLength(3);
   });
 
   it('연동하지 않았거나 연동한 학번과 다르면 SCHOOL_NOT_LINKED — 학교에 요청하지 않는다', async () => {
@@ -359,7 +360,7 @@ describe('시간표', () => {
     await setup(user).svc.timetableImport(user.uid, creds(user));
     const broken = setup(user, { timetable: [{ weird: true }] });
     await expect(broken.svc.timetableImport(user.uid, creds(user))).rejects.toBeInstanceOf(SchoolUnavailable);
-    expect(await all("SELECT 1 FROM timetable_entries WHERE user_id = ? AND source = 'school'", [user.uid])).toHaveLength(2);
+    expect(await all("SELECT 1 FROM timetable_entries WHERE user_id = ? AND source = 'school'", [user.uid])).toHaveLength(3);
   });
 });
 

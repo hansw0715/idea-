@@ -77,14 +77,15 @@ describe('parseTimetable', () => {
     { title: '교양', start: '2026-10-13T11:00:00', end: '2026-10-13T12:00:00' }, // 분반·교수·강의실 없음
   ];
 
-  it('요일·시간·과목·분반·교수·강의실을 읽고 월~금만 두며 중복을 합친다', () => {
+  it('요일·시간·과목·분반·교수·강의실을 읽고 주말 수업도 두며 중복을 합친다', () => {
     const r = parseTimetable(JSON.stringify(events))!;
     expect(r.classes).toEqual([
       { day: 0, start: '09:15', end: '10:45', subject: '자료구조', section: '01', professor: '김교수', room: '공학관 B101' },
       { day: 1, start: '11:00', end: '12:00', subject: '교양', section: '', professor: '', room: '' },
       { day: 2, start: '13:00', end: '15:00', subject: '운영체제', section: '02', professor: '이교수', room: '상상관 201' },
+      { day: 5, start: '10:00', end: '12:00', subject: '주말특강', section: '01', professor: '박교수', room: '상상관 301' },
     ]);
-    expect(r.skipped).toEqual([{ subject: '주말특강', reason: '주말 수업은 시간표에 넣을 수 없어요.' }]);
+    expect(r.skipped).toEqual([]);
   });
 
   it('빈 배열은 수업 없음', () => {
@@ -152,11 +153,10 @@ describe('toGrid (설계 §6)', () => {
     expect(r.skipped[0].reason).toContain('09:00~24:00');
   });
 
-  it('주말은 건너뛴다', () => {
+  it('토·일 수업도 시간표에 넣는다', () => {
     const r = toGrid([cls(5, '10:00', '11:00', '토요강의'), cls(6, '10:00', '11:00', '일요강의')]);
-    expect(r.entries).toEqual([]);
-    expect(r.skipped).toHaveLength(2);
-    expect(r.skipped[0].reason).toContain('주말');
+    expect(r.entries.map((e) => e.day)).toEqual([5, 6]);
+    expect(r.skipped).toEqual([]);
   });
 
   it('격자에 맞춘 뒤 같아지는 수업은 하나로 합친다', () => {

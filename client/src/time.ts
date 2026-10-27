@@ -1,4 +1,13 @@
-export const DAY_NAMES = ['월', '화', '수', '목', '금'];
+export const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
+/** 평일 수 (회의 공통 여유 시간·시설 예약은 평일만) */
+export const WEEKDAY_COUNT = 5;
+
+/** 시간표·홈에 보일 요일 수: 평소 월~금, 토요일 일정이 있으면 토까지, 일요일 일정이 있으면 일까지 */
+export function visibleDayCount(days: Iterable<number>): number {
+  let max = WEEKDAY_COUNT - 1;
+  for (const d of days) if (d > max && d < DAY_NAMES.length) max = d;
+  return max + 1;
+}
 export const OPEN_MIN = 540; // 09:00
 // 시간표에 적을 수 있는 범위 (야간 수업·아르바이트까지)
 export const CLOSE_MIN = 1440; // 24:00
@@ -97,9 +106,9 @@ export function currentWeekStart(): string {
   return weekStartOf(todayStr());
 }
 
-/** 그 주의 월~금 날짜 5개. */
-export function weekDates(weekStart: string): string[] {
-  return Array.from({ length: DAY_NAMES.length }, (_, i) => addDaysStr(weekStart, i));
+/** 그 주의 월요일부터 count 일의 날짜 (기본 월~금 5개). */
+export function weekDates(weekStart: string, count = WEEKDAY_COUNT): string[] {
+  return Array.from({ length: count }, (_, i) => addDaysStr(weekStart, i));
 }
 
 /** 'YYYY-MM-DD' → '9/18(목)' */

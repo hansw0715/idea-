@@ -16,6 +16,7 @@ import {
   fmtWeekLabel,
   weekDates,
   todayStr,
+  visibleDayCount,
 } from '../time';
 import type { WeekSlide } from '../useWeek';
 import './timetable.css';
@@ -793,7 +794,10 @@ export default function TimetableGrid({
     else setInfo(entry);
   }
 
-  const dates = weekStart ? weekDates(weekStart) : null;
+  // 평소 월~금, 주말 일정(또는 고르는 중인 범위)이 있으면 토·일 칸까지
+  const dayCount = visibleDayCount([...drawnEntries.map((e) => e.day), ...(liveRange ? [liveRange.day] : [])]);
+  const dayNames = DAY_NAMES.slice(0, dayCount);
+  const dates = weekStart ? weekDates(weekStart, dayCount) : null;
   const today = todayStr();
   const hasNav = Boolean(onPrevWeek || onNextWeek);
   // key 가 바뀌면 React가 다시 그리면서 슬라이드 애니메이션이 처음부터 재생된다.
@@ -814,7 +818,7 @@ export default function TimetableGrid({
       className={`tt${compact ? ' tt--compact' : ''}${multi ? ' tt--multi' : ''}${
         halfHourLines ? ' tt--half' : ''
       }`}
-      style={{ '--tt-hours': totalMin / 60 } as CSSProperties}
+      style={{ '--tt-hours': totalMin / 60, '--tt-days': dayCount } as CSSProperties}
     >
       {hasNav && <WeekNav compact sub={weekRange} onPrev={onPrevWeek} onNext={onNextWeek} />}
 
@@ -829,7 +833,7 @@ export default function TimetableGrid({
           >
             <div className="tt-head">
               <div />
-              {DAY_NAMES.map((d, i) => {
+              {dayNames.map((d, i) => {
                 const date = dates?.[i];
                 const isToday = Boolean(date && date === today);
                 if (!date) {
@@ -874,7 +878,7 @@ export default function TimetableGrid({
                 ))}
               </div>
 
-              {DAY_NAMES.map((_, day) => {
+              {dayNames.map((_, day) => {
                 const dayEntries = entries.filter(
                   (e) => e.day === day && clampMinute(e.endMin) > clampMinute(e.startMin),
                 );

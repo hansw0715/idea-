@@ -372,14 +372,14 @@ describe('학교 시간표', () => {
     expect(fake.state.calls.length).toBe(0);
   });
 
-  it('미리보기: 중복 수업은 하나로, 주말은 건너뛰고, 30분 격자에 맞춘 수업 수를 알려 준다', async () => {
+  it('미리보기: 중복 수업은 하나로, 주말 수업도 두고, 30분 격자에 맞춘 수업 수를 알려 준다', async () => {
     const { fake, svc } = setup();
     await markLinked(uid);
     const p = await svc.timetablePreview(uid, creds);
     expect(p.profile).toMatchObject({ studentId: STUDENT, name: '박민재', department: 'AI응용학과' });
-    expect(p.classes.map((c) => `${c.day} ${c.start}-${c.end} ${c.subject}`)).toEqual(['0 09:15-10:45 자료구조', '2 13:00-15:00 운영체제']);
+    expect(p.classes.map((c) => `${c.day} ${c.start}-${c.end} ${c.subject}`)).toEqual(['0 09:15-10:45 자료구조', '2 13:00-15:00 운영체제', '5 10:00-12:00 주말특강']);
     expect(p.adjusted).toBe(1); // 09:15~10:45 → 09:00~11:00
-    expect(p.skipped.map((s) => s.subject)).toEqual(['주말특강']);
+    expect(p.skipped).toEqual([]);
     expect(fake.state.infoLogins).toBe(1);
     // 미리보기는 저장하지 않는다
     expect(await all('SELECT 1 FROM timetable_entries WHERE user_id = ?', [uid])).toHaveLength(0);
@@ -391,19 +391,19 @@ describe('학교 시간표', () => {
     await run("INSERT INTO timetable_entries (user_id, day, start_min, end_min, title, place) VALUES (?, 1, 600, 660, '알바', '편의점')", [uid]);
 
     const first = await svc.timetableImport(uid, creds);
-    expect(first).toMatchObject({ imported: 2, replaced: 0, adjusted: 1 });
+    expect(first).toMatchObject({ imported: 3, replaced: 0, adjusted: 1 });
     let rows = await all<{ title: string; source: string; day: number; start_min: number; end_min: number; place: string; repeat_kind: string }>(
       'SELECT title, source, day, start_min, end_min, place, repeat_kind FROM timetable_entries WHERE user_id = ? ORDER BY day, start_min',
       [uid],
     );
-    expect(rows.map((r) => `${r.source}:${r.title}`)).toEqual(['school:자료구조', 'manual:알바', 'school:운영체제']);
+    expect(rows.map((r) => `${r.source}:${r.title}`)).toEqual(['school:자료구조', 'manual:알바', 'school:운영체제', 'school:주말특강']);
     expect(rows[0]).toMatchObject({ day: 0, start_min: 540, end_min: 660, place: '공학관 B101', repeat_kind: 'weekly' });
 
     const second = await svc.timetableImport(uid, creds);
-    expect(second).toMatchObject({ imported: 2, replaced: 2 });
+    expect(second).toMatchObject({ imported: 3, replaced: 3 });
     rows = await all('SELECT title, source FROM timetable_entries WHERE user_id = ? ORDER BY day, start_min', [uid]);
-    expect(rows).toHaveLength(3); // 교체이지 누적이 아니다
-    expect(rows.filter((r) => r.source === 'school')).toHaveLength(2);
+    expect(rows).toHaveLength(4); // 교체이지 누적이 아니다
+    expect(rows.filter((r) => r.source === 'school')).toHaveLength(3);
     expect(rows.filter((r) => r.source === 'manual')).toEqual([{ title: '알바', source: 'manual' }]);
     expect(await all("SELECT 1 FROM timetable_entries WHERE source LIKE 'school-new-%'")).toHaveLength(0); // 임시 표시가 남지 않는다
   });
@@ -416,7 +416,7 @@ describe('학교 시간표', () => {
     const bad = setup({ failNetwork: (r) => r.path.includes('dae_sigan_main_data') });
     await expect(bad.svc.timetableImport(uid, creds)).rejects.toBeInstanceOf(SchoolUnavailable);
     const rows = await all<{ source: string }>('SELECT source FROM timetable_entries WHERE user_id = ?', [uid]);
-    expect(rows.map((r) => r.source)).toEqual(['school', 'school']);
+    expect(rows.map((r) => r.source)).toEqual(['school', 'school', 'school']);
     expect(bad.fake.state.infoLogins).toBe(1); // 실패해도 다시 로그인하지 않는다
   });
 

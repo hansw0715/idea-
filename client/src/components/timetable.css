@@ -153,7 +153,7 @@
   top: calc(var(--header-h) + var(--safe-top));
   z-index: 6;
   display: grid;
-  grid-template-columns: var(--tt-axis) repeat(5, minmax(0, 1fr));
+  grid-template-columns: var(--tt-axis) repeat(var(--tt-days, 5), minmax(0, 1fr));
   background: var(--tt-head-bg);
   border-bottom: 1px solid var(--c-border);
 }
@@ -187,7 +187,7 @@
 .tt .tt-body {
   position: relative;
   display: grid;
-  grid-template-columns: var(--tt-axis) repeat(5, minmax(0, 1fr));
+  grid-template-columns: var(--tt-axis) repeat(var(--tt-days, 5), minmax(0, 1fr));
   height: calc(var(--tt-hour) * var(--tt-hours));
 }
 

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { all, get, run, insert } from './db.js';
 import { requireAuth, userId, wrap } from './auth.js';
-import { OPEN_MIN, CLOSE_MIN, STEP_MIN, DAY_COUNT } from './constants.js';
+import { OPEN_MIN, CLOSE_MIN, STEP_MIN, TIMETABLE_DAY_COUNT } from './constants.js';
 import { parseDateStrict, resolveWeekStart, weekEndOf, weekdayOf } from './dates.js';
 
 export const timetableRouter = Router();
@@ -69,15 +69,11 @@ timetableRouter.post(
         return;
       }
       day = weekdayOf(parsed);
-      if (day >= DAY_COUNT) {
-        res.status(400).json({ error: '주말은 시간표에 넣을 수 없습니다.' });
-        return;
-      }
       entryDate = date as string;
     } else {
       const raw = (req.body as Record<string, unknown>)?.day;
-      if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 0 || raw >= DAY_COUNT) {
-        res.status(400).json({ error: '요일은 월요일부터 금요일까지 선택할 수 있습니다.' });
+      if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 0 || raw >= TIMETABLE_DAY_COUNT) {
+        res.status(400).json({ error: '요일을 올바르게 선택해 주세요.' });
         return;
       }
       day = raw;

@@ -20,6 +20,8 @@ import CourseSearch from "../components/CourseSearch";
 import type { Course, CourseAddFailure } from "../components/CourseSearch";
 import {
   DAY_NAMES,
+  WEEKDAY_COUNT,
+  visibleDayCount,
   OPEN_MIN,
   CLOSE_MIN,
   GRID_DEFAULT_CLOSE_MIN,
@@ -64,7 +66,7 @@ const ADD_FORM_ID = "tt-add-form";
 /** "일정 추가하기" 버튼으로 열 때의 기본 시간: 오늘 요일, 지금 다음 정시부터 1시간 (주말이면 월요일 09:00) */
 function defaultAddRange(): SelectedRange {
   const day = weekdayOfDate(todayStr());
-  if (day >= DAY_NAMES.length)
+  if (day >= WEEKDAY_COUNT)
     return { day: 0, startMin: OPEN_MIN, endMin: OPEN_MIN + 60 };
   const nextHour = (Math.floor(nowMinutes() / 60) + 1) * 60;
   const startMin = Math.min(CLOSE_MIN - 60, Math.max(OPEN_MIN, nextHour));
@@ -296,8 +298,9 @@ export default function TimetablePage() {
   }
 
   // 고른 요일이 보고 있는 주에서 실제로 며칠인지.
-  const rangeDate = weekDates(weekStart)[range.day] ?? null;
-  const dates = weekDates(weekStart);
+  const rangeDate = weekDates(weekStart, DAY_NAMES.length)[range.day] ?? null;
+  // 주 표시(10/26(월) ~ …)는 격자와 같이 주말 일정이 있으면 토·일까지
+  const dates = weekDates(weekStart, visibleDayCount(gridEntries.map((e) => e.day)));
 
   function changeTab(next: TabId) {
     setTab(next);
