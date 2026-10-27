@@ -29,10 +29,10 @@
   gap: 0 var(--sp-3);
 }
 .school-eclass__tally {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--sp-3);
-  margin: 0 0 0 calc(-1 * var(--sp-1));
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-2);
 }
 /* 마지막 확인 바로 위: 이번주 완료 보기 (오른쪽 끝) */
 .school-eclass__donerow {
@@ -47,47 +47,45 @@
 .school-eclass__done {
   margin-right: calc(-1 * var(--sp-1));
 }
-.school-eclass__textbtn.school-eclass__kind {
+/* 미수강 강의 · 미제출 과제: 홈 강의·과제 카드와 같은 칸 (왼쪽 이름, 오른쪽 큰 숫자). 누른 칸이 아래 목록 종류 */
+.school-eclass__tile {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-height: 4.4rem;
+  padding: 1rem 1.4rem;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  background: var(--c-bg);
+  color: var(--c-text-sub);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+.school-eclass__tile strong {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
   color: var(--c-text-sub);
 }
-.school-eclass__textbtn.school-eclass__kind[aria-pressed='true'] {
+/* 남은 게 있으면 숫자를 강조색으로 */
+.school-eclass__tile.is-left strong {
   color: var(--c-action-text);
 }
-/* 남은 개수: 글자 오른쪽 위에 걸친 알림 배지 */
-.school-eclass__textbtn.school-eclass__kind {
-  position: relative;
-  /* 배지가 옆 버튼과 겹치지 않게 자리를 둔다 */
-  margin-right: 1.4rem;
+/* 지금 보고 있는 칸: 강조색 테두리 + 이름도 강조색 */
+.school-eclass__tile[aria-pressed='true'] {
+  border-color: var(--c-action);
+  color: var(--c-action-text);
 }
-.school-eclass__badge {
-  position: absolute;
-  top: 0.3rem;
-  right: -1.4rem;
-  /* 숫자에 딱 맞는 작은 원 (두 자리부터는 옆으로만 늘어난다) */
-  min-width: 1.4rem;
-  height: 1.4rem;
-  padding: 0 0.3rem;
-  border-radius: var(--r-pill);
-  color: var(--c-on-action);
-  font-size: 0.95rem;
-  font-weight: var(--fw-bold);
-  line-height: 1.4rem;
-  text-align: center;
-  /* 아래 ::before 원을 숫자 뒤에 깔기 위한 쌓임 맥락 */
-  z-index: 0;
+.school-eclass__tile:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
-/* 원은 바탕색 대신 위쪽 테두리 하나로 칠한다(높이 0 + 테두리 1.4rem = 같은 모양).
-   삼성 인터넷 다크 모드는 바탕색은 밝게 뒤집지만 테두리 색은 거의 그대로 두어, 안드로이드에서도 원래 파랑으로 보인다 */
-.school-eclass__badge::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: -1;
-  height: 0;
-  border-top: 1.4rem solid var(--c-action);
-  border-radius: var(--r-pill);
+@media (hover: hover) {
+  .school-eclass__tile:hover {
+    background: var(--c-surface);
+  }
 }
 
 /* 강좌 묶음: 위에 구분선, 강좌 이름 · "N개" · 접기 화살표, 그 아래 카드들 */

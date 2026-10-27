@@ -147,9 +147,10 @@ export default function App() {
           <ConfirmProvider>
             <AuthContext.Provider value={{ user, setUser }}>
               <SessionWatcher onExpired={() => setUser(null)} />
+              {/* 라우터를 라운지보다 바깥에 둔다: 라운지 프로필 창(ProfileSheet)의 링크가 라우터 안에 있어야 한다 */}
+              <BrowserRouter>
               <MaybeLounge>
               <SchoolProvider>
-              <BrowserRouter>
                 <NotificationsProvider key={user?.id ?? 'guest'}>
                 <Routes>
                   <Route path="/login" element={<Public><Login /></Public>} />
@@ -175,9 +176,9 @@ export default function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
                 </NotificationsProvider>
-              </BrowserRouter>
               </SchoolProvider>
               </MaybeLounge>
+              </BrowserRouter>
             </AuthContext.Provider>
           </ConfirmProvider>
         </ToastProvider>

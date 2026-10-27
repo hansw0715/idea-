@@ -88,6 +88,17 @@ export function deadlineOf(
   };
 }
 
+/** 카드 왼쪽에 쓰는 짧은 남은 기간: "5일 3시간 남음" → "D-5", 하루 안 남음("3시간 남음") → "D-DAY", "기한 지남" → "지남" */
+export function shortDeadline(label: string): string {
+  const days = label.match(/^(\d+)일/);
+  if (days) return `D-${days[1]}`;
+  if (/^\d+(?:시간|분)/.test(label)) return "D-DAY";
+  if (label.endsWith("완료")) return "완료";
+  if (label === "기한 지남") return "지남";
+  if (label === "공개 예정") return "예정";
+  return "-";
+}
+
 export function formatDue(value: string): string {
   const t = ts(value);
   if (t === null) return "날짜 확인 필요";

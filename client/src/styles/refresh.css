@@ -675,3 +675,43 @@
 .lounge-pick__check { display: grid; place-items: center; position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%; background: var(--c-action); color: white; }
 .lounge-pick__check svg { width: 14px; height: 14px; }
 @media (max-width: 359px) { .lounge-pick__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ── 화면을 밀어서 옆 탭으로 갈 때 (Shell.tsx 의 slideTo) ─────────────
+   왼쪽으로 밀면(next) 지금 화면은 왼쪽으로 나가고 새 화면은 오른쪽에서 들어온다. 오른쪽으로 밀면(prev) 반대.
+   하단 탭바는 움직이지 않게 따로 떼어 둔다. */
+.tabbar {
+  view-transition-name: tabbar;
+}
+html[data-swipe]::view-transition-old(root),
+html[data-swipe]::view-transition-new(root) {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-fill-mode: both;
+}
+html[data-swipe='next']::view-transition-old(root) {
+  animation-name: swipe-out-left;
+}
+html[data-swipe='next']::view-transition-new(root) {
+  animation-name: swipe-in-right;
+}
+html[data-swipe='prev']::view-transition-old(root) {
+  animation-name: swipe-out-right;
+}
+html[data-swipe='prev']::view-transition-new(root) {
+  animation-name: swipe-in-left;
+}
+html[data-swipe]::view-transition-group(tabbar) {
+  animation: none;
+}
+@keyframes swipe-out-left {
+  to { transform: translateX(-100%); }
+}
+@keyframes swipe-in-right {
+  from { transform: translateX(100%); }
+}
+@keyframes swipe-out-right {
+  to { transform: translateX(100%); }
+}
+@keyframes swipe-in-left {
+  from { transform: translateX(-100%); }
+}

@@ -498,45 +498,80 @@
   background: transparent;
   font-size: var(--fs-xs);
 }
-.home-learning__urgent {
+/* 홈 강의·과제: 남은 개수 두 칸 + 가장 급한 것 한 줄씩 */
+.home-learning__counts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.home-learning__count {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: var(--r);
+  background: var(--c-bg);
+  color: var(--c-text-sub);
+  font-size: var(--fs-sm);
+  text-decoration: none;
+}
+.home-learning__count strong {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--c-text-sub);
+}
+/* 남은 게 있으면 숫자를 강조색으로 */
+.home-learning__count.is-left strong {
+  color: var(--c-action-text);
+}
+.home-learning__next {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.home-learning__next a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  color: var(--c-text);
+  text-decoration: none;
+}
+.home-learning__next li + li {
+  border-top: 1px solid var(--c-divider);
+}
+.home-learning__next .school-eclass__dday {
+  min-width: 4rem;
+  text-align: left;
+}
+.home-learning__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-learning__foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 44px;
-  color: var(--c-action-text);
-  font-size: var(--fs-h4);
-  font-weight: 600;
-  text-decoration: none;
+  margin-bottom: -8px;
 }
-.home-learning__urgent svg {
-  width: 16px;
-  height: 16px;
-  flex: none;
-}
-.home-learning__item {
-  display: grid;
-  gap: 4px;
-  width: 100%;
-  color: var(--c-text);
-  text-decoration: none;
-  padding: 8px 0;
-}
-.home-learning__item strong {
-  font-weight: 500;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-}
-.home-learning__course,
-.home-learning__itemmeta {
-  font-size: var(--fs-xs);
-  color: var(--c-text-sub);
-}
-.home-card__line + .home-card__line {
-  border-top: 1px solid var(--c-divider);
+@media (hover: hover) {
+  .home-learning__count:hover {
+    background: var(--c-surface);
+  }
+  .home-learning__next a:hover .home-learning__title {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 .home-empty > a + a {
   margin-left: 16px;

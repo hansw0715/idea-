@@ -23,7 +23,7 @@ function SafariMenuIcon() {
 
 /**
  * 사이트는 앱 설치용으로만 쓴다. 브라우저로 들어오면 어떤 주소든 이 화면만 보인다.
- * 큰 로고, "앱 설치하기" 버튼, 그 아래 Android · iOS 설치 방법.
+ * 큰 로고, "앱 설치하기" 버튼, 그 아래 Android · iOS · Mac 설치 방법.
  * 아이폰은 버튼으로 설치 창을 띄울 수 없어, 누르면 화면 아래 공유 버튼 쪽을 화살표로 가리킨다.
  * 설치한 앱(홈 화면 아이콘)으로 열면 이 화면 대신 로그인 화면부터 원래 앱이 열린다 (main.tsx).
  */
@@ -31,6 +31,8 @@ export default function DownloadPage() {
   const [pointShare, setPointShare] = useState(false);
   const ios = isIos();
   const android = /android/i.test(navigator.userAgent);
+  // 맥(사파리)은 공유 → Dock에 추가. 아이패드도 Macintosh 로 알리므로 터치가 없을 때만 맥으로 본다
+  const mac = /Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints <= 1;
 
   // 로그인 화면처럼 아래로 내려가지 않게 막는다
   useEffect(() => {
@@ -70,6 +72,17 @@ export default function DownloadPage() {
               </li>
               <li>
                 <strong>홈 화면에 추가</strong> → 오른쪽 위 <strong>추가</strong>
+              </li>
+            </ol>
+          </div>
+          <div className={`install-guide__item${mac ? ' install-guide__item--mine' : ''}`}>
+            <h2 className="install-guide__os">Mac</h2>
+            <ol>
+              <li>
+                사파리 오른쪽 위 <ShareIcon /> <strong>공유</strong> 버튼
+              </li>
+              <li>
+                <strong>Dock에 추가</strong> → <strong>추가</strong>
               </li>
             </ol>
           </div>

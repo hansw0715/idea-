@@ -27,6 +27,7 @@ import {
   isThisWeek,
   needsAttention,
   safeEclassUrl,
+  shortDeadline,
   sortItems,
   ts,
 } from "./eclassLogic";
@@ -59,17 +60,6 @@ function detailOf(item: EclassItem, now: number): string {
   if (item.kind === "lecture" && item.progress !== null && item.progress > 0)
     parts.push(`학습 ${Math.round(item.progress)}%`);
   return parts.join(" · ");
-}
-
-/** 카드 왼쪽에 쓰는 짧은 남은 기간: "5일 3시간 남음" → "D-5", 하루 안 남음("3시간 남음") → "D-DAY", "기한 지남" → "지남" */
-function shortDeadline(label: string): string {
-  const days = label.match(/^(\d+)일/);
-  if (days) return `D-${days[1]}`;
-  if (/^\d+(?:시간|분)/.test(label)) return "D-DAY";
-  if (label.endsWith("완료")) return "완료";
-  if (label === "기한 지남") return "지남";
-  if (label === "공개 예정") return "예정";
-  return "-";
 }
 
 const cacheKey = (userId: number) => `sangsang-booke:eclass:${userId}`;
@@ -348,22 +338,16 @@ export default function EclassHome() {
                 <button
                   key={value}
                   type="button"
-                  className="school-eclass__textbtn school-eclass__kind"
+                  className={`school-eclass__tile${count > 0 ? " is-left" : ""}`}
                   aria-pressed={kind === value}
                   onClick={() => {
                     setKind(value);
                     setLimit(PAGE);
                   }}
                 >
-                  {label}
-                  {/* 남은 개수는 알림처럼 글자 오른쪽 위 배지로. 0개면 배지 없이 읽어 주기만 한다 */}
-                  {count > 0 ? (
-                    <b className="school-eclass__badge tabular">
-                      {count > 99 ? "99+" : count}
-                    </b>
-                  ) : (
-                    <span className="sr-only"> 0개</span>
-                  )}
+                  {/* 홈 카드와 같은 모양: 왼쪽 이름, 오른쪽 큰 남은 개수 */}
+                  <span>{label}</span>
+                  <strong className="tabular">{count}</strong>
                 </button>
               ))}
             </div>

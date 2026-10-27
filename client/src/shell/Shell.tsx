@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import type { CSSProperties, MouseEvent, ReactNode } from 'react';
+import { flushSync } from 'react-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Icon } from '../ui';
 import type { IconName } from '../ui';
 import { LOUNGE_ENABLED } from '../features';
@@ -77,14 +78,84 @@ function ScrollToTop() {
   return null;
 }
 
+/** 하단 탭 순서: 홈이 가운데 (라운지 · 시간표 · 홈 · 학사 알림 · 내 정보) */
 const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
-  { to: '/', label: '홈', icon: 'home', end: true },
-  { to: '/timetable', label: '시간표', icon: 'calendar' },
   ...(!LOUNGE_ENABLED ? [{ to: '/meetings', label: '회의', icon: 'users' as IconName }] : []),
   ...(LOUNGE_ENABLED ? [{ to: '/lounge', label: '라운지', icon: 'lounge' as IconName }] : []),
+  { to: '/timetable', label: '시간표', icon: 'calendar' },
+  { to: '/', label: '홈', icon: 'home', end: true },
   { to: '/campus', label: '학사 알림', icon: 'list' },
   { to: '/account', label: '내 정보', icon: 'user' },
 ];
+
+/** 이 요소(또는 조상)가 가로로 스크롤되거나 끌기를 직접 다루면 화면 넘기기를 하지 않는다 */
+function handlesHorizontalGesture(start: EventTarget | null): boolean {
+  for (let el = start instanceof Element ? start : null; el && el !== document.body; el = el.parentElement) {
+    if (el.matches('input, textarea, select, [contenteditable="true"], [data-no-swipe], .tt-grid')) return true;
+    const style = getComputedStyle(el);
+    if (/(auto|scroll)/.test(style.overflowX) && el.scrollWidth > el.clientWidth + 1) return true;
+  }
+  return false;
+}
+
+/**
+ * 화면을 밀어서 옆 탭으로 갈 때: 지금 화면은 민 방향으로 나가고 새 화면은 반대쪽에서 들어온다 (refresh.css 의 view-transition).
+ * 브라우저가 View Transitions 를 못 쓰거나 움직임 줄이기를 켰으면 그냥 바꾼다.
+ */
+function slideTo(go: () => void, direction: 'next' | 'prev') {
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void> } };
+  if (!doc.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    go();
+    return;
+  }
+  const root = document.documentElement;
+  root.dataset.swipe = direction;
+  const transition = doc.startViewTransition(() => flushSync(go));
+  void transition.finished.finally(() => delete root.dataset.swipe);
+}
+
+/**
+ * 작은 화면에서 좌우로 밀면 옆 탭으로 간다 (왼쪽으로 밀면 오른쪽 탭, 오른쪽으로 밀면 왼쪽 탭).
+ * 탭 화면 자체에서만 동작하고, 화면 가장자리(휴대폰의 뒤로 가기 제스처)·가로 스크롤 영역·시간표 격자·열린 창에서는 하지 않는다.
+ */
+function useTabSwipe(enabled: boolean) {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (!enabled) return;
+    const index = TABS.findIndex((t) => t.to === pathname);
+    if (index < 0) return;
+    let start: { x: number; y: number; t: number } | null = null;
+    const EDGE = 24;
+    const onStart = (e: TouchEvent) => {
+      start = null;
+      if (e.touches.length !== 1 || window.innerWidth >= 768) return;
+      const touch = e.touches[0];
+      if (touch.clientX < EDGE || touch.clientX > window.innerWidth - EDGE) return;
+      if (document.querySelector('[aria-modal="true"], dialog[open]')) return;
+      if (handlesHorizontalGesture(e.target)) return;
+      start = { x: touch.clientX, y: touch.clientY, t: Date.now() };
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (!start) return;
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      const quick = Date.now() - start.t < 700;
+      start = null;
+      // 충분히 길고, 세로보다 확실히 가로로 민 경우만
+      if (!quick || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+      const next = TABS[index + (dx < 0 ? 1 : -1)];
+      if (next) slideTo(() => navigate(next.to), dx < 0 ? 'next' : 'prev');
+    };
+    document.addEventListener('touchstart', onStart, { passive: true });
+    document.addEventListener('touchend', onEnd, { passive: true });
+    return () => {
+      document.removeEventListener('touchstart', onStart);
+      document.removeEventListener('touchend', onEnd);
+    };
+  }, [enabled, pathname, navigate]);
+}
 
 /** 지금 주소에 해당하는 탭 번호. 탭에 없는 화면(관리자 등)이면 -1 */
 function activeTabIndex(pathname: string): number {
@@ -101,7 +172,14 @@ let lastTabIndex = -1;
 export function TabBar() {
   const { unread } = useNotifications();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const target = activeTabIndex(pathname);
+  // 탭을 눌러 옮길 때도 밀었을 때와 같이 옆으로 미끄러지게: 오른쪽 탭이면 새 화면이 오른쪽에서, 왼쪽 탭이면 왼쪽에서 들어온다
+  const onTabClick = (event: MouseEvent<HTMLAnchorElement>, index: number, to: string) => {
+    if (target < 0 || index === target || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    slideTo(() => navigate(to), index > target ? 'next' : 'prev');
+  };
   // 처음에는 지난 자리에 그렸다가, 그려진 직후 새 자리로 옮겨 움직임이 보이게 한다
   const [shown, setShown] = useState(lastTabIndex >= 0 ? lastTabIndex : target);
   useEffect(() => {
@@ -118,7 +196,12 @@ export function TabBar() {
         )}
         {TABS.map((t, index) => (
           <li key={t.to} style={{ display: 'contents' }}>
-            <Link to={t.to} aria-current={target === index ? 'page' : undefined} className="tabbar__item">
+            <Link
+              to={t.to}
+              aria-current={target === index ? 'page' : undefined}
+              className="tabbar__item"
+              onClick={(event) => onTabClick(event, index, t.to)}
+            >
               <span className="nav-icon"><Icon name={t.icon} className="tabbar__icon" />{unread(scopeFor(t.to)!) && <span className="nav-dot" role="img" aria-label="새 알림" />}</span>
               <span>{t.label}</span>
             </Link>
@@ -178,6 +261,7 @@ function TopNav() {
 export function AppFrame({ children, tabs = true }: { children: ReactNode; tabs?: boolean }) {
   const [hidden, setHidden] = useState(false);
   const showTabs = tabs && !hidden;
+  useTabSwipe(showTabs);
   return (
     <ShellContext.Provider value={{ setTabBarHidden: setHidden }}>
       <a className="skip-link" href="#main">
