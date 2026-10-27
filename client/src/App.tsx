@@ -26,6 +26,7 @@ import GatheringPage from './lounge/GatheringPage';
 import ChatRoomPage from './lounge/ChatRoomPage';
 import { NotificationsProvider } from './notifications/Notifications';
 import AdminPage from './lounge/AdminPage';
+import { hideSplash } from './shell/splash';
 
 /** 로그인 후 화면: 로그인이 안 되어 있으면 로그인으로 보낸다. 헤더·탭바는 AppFrame 이 맡는다. */
 function MeetingsEntry() {
@@ -130,6 +131,11 @@ export default function App() {
       .finally(() => setBooting(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 로그인 확인이 끝나 첫 화면을 그릴 수 있으면 로딩 화면을 걷는다
+  useEffect(() => {
+    if (!booting) hideSplash();
+  }, [booting]);
 
   if (booting) {
     return (

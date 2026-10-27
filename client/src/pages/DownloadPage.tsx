@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { hideSplash } from '../shell/splash';
 import InstallButton, { isIos } from '../shell/InstallBanner';
 import './auth.css';
 
@@ -28,6 +29,8 @@ function SafariMenuIcon() {
  * 설치한 앱(홈 화면 아이콘)으로 열면 이 화면 대신 로그인 화면부터 원래 앱이 열린다 (main.tsx).
  */
 export default function DownloadPage() {
+  // 설치 화면은 기다릴 것이 없어 바로 로딩 화면을 걷는다
+  useEffect(hideSplash, []);
   const [pointShare, setPointShare] = useState(false);
   const ios = isIos();
   const android = /android/i.test(navigator.userAgent);
