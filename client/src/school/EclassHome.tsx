@@ -345,7 +345,7 @@ export default function EclassHome() {
                 ] as const
               ).map(([value, label, count]) => (
                 <div key={value} className={`school-eclass__tile${count > 0 ? " is-left" : ""}`}>
-                  {/* 홈 카드와 같은 모양: 왼쪽 이름, 오른쪽 큰 남은 개수 */}
+                  {/* 홈 카드와 같은 모양: 가운데에 이름 · 큰 남은 개수 */}
                   <span>{label}</span>
                   <strong className="tabular">{count}</strong>
                 </div>

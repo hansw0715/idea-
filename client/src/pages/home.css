@@ -509,8 +509,9 @@
 .home-learning__count {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
+  /* 이름과 숫자를 붙여서 칸 가운데에 */
+  justify-content: center;
+  gap: 10px;
   min-height: 44px;
   padding: 10px 14px;
   border-radius: var(--r);

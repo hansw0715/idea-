@@ -47,12 +47,13 @@
 .school-eclass__done {
   margin-right: calc(-1 * var(--sp-1));
 }
-/* 미수강 강의 · 미제출 과제: 홈 강의·과제 카드와 같은 칸 (왼쪽 이름, 오른쪽 큰 숫자). 누른 칸이 아래 목록 종류 */
+/* 미수강 강의 · 미제출 과제: 홈 강의·과제 카드와 같은 칸 (가운데에 이름 · 큰 숫자). 누른 칸이 아래 목록 종류 */
 .school-eclass__tile {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-2);
+  /* 이름과 숫자를 붙여서 칸 가운데에 (홈 카드와 같게) */
+  justify-content: center;
+  gap: 1rem;
   min-height: 4.4rem;
   padding: 1rem 1.4rem;
   border: 1px solid transparent;
