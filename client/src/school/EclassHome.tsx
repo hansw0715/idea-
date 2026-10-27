@@ -354,12 +354,14 @@ export default function EclassHome() {
                   className="school-eclass__group"
                   aria-label={group.name}
                 >
-                  {/* 강좌 이름 · 남은 개수 · 접기 */}
+                  {/* 강좌 이름 · 남은 개수(접었을 때만) · 접기 */}
                   <div className="school-eclass__course">
                     <h3>{group.name}</h3>
-                    <span className="school-eclass__count tabular">
-                      {group.items.length}개
-                    </span>
+                    {folded.has(group.courseId) && (
+                      <span className="school-eclass__count tabular">
+                        {group.items.length}개
+                      </span>
+                    )}
                     <button
                       type="button"
                       className="school-eclass__fold"
