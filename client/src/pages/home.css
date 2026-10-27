@@ -265,6 +265,8 @@
 }
 .home-learning {
   display: grid;
+  /* 칸 너비를 카드에 맞춘다 (긴 과제 제목이 한 줄로 늘어나 칸·새로고침이 오른쪽으로 밀려나지 않게) */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 .home-learning__stamp {
@@ -529,6 +531,7 @@
 }
 .home-learning__next {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   margin: 0;
   padding: 0;
   list-style: none;
