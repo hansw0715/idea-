@@ -17,11 +17,8 @@ export default function HomeNotifications() {
     if (a.kind === 'reservation' || b.kind === 'reservation') return a.kind === 'reservation' ? -1 : 1;
     return b.at.localeCompare(a.at);
   });
-  const hasUnread = unread('home');
   return <section className="home-panel home-notifications" aria-labelledby="home-notifications-title" aria-busy={loading}>
-    <div className="home-sum__head"><h2 className="home-sum__title" id="home-notifications-title">알림</h2>
-      {hasUnread && <Button variant="tertiary" size="sm" onClick={() => mark('home')}>모두 확인</Button>}
-    </div>
+    <div className="home-sum__head"><h2 className="home-sum__title" id="home-notifications-title">알림</h2></div>
     <p className="home-notifications__lead">회의, 라운지, 예약 소식을 한곳에서 확인하세요.</p>
     {failed && <div className="home-notifications__retry"><span>일부 소식을 불러오지 못했어요.</span><Button variant="tertiary" size="sm" onClick={refresh}>다시 시도</Button></div>}
     {feed.length ? <ul className="home-notifications__list">{feed.slice(0, expanded ? undefined : 5).map((item) => <li key={item.id}>
