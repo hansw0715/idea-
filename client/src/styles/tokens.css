@@ -305,6 +305,11 @@
   }
 }
 
+/* 설정에서 밝은 화면을 고르면 휴대폰이 다크 모드여도 입력칸·스크롤바까지 밝게 (index.html 의 color-scheme 은 light dark) */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
 :root[data-theme='dark'] {
     color-scheme: dark;
     --gray-0: #16181b;
