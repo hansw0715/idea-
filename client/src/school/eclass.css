@@ -191,8 +191,9 @@
 .school-eclass__dday--danger {
   color: var(--c-danger-text);
 }
+/* 완료: 초록 대신 다른 남은 기간과 같은 파란색 */
 .school-eclass__dday--success {
-  color: var(--c-success-text);
+  color: var(--c-action-text);
 }
 .school-eclass__body {
   flex: 1;
