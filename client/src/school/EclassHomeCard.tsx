@@ -17,8 +17,11 @@ import type { EclassCounts } from "./eclassLogic";
 import { useSchool } from "./SchoolContext";
 import "./eclass.css";
 
-/** 홈에는 최근 조회 요약만 두고 학교에 대한 새 요청은 학사 알림에서 수행한다. 가장 급한 것 몇 개만 한 줄씩 */
-const SHOW = 2;
+/** 홈에는 최근 조회 요약만 두고 학교에 대한 새 요청은 학사 알림에서 수행한다.
+ *  강의·과제 각각 가장 급한 것 몇 개만 한 줄씩 (강의만 많아도 과제가 묻히지 않게 종류마다 따로 센다) */
+const SHOW_PER_KIND = 2;
+
+const KIND_LABEL = { lecture: "강의", assignment: "과제" } as const;
 
 /** e-class 결과가 새로 저장되면 알리는 이벤트 (EclassHome 이 저장할 때 보낸다) */
 export const ECLASS_UPDATED_EVENT = "sangsang-booke:eclass-updated";
@@ -77,7 +80,16 @@ export default function EclassHomeCard() {
   }, [user]);
 
   const itemLink = (item: EclassItem) =>
-    `/campus?tab=learning&kind=${item.kind}&item=${encodeURIComponent(item.id)}`;
+    `/campus?tab=learning&item=${encodeURIComponent(item.id)}`;
+  const shown = items
+    ? sortItems(
+        [
+          ...items.filter((i) => i.kind === "lecture").slice(0, SHOW_PER_KIND),
+          ...items.filter((i) => i.kind === "assignment").slice(0, SHOW_PER_KIND),
+        ],
+        now,
+      )
+    : [];
 
   let body;
   if (school.loading)
@@ -91,7 +103,7 @@ export default function EclassHomeCard() {
   else
     body = (
       <>
-        {/* 한눈에: 남은 개수 두 칸 (누르면 그 종류 목록으로) */}
+        {/* 한눈에: 남은 개수 두 칸 (누르면 학사 알림 목록으로) */}
         <div className="home-learning__counts">
           {(
             [
@@ -101,7 +113,7 @@ export default function EclassHomeCard() {
           ).map(([kind, label, count]) => (
             <Link
               key={kind}
-              to={`/campus?tab=learning&kind=${kind}`}
+              to="/campus?tab=learning"
               className={`home-learning__count${count > 0 ? " is-left" : ""}`}
             >
               <span>{label}</span>
@@ -109,12 +121,12 @@ export default function EclassHomeCard() {
             </Link>
           ))}
         </div>
-        {/* 가장 급한 것만 한 줄씩: 남은 기간 · 제목 */}
-        {items.length === 0 ? (
+        {/* 강의·과제 각각 가장 급한 것 한 줄씩: 남은 기간 · [강의/과제] 제목 */}
+        {shown.length === 0 ? (
           <p className="home-card__sub">남은 강의·과제가 없어요.</p>
         ) : (
           <ul className="home-learning__next">
-            {items.slice(0, SHOW).map((i) => {
+            {shown.map((i) => {
               const d = deadlineOf(i, now);
               return (
                 <li key={i.id}>
@@ -124,7 +136,12 @@ export default function EclassHomeCard() {
                     >
                       {i.completion === "unknown" ? "확인" : shortDeadline(d.label)}
                     </span>
-                    <span className="home-learning__title">{i.title}</span>
+                    <span className="home-learning__title">
+                      <b className={`school-eclass__kindtag school-eclass__kindtag--${i.kind}`}>
+                        {KIND_LABEL[i.kind]}
+                      </b>
+                      {i.title}
+                    </span>
                   </Link>
                 </li>
               );

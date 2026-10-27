@@ -34,7 +34,6 @@ import {
 import { useSchool } from "./SchoolContext";
 import "./eclass.css";
 
-type KindFilter = "lecture" | "assignment";
 const PAGE = 5;
 
 /** 강좌 이름 정리: [분반] 표기와 NEW 표시를 떼어 낸다 */
@@ -99,26 +98,21 @@ export default function EclassHome() {
     message: string;
     relink: boolean;
   } | null>(null);
-  const [kind, setKind] = useState<KindFilter>(
-    params.get("kind") === "assignment" ? "assignment" : "lecture",
-  );
   const [showDone, setShowDone] = useState(false);
   const [limit, setLimit] = useState(PAGE);
   const [now, setNow] = useState(() => Date.now());
-  const requestedKind = params.get("kind");
   const requestedItem = params.get("item");
   useEffect(() => {
-    if (requestedKind === "lecture" || requestedKind === "assignment") {
-      setKind(requestedKind);
-      setLimit(PAGE);
-    }
-  }, [requestedKind]);
+    if (!requestedItem) return;
+    // 홈에서 누른 항목이 접힌 범위(더 보기) 뒤에 있으면 다 펼친다
+    setLimit(Number.MAX_SAFE_INTEGER);
+  }, [requestedItem]);
   useEffect(() => {
     if (!requestedItem) return;
     const target = document.getElementById(`eclass-item-${requestedItem}`);
     target?.scrollIntoView({ block: "center" });
     target?.focus({ preventScroll: true });
-  }, [requestedItem, snapshot, kind]);
+  }, [requestedItem, snapshot, limit]);
   const alive = useRef(true);
   const inFlight = useRef(false);
   // 인증 실패·잠금 뒤에는 이 방문 동안 자동으로 다시 시도하지 않는다
@@ -172,20 +166,18 @@ export default function EclassHome() {
   const visible = useMemo(() => {
     if (!snapshot) return [];
     return sortItems(
-      // 꺼짐: 아직 안 한 것(공개 전은 제외) / 켜짐: 이번 주차에 완료한 것만
-      snapshot.items.filter(
-        (i) =>
-          i.kind === kind &&
-          (showDone
-            ? i.completion === "completed" &&
-              isAvailable(i, now) &&
-              isThisWeek(i, now)
-            : needsAttention(i, now)),
+      // 강의·과제를 함께. 꺼짐: 아직 안 한 것(공개 전은 제외) / 켜짐: 이번 주차에 완료한 것만
+      snapshot.items.filter((i) =>
+        showDone
+          ? i.completion === "completed" &&
+            isAvailable(i, now) &&
+            isThisWeek(i, now)
+          : needsAttention(i, now),
       ),
       now,
     );
-  }, [snapshot, kind, showDone, now]);
-  // 보이는 항목을 강좌별로 묶는다 (강좌 순서는 가장 급한 항목 기준)
+  }, [snapshot, showDone, now]);
+  // 보이는 항목을 강좌별로 묶는다 (강좌 순서는 가장 급한 항목 기준). 한 강좌 안에서는 강의 밑에 과제
   const groups = useMemo(() => {
     const map = new Map<
       string,
@@ -200,7 +192,10 @@ export default function EclassHome() {
       group.items.push(item);
       map.set(item.courseId, group);
     }
-    return [...map.values()];
+    const groups = [...map.values()];
+    // 정렬은 안정적이라 같은 종류 안에서는 급한 순서가 그대로 남는다
+    for (const g of groups) g.items.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "lecture" ? -1 : 1));
+    return groups;
   }, [visible, limit]);
   // 접은 강좌 (강좌 이름 옆 화살표)
   const [folded, setFolded] = useState<Set<string>>(() => new Set());
@@ -326,29 +321,20 @@ export default function EclassHome() {
             </Alert>
           )}
 
-          {/* 맨 위 줄: 미수강 강의 · 미제출 과제 (누르면 그 종류를 보여 줌) */}
+          {/* 맨 위 줄: 미수강 강의 · 미제출 과제 남은 개수 (보여 주기만. 아래 목록은 강의·과제 함께) */}
           <div className="school-eclass__controls">
-            <div className="school-eclass__tally" role="group" aria-label="볼 항목 고르기">
+            <div className="school-eclass__tally">
               {(
                 [
                   ["lecture", "미수강 강의", counts?.pendingLectures ?? 0],
                   ["assignment", "미제출 과제", counts?.pendingAssignments ?? 0],
                 ] as const
               ).map(([value, label, count]) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`school-eclass__tile${count > 0 ? " is-left" : ""}`}
-                  aria-pressed={kind === value}
-                  onClick={() => {
-                    setKind(value);
-                    setLimit(PAGE);
-                  }}
-                >
+                <div key={value} className={`school-eclass__tile${count > 0 ? " is-left" : ""}`}>
                   {/* 홈 카드와 같은 모양: 왼쪽 이름, 오른쪽 큰 남은 개수 */}
                   <span>{label}</span>
                   <strong className="tabular">{count}</strong>
-                </button>
+                </div>
               ))}
             </div>
           </div>
@@ -358,7 +344,7 @@ export default function EclassHome() {
             snapshot.items.length === 0 ? (
               <p className="school-eclass__none">확인된 강의·과제가 없어요.</p>
             ) : showDone ? (
-              <p className="school-eclass__none">{`이번주에 완료한 ${kind === "lecture" ? "강의" : "과제"}가 없어요.`}</p>
+              <p className="school-eclass__none">이번주에 완료한 강의·과제가 없어요.</p>
             ) : null
           ) : (
             <div className="school-eclass__groups">
@@ -411,7 +397,12 @@ export default function EclassHome() {
                                 <span className="sr-only"> ({d.label})</span>
                               </span>
                               <span className="school-eclass__body">
-                                <span className="school-eclass__title">{item.title}</span>
+                                <span className="school-eclass__title">
+                                  <b className={`school-eclass__kindtag school-eclass__kindtag--${item.kind}`}>
+                                    {item.kind === "lecture" ? "강의" : "과제"}
+                                  </b>
+                                  {item.title}
+                                </span>
                                 {detail && <span className="school-eclass__sub">{detail}</span>}
                               </span>
                               <Icon name="chevron-right" className="school-eclass__go" />
@@ -451,7 +442,7 @@ export default function EclassHome() {
               }}
             >
               {showDone && <Icon name="check" className="btn__icon" />}
-              이번주 완료 {kind === "lecture" ? "강의" : "과제"} 보기
+              이번주 완료 보기
             </button>
           </div>
 
