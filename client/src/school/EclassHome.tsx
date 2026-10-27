@@ -355,7 +355,15 @@ export default function EclassHome() {
                     setLimit(PAGE);
                   }}
                 >
-                  {label} <b className="tabular">{count}</b>
+                  {label}
+                  {/* 남은 개수는 알림처럼 글자 오른쪽 위 배지로. 0개면 배지 없이 읽어 주기만 한다 */}
+                  {count > 0 ? (
+                    <b className="school-eclass__badge tabular">
+                      {count > 99 ? "99+" : count}
+                    </b>
+                  ) : (
+                    <span className="sr-only"> 0개</span>
+                  )}
                 </button>
               ))}
             </div>

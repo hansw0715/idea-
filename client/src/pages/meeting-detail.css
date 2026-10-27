@@ -129,9 +129,9 @@
 }
 
 .mtg-grid .tt .tt-grid {
-  border-radius: 0;
+  border-radius: var(--r-panel);
 }
-/* 수업·겹치는 시간 블록: 시간표 탭 강의 블록과 같은 아주 살짝 둥근 모서리 */
+/* 수업·겹치는 시간 블록: 시간표 탭 강의 블록과 같은 작은 곡률 */
 .mtg-grid .tt .tt-entry {
   border-radius: var(--r-xs);
 }

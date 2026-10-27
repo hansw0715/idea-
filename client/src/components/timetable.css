@@ -11,6 +11,7 @@
   --tt-axis: 2.8rem; /* 시각 축 폭: 시만 두 자리("09")로 적으니 좁게 — 남는 폭은 요일 칸으로 (기존 4.2rem) */
   --tt-hour: 3.7rem; /* 1시간 높이 (기존 4.6rem 의 80%) */
   --tt-hours: 13; /* 09:00 ~ 22:00 (JS 에서 덮어쓴다) */
+  --tt-gap: 0.2rem; /* 일정 블록 위아래 여백 (좌우 left/right 0.2rem 과 같게) */
 
   --tt-line: var(--c-divider);
   --tt-line-soft: var(--gray-5);
@@ -22,12 +23,13 @@
   --tt-class-bg: var(--c-panel-strong);
   --tt-class-bar: transparent;
   --tt-class-line: transparent;
-  /* 회의 예약과 계획: 수업 블록과 같은 테두리 없는 박스, 색만 옅은 연두색 + "예약" 글자 */
-  --tt-res-bg: var(--c-green-bg);
+  /* 회의 예약과 계획: 밝은 화면은 파란 바탕 + 흰 글자, 다크 모드는 흰 바탕 + 파란 글자 (아래 다크 규칙) */
+  --tt-res-bg: var(--primary-50);
   --tt-res-bar: transparent;
   --tt-res-line: transparent;
-  --tt-res-text: var(--success-70);
-  --tt-res-hatch: var(--c-green-bg); /* 빗금 없음 (바탕과 같은 색) */
+  --tt-res-text: var(--white);
+  --tt-res-hatch: var(--tt-res-bg); /* 빗금 없음 (바탕과 같은 색) */
+  --tt-res-hover: var(--primary-60);
   /* 팀원 모두 비는 시간 */
   --tt-free-bg: var(--primary-10);
   /* 선택한 범위 */
@@ -39,6 +41,26 @@
 
   /* 칸 폭을 글자 크기(rem)로 재서, 글자가 안 들어갈 만큼 좁으면 아래 @container 규칙이 글자를 숨기고 목록을 보여 준다. */
   container: tt / inline-size;
+}
+
+/* 다크 모드의 회의 예약: 흰 바탕 + 파란 글자 (tokens.css 의 다크 판정과 같은 조건) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']):not([data-contrast='high']) .tt {
+    --tt-res-bg: var(--white);
+    --tt-res-text: var(--primary-60);
+    --tt-res-hover: var(--primary-20);
+  }
+  :root:not([data-theme='light']):not([data-contrast='high']) .tt-swatch--res {
+    background: var(--white);
+  }
+}
+:root[data-theme='dark']:not([data-contrast='high']) .tt {
+  --tt-res-bg: var(--white);
+  --tt-res-text: var(--primary-60);
+  --tt-res-hover: var(--primary-20);
+}
+:root[data-theme='dark']:not([data-contrast='high']) .tt-swatch--res {
+  background: var(--white);
 }
 
 /* 줄인 격자(홈·회의): 정각 1시간 블록이 터치 대상 최소 높이(44px)를 채운다. */
@@ -58,8 +80,15 @@
   --tt-res-bg: var(--gray-0);
   --tt-res-bar: var(--success-70);
   --tt-res-line: var(--gray-100);
+  --tt-res-text: var(--gray-100);
+  --tt-res-hover: var(--primary-10);
   --tt-free-bg: var(--primary-10);
   --tt-pending-bg: var(--primary-10);
+}
+/* 고대비: 예약 블록은 왼쪽 막대를 그대로 보인다 */
+:root[data-contrast='high'] .tt .tt-entry--res {
+  border-left-width: 0.3rem;
+  padding-left: 0.4rem;
 }
 
 /* 주를 넘길 때 옆에서 들어오는 모션 (400ms 이하, reduced-motion 이면 즉시) */
@@ -314,14 +343,17 @@
     background: var(--primary-20);
   }
   .tt .tt-entry--res:hover {
-    background-color: var(--c-green-bg-strong);
+    background-color: var(--tt-res-hover);
     background-image: none;
   }
 }
 
-/* 회의 예약: 초록 + 빗금 + 막대 + "예약" 글자 */
+/* 회의 예약: 색 면 + "예약" 글자 */
 .tt .tt-entry--res {
   z-index: 1;
+  /* 왼쪽 막대(투명)를 두면 그 폭만큼 바탕이 비쳐 잘린 것처럼 보이므로 막대 대신 같은 폭의 안쪽 여백 */
+  border-left-width: 0;
+  padding-left: 0.7rem;
   border-left-color: var(--tt-res-bar);
   box-shadow: inset 0 0 0 1px var(--tt-res-line);
   background-color: var(--tt-res-bg);
@@ -609,10 +641,10 @@
   box-shadow: inset 0 0 0 1px var(--gray-100);
 }
 .tt-swatch--res {
-  /* 회의 예약과 계획 견본: 격자의 연두색 박스와 같은 모양 */
+  /* 회의 예약과 계획 견본: 격자의 예약 박스와 같은 색 (밝은 화면 파랑, 다크 모드 흰색) */
   border-left: 0;
   box-shadow: none;
-  background: var(--c-green-bg);
+  background: var(--primary-50);
 }
 .tt-swatch--free {
   border-left-width: 0;

@@ -128,13 +128,17 @@
   color: var(--c-action-text);
   font-weight: 600;
 }
+/* 오늘 표시 점: 요일 글자 오른쪽 위에 붙여, 글자는 가운데 그대로 둔다 */
+.home-week__day.is-today > span:first-child {
+  position: relative;
+}
 .home-week__day.is-today > span:first-child::after {
   content: "";
-  display: inline-block;
-  width: 4px;
-  height: 4px;
-  margin-left: 3px;
-  vertical-align: middle;
+  position: absolute;
+  top: 0;
+  right: -6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--c-action);
 }

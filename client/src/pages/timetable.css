@@ -94,6 +94,8 @@
 .tt-page__evening .tag[aria-pressed='true'] {
   background: var(--c-panel-strong);
   border-color: var(--c-panel-strong);
+  /* 알약 대신 주 이동 버튼·탭과 같은 곡률 */
+  border-radius: var(--r-panel);
   color: var(--c-action-text);
 }
 
@@ -126,9 +128,9 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-/* 격자 바깥 틀은 각지게, 수업 블록은 아주 살짝만 둥글게 */
+/* 격자 바깥 틀은 카드·탭과 같은 곡률, 수업 블록은 한 단계 작게. 칸 안쪽 줄은 각진 그대로 */
 .tt-page .tt .tt-grid {
-  border-radius: 0;
+  border-radius: var(--r-panel);
 }
 .tt-page .tt .tt-entry {
   border-radius: var(--r-xs);

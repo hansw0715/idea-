@@ -963,8 +963,10 @@ export default function TimetableGrid({
                           }`}
                           style={
                             {
-                              top: top(startMin),
-                              height: height(startMin, endMin),
+                              // 위아래도 좌우처럼 칸 선에서 같은 간격(--tt-gap)만큼 띄운다.
+                              // 시각 선(1px)은 칸 위쪽에 그려지므로 위는 선 두께만큼 더 내린다.
+                              top: `calc(${top(startMin)} + 1px + var(--tt-gap))`,
+                              height: `calc(${height(startMin, endMin)} - 1px - 2 * var(--tt-gap))`,
                               ...position,
                               ...(lane ? { '--lane': color } : {}),
                             } as CSSProperties
