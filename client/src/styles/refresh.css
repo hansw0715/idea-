@@ -678,9 +678,12 @@
 
 /* ── 화면을 밀어서 옆 탭으로 갈 때 (Shell.tsx 의 slideTo) ─────────────
    왼쪽으로 밀면(next) 지금 화면은 왼쪽으로 나가고 새 화면은 오른쪽에서 들어온다. 오른쪽으로 밀면(prev) 반대.
-   하단 탭바는 움직이지 않게 따로 떼어 둔다. */
+   하단 탭바와 맨 위 머리글(상상Book-E)은 움직이지 않게 따로 떼어 둔다. */
 .tabbar {
   view-transition-name: tabbar;
+}
+.app-header:not(.app-header--back) {
+  view-transition-name: appheader;
 }
 html[data-swipe]::view-transition-old(root),
 html[data-swipe]::view-transition-new(root) {
@@ -700,8 +703,17 @@ html[data-swipe='prev']::view-transition-old(root) {
 html[data-swipe='prev']::view-transition-new(root) {
   animation-name: swipe-in-left;
 }
-html[data-swipe]::view-transition-group(tabbar) {
+html[data-swipe]::view-transition-group(tabbar),
+html[data-swipe]::view-transition-group(appheader),
+html[data-swipe]::view-transition-new(appheader) {
   animation: none;
+}
+html[data-swipe]::view-transition-old(appheader) {
+  display: none;
+}
+/* 손가락으로 끄는 동안 본문이 옆으로 나가도 가로 스크롤이 생기지 않게 */
+.app-frame--app {
+  overflow-x: clip;
 }
 @keyframes swipe-out-left {
   to { transform: translateX(-100%); }

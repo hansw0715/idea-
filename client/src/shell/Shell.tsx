@@ -99,7 +99,8 @@ function handlesHorizontalGesture(start: EventTarget | null): boolean {
 }
 
 /**
- * 화면을 밀어서 옆 탭으로 갈 때: 지금 화면은 민 방향으로 나가고 새 화면은 반대쪽에서 들어온다 (refresh.css 의 view-transition).
+ * 탭을 눌러 옆 탭으로 갈 때: 지금 화면은 나가고 새 화면은 반대쪽에서 들어온다 (refresh.css 의 view-transition). 머리글·탭바는 그대로.
+ * (손가락으로 밀 때는 useTabSwipe 가 본문을 직접 움직인다)
  * 브라우저가 View Transitions 를 못 쓰거나 움직임 줄이기를 켰으면 그냥 바꾼다.
  */
 function slideTo(go: () => void, direction: 'next' | 'prev') {
@@ -116,8 +117,10 @@ function slideTo(go: () => void, direction: 'next' | 'prev') {
 
 /**
  * 작은 화면에서 좌우로 밀면 옆 탭으로 간다 (왼쪽으로 밀면 오른쪽 탭, 오른쪽으로 밀면 왼쪽 탭).
+ * 본문(#main)이 손가락을 따라 민 만큼 움직이고, 놓았을 때 화면의 1/3 넘게 밀었거나 빠르게 튕겼으면 넘어가고 아니면 제자리로 돌아온다.
+ * 위쪽 머리글(상상Book-E)과 하단 탭바는 본문 밖이라 움직이지 않는다. 끝 탭에서 더 밀면 고무줄처럼 조금만 끌린다.
  * 탭 화면 자체에서만 동작하고, 화면 가장자리(휴대폰의 뒤로 가기 제스처)·가로 스크롤 영역·열린 창에서는 하지 않는다.
- * 시간표 격자 위에서는 빠르게 민 경우만 넘긴다: 길게 눌러(350ms) 범위를 고르는 동작과 겹치지 않게.
+ * 시간표 격자 위에서는 길게 눌러(350ms) 범위를 고르는 동작과 겹치지 않게, 누르자마자 가로로 움직인 경우만 끈다.
  */
 function useTabSwipe(enabled: boolean) {
   const navigate = useNavigate();
@@ -126,10 +129,20 @@ function useTabSwipe(enabled: boolean) {
     if (!enabled) return;
     const index = TABS.findIndex((t) => t.to === pathname);
     if (index < 0) return;
-    let start: { x: number; y: number; t: number; grid: boolean } | null = null;
     const EDGE = 24;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let start: { x: number; y: number; t: number; grid: boolean } | null = null;
+    let main: HTMLElement | null = null;
+    let dx = 0;
+
+    const release = (el: HTMLElement) => {
+      el.style.transform = '';
+      el.style.willChange = '';
+    };
     const onStart = (e: TouchEvent) => {
       start = null;
+      main = null;
+      dx = 0;
       if (e.touches.length !== 1 || window.innerWidth >= 768) return;
       const touch = e.touches[0];
       if (touch.clientX < EDGE || touch.clientX > window.innerWidth - EDGE) return;
@@ -138,24 +151,85 @@ function useTabSwipe(enabled: boolean) {
       const grid = e.target instanceof Element && e.target.closest('.tt-grid') !== null;
       start = { x: touch.clientX, y: touch.clientY, t: Date.now(), grid };
     };
-    const onEnd = (e: TouchEvent) => {
+    const onMove = (e: TouchEvent) => {
       if (!start) return;
-      const touch = e.changedTouches[0];
-      const dx = touch.clientX - start.x;
-      const dy = touch.clientY - start.y;
-      // 시간표 격자에서는 길게 누르기(350ms)보다 짧게 민 것만 스와이프로 본다
-      const quick = Date.now() - start.t < (start.grid ? 350 : 700);
+      const touch = e.touches[0];
+      const mx = touch.clientX - start.x;
+      const my = touch.clientY - start.y;
+      if (!main) {
+        if (Math.abs(mx) < 10 && Math.abs(my) < 10) return;
+        // 세로로 먼저 움직였거나, 격자에서 길게 누른 뒤면 끌지 않는다 (스크롤·범위 고르기에 맡긴다)
+        if (Math.abs(mx) < Math.abs(my) * 1.5 || (start.grid && Date.now() - start.t > 350)) {
+          start = null;
+          return;
+        }
+        main = document.getElementById('main');
+        if (!main) {
+          start = null;
+          return;
+        }
+        main.getAnimations().forEach((a) => a.cancel());
+        main.style.willChange = 'transform';
+      }
+      if (e.cancelable) e.preventDefault();
+      const hasNext = TABS[index + (mx < 0 ? 1 : -1)] !== undefined;
+      dx = hasNext ? mx : mx / 4;
+      main.style.transform = `translateX(${dx}px)`;
+    };
+    const onEnd = () => {
+      const el = main;
+      const began = start;
       start = null;
-      // 충분히 길고, 세로보다 확실히 가로로 민 경우만
-      if (!quick || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+      main = null;
+      if (!el || !began) return;
+      const width = window.innerWidth;
+      const speed = Math.abs(dx) / Math.max(1, Date.now() - began.t);
       const next = TABS[index + (dx < 0 ? 1 : -1)];
-      if (next) slideTo(() => navigate(next.to), dx < 0 ? 'next' : 'prev');
+      const go = next !== undefined && (Math.abs(dx) > width / 3 || (speed > 0.5 && Math.abs(dx) > 40));
+      if (!go) {
+        // 제자리로
+        const back = el.animate([{ transform: `translateX(${dx}px)` }, { transform: 'translateX(0)' }], {
+          duration: reduce ? 0 : 200,
+          easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        });
+        release(el);
+        void back.finished.catch(() => {});
+        return;
+      }
+      const dir = dx < 0 ? -1 : 1;
+      const out = el.animate([{ transform: `translateX(${dx}px)` }, { transform: `translateX(${dir * width}px)` }], {
+        duration: reduce ? 0 : 160,
+        easing: 'ease-out',
+        fill: 'forwards',
+      });
+      void out.finished
+        .catch(() => {})
+        .then(() => {
+          flushSync(() => navigate(next.to));
+          // 같은 요소가 남아 있으면(이동이 안 된 경우) 되돌린다
+          if (el.isConnected) {
+            out.cancel();
+            release(el);
+          }
+          const fresh = document.getElementById('main');
+          if (fresh && fresh !== el && !reduce) {
+            fresh.animate([{ transform: `translateX(${-dir * width * 0.35}px)`, opacity: 0.4 }, { transform: 'translateX(0)', opacity: 1 }], {
+              duration: 240,
+              easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+            });
+          }
+        });
     };
     document.addEventListener('touchstart', onStart, { passive: true });
+    // 가로로 끄는 동안 세로 스크롤을 막아야 해서 passive 가 아니다
+    document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('touchend', onEnd, { passive: true });
+    document.addEventListener('touchcancel', onEnd, { passive: true });
     return () => {
       document.removeEventListener('touchstart', onStart);
+      document.removeEventListener('touchmove', onMove);
       document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
     };
   }, [enabled, pathname, navigate]);
 }
