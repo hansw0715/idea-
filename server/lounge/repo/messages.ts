@@ -86,3 +86,25 @@ export async function insertSystemMessageIfEmpty(roomId: string, text: string, a
   );
   return changes === 1;
 }
+
+/** 단톡방 나가기를 남긴다. 두 번 눌러도 한 줄. 새로 나갔으면 true. */
+export async function insertRoomLeave(userId: string, roomId: string, at: ISODateTime): Promise<boolean> {
+  const { changes } = await run(
+    `INSERT INTO lounge_room_leaves (user_id, room_id, at) VALUES (?, ?, ?::timestamptz)
+     ON CONFLICT (user_id, room_id) DO NOTHING`,
+    [Number(userId), roomId, at],
+  );
+  return changes === 1;
+}
+
+/** 이 방에서 나간 사람들 */
+export async function roomLeaverIds(roomId: string): Promise<Set<string>> {
+  const rows = await all<{ user_id: number }>('SELECT user_id FROM lounge_room_leaves WHERE room_id = ?', [roomId]);
+  return new Set(rows.map((r) => String(r.user_id)));
+}
+
+/** 이 사람이 나간 방들 */
+export async function leftRoomIds(userId: string): Promise<Set<string>> {
+  const rows = await all<{ room_id: string }>('SELECT room_id FROM lounge_room_leaves WHERE user_id = ?', [Number(userId)]);
+  return new Set(rows.map((r) => r.room_id));
+}

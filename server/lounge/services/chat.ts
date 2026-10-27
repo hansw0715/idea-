@@ -14,7 +14,7 @@ import { canRead, checkSend, hideBlocked, messagesAfter } from '../domain/chat.j
 import type { Message, RoomAccess } from '../domain/chat.js';
 import type { Gathering } from '../../../shared/lounge/gathering.js';
 import { findGathering, listRoomGatherings } from '../repo/gatherings.js';
-import { insertMessage, insertSystemMessageIfEmpty, listMessages, latestRoomActivity } from '../repo/messages.js';
+import { insertMessage, insertRoomLeave, insertSystemMessageIfEmpty, leftRoomIds, listMessages, latestRoomActivity, roomLeaverIds } from '../repo/messages.js';
 import { hiddenFor } from './safety.js';
 
 const nowISO = () => new Date().toISOString();
@@ -24,12 +24,13 @@ const RECENT_LIMIT = 200;
 
 type Loaded = { gathering: Gathering; access: RoomAccess };
 
-/** 기존 방 읽기 권한과 같은 기준. 신청자·탈퇴한 참여자는 포함하지 않는다. */
+/** 기존 방 읽기 권한과 같은 기준. 신청자·탈퇴한 참여자·방을 나간 사람은 포함하지 않는다. */
 export async function roomSummaries(viewer: LoungeUser): Promise<RoomSummary[]> {
   const rows = await listRoomGatherings(viewer.id);
-  const activity = await latestRoomActivity(viewer.id);
+  const [activity, left] = await Promise.all([latestRoomActivity(viewer.id), leftRoomIds(viewer.id)]);
   const now = nowISO();
   return rows.flatMap((g) => {
+    if (left.has(g.id)) return [];
     const status = currentStatus(g, now);
     const members = memberIds(g);
     if (!canRead({ memberIds: members, opened: isFull(g) || status === 'done', readOnly: true }, viewer.id)) return [];
@@ -43,10 +44,12 @@ async function accessOf(roomId: string): Promise<Result<Loaded>> {
   if (!gathering) return fail('NOT_FOUND', '없는 방이에요.');
 
   const status = currentStatus(gathering, nowISO());
+  // 방을 나간 사람은 모임에는 남아 있어도 방 참여자가 아니다 (읽기·쓰기·참여자 목록에서 빠진다)
+  const leavers = await roomLeaverIds(roomId);
   return ok({
     gathering,
     access: {
-      memberIds: memberIds(gathering),
+      memberIds: memberIds(gathering).filter((id) => !leavers.has(id)),
       // 자리가 다 차면 방이 열린다. 끝난 모임도 기록을 볼 수 있게 열어 둔다.
       opened: isFull(gathering) || status === 'done',
       readOnly: status === 'cancelled' || status === 'done',
@@ -147,4 +150,23 @@ export async function sendMessage(sender: LoungeUser, roomId: string, text: stri
  */
 export async function openRoomIfNeeded(roomId: string): Promise<void> {
   await insertSystemMessageIfEmpty(roomId, SYSTEM_OPEN_MESSAGE, nowISO());
+}
+
+/**
+ * 단톡방 나가기. 내 목록에서 방이 사라지고 다시 들어올 수 없다. 남은 사람들에게는 안내 한 줄을 남긴다.
+ * 모임 참여는 그대로 둔다 — 빠지면 정원이 비어 남은 사람들의 방이 닫히니까.
+ */
+export async function leaveRoom(viewer: LoungeUser, roomId: string): Promise<Result<null>> {
+  const loaded = await accessOf(roomId);
+  if (!loaded.ok) return loaded;
+  const { access, gathering } = loaded.value;
+  if (!canRead(access, viewer.id)) return fail('FORBIDDEN', '참여 중인 방이 아니에요.');
+
+  const at = nowISO();
+  if (await insertRoomLeave(viewer.id, roomId, at)) {
+    // 이름은 방에서 보이던 대로 (미팅은 가린 이름, 그 밖은 실명)
+    const name = gathering.kind === 'meetup' ? viewer.nickname : viewer.name;
+    await insertMessage({ id: randomUUID(), roomId, userId: null, kind: 'system', text: `${name}님이 나갔어요.`, at });
+  }
+  return ok(null);
 }

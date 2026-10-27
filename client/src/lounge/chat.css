@@ -285,3 +285,8 @@ html:has(.lounge-chat-root) {
 .lounge-chat-pick-item {
   gap: var(--sp-4);
 }
+
+/* 채팅방 메뉴 맨 아래: 채팅방 나가기 */
+.lounge-chat-leave {
+  margin-top: var(--sp-5);
+}

@@ -7,12 +7,12 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { CHAT_POLL_MS, MAX_MESSAGE_LENGTH, formatMeetAt } from '../../../shared/lounge';
 import type { ChatMessageView, PublicUser, RoomView } from '../../../shared/lounge';
 import { ApiError } from '../api';
 import { AppHeader, useHideTabBar } from '../shell/Shell';
-import { Alert, Button, EmptyState, Icon, LoadingBlock, Sheet, btnClass } from '../ui';
+import { Alert, Button, EmptyState, Icon, LoadingBlock, Sheet, btnClass, useConfirm, useToast } from '../ui';
 import { loungeApi } from './api';
 import { useLounge } from './LoungeContext';
 import Avatar from './parts/Avatar';
@@ -148,6 +148,26 @@ function ChatRoom({ roomId }: { roomId: string }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
+  const navigate = useNavigate();
+  const confirm = useConfirm();
+  const toast = useToast();
+
+  /** 채팅방 나가기: 내 목록에서 방이 사라지고 다시 들어올 수 없다 (모임 참여는 그대로) */
+  async function leaveRoom() {
+    setPickOpen(false);
+    const ok = await confirm({
+      title: '채팅방에서 나갈까요?',
+      message: '나가면 내 채팅 목록에서 이 방이 사라지고 다시 들어올 수 없어요. 남은 사람들에게는 나갔다고 알려요.',
+      tone: 'danger',
+      confirmLabel: '나가기',
+      run: async () => {
+        await loungeApi.leaveRoom(roomId);
+      },
+    });
+    if (!ok) return;
+    toast('채팅방에서 나갔어요.');
+    navigate('/lounge?tab=chats', { replace: true });
+  }
   const sendingRef = useRef(false);
   /** 한글 같은 조합 입력 중인가 (조합 중 Enter 는 글자를 확정하는 키다) */
   const composingRef = useRef(false);
@@ -343,7 +363,7 @@ function ChatRoom({ roomId }: { roomId: string }) {
       ref={moreRef}
       type="button"
       className="btn btn--icon"
-      aria-label="신고·차단"
+      aria-label="채팅방 메뉴"
       aria-haspopup="dialog"
       onClick={() => setPickOpen(true)}
     >
@@ -436,7 +456,7 @@ function ChatRoom({ roomId }: { roomId: string }) {
                   <Icon name="shield" />
                   <span>
                     연락처·실명은 공개되지 않아요. 불쾌한 일이 있으면 <span aria-hidden="true">⋯</span>
-                    <span className="sr-only">(위쪽 신고·차단 버튼)</span> 에서 신고할 수 있어요.
+                    <span className="sr-only">(위쪽 채팅방 메뉴 버튼)</span> 에서 신고할 수 있어요.
                   </span>
                 </p>
               </section>
@@ -570,8 +590,8 @@ function ChatRoom({ roomId }: { roomId: string }) {
         </main>
       )}
 
-      {/* ⋯ → 신고·차단할 참여자 고르기 → 사용자 카드(UserSheet) */}
-      <Sheet open={pickOpen} onClose={() => setPickOpen(false)} title="신고·차단할 사람 고르기">
+      {/* ⋯ → 채팅방 메뉴: 신고·차단할 참여자 고르기 → 사용자 카드(UserSheet), 맨 아래 채팅방 나가기 */}
+      <Sheet open={pickOpen} onClose={() => setPickOpen(false)} title="채팅방 메뉴">
         <p className="lounge-chat-pick-lead">신고하거나 차단할 참여자를 골라 주세요. 차단해도 상대에게 알리지 않아요.</p>
         {others.length === 0 ? (
           <EmptyState title="고를 수 있는 참여자가 없어요" description="나 말고 다른 참여자가 있을 때 고를 수 있어요." />
@@ -597,6 +617,9 @@ function ChatRoom({ roomId }: { roomId: string }) {
             ))}
           </div>
         )}
+        <Button variant="danger" block className="lounge-chat-leave" onClick={() => void leaveRoom()}>
+          채팅방 나가기
+        </Button>
       </Sheet>
       <UserSheet
         open={targetId !== null}

@@ -15,6 +15,7 @@
 export const LOUNGE_TABLES = [
   'lounge_gatherings',
   'lounge_messages',
+  'lounge_room_leaves',
   'lounge_blocks',
   'lounge_reports',
   'lounge_quick_requests',
@@ -71,6 +72,16 @@ export const LOUNGE_MIGRATIONS = `
     at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_lounge_messages_room ON lounge_messages(room_id, at);
+
+  -- 단톡방 나가기: 나간 사람은 그 방을 목록에서 지우고 다시 들어올 수 없다. 모임 참여 자체는 그대로 둔다
+  -- (빠지면 정원이 비어 남은 사람들의 방이 닫히니까). room_id 는 메시지처럼 FK 가 아니다.
+  CREATE TABLE IF NOT EXISTS lounge_room_leaves (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    room_id TEXT NOT NULL,
+    at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, room_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_lounge_room_leaves_room ON lounge_room_leaves(room_id);
 
   -- 차단: 한쪽만 걸어도 양쪽에서 서로 사라진다
   CREATE TABLE IF NOT EXISTS lounge_blocks (

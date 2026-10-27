@@ -63,6 +63,7 @@ export const loungeApi = {
     api.post<{ gathering: GatheringView }>(`${L}/gatherings/${id}/${action}`, body).then((r) => r.gathering),
 
   // 단톡방
+  leaveRoom: (id: string) => api.post<{ ok: true }>(`${L}/gatherings/${id}/leave-room`),
   rooms: () => api.get<{ rooms: RoomSummary[] }>(`${L}/rooms`).then((r) => r.rooms),
   room: (id: string, after?: string) =>
     api

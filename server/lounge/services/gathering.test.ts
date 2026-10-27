@@ -26,7 +26,7 @@ import * as G from '../domain/gathering.js';
 import { findGathering, insertGathering, listMine, mutateGathering } from '../repo/gatherings.js';
 import { listMessages } from '../repo/messages.js';
 import * as svc from './gathering.js';
-import { openRoomIfNeeded, roomView, roomSummaries, sendMessage } from './chat.js';
+import { leaveRoom, openRoomIfNeeded, roomView, roomSummaries, sendMessage } from './chat.js';
 import { notify } from './push.js';
 import { blockChecker, blockUser, handleReport, hiddenFor, listReportsForAdmin, myBlocks, reportUser, unblockUser } from './safety.js';
 import { adminStats } from './stats.js';
@@ -621,6 +621,30 @@ describe('단톡방', () => {
     // 방 열기를 직접 여러 번(동시에) 불러도 마찬가지
     await Promise.all(Array.from({ length: 5 }, () => openRoomIfNeeded(g.id)));
     expect(await messageCount(g.id)).toBe(1);
+  });
+
+  it('채팅방 나가기: 내 목록에서 사라지고 다시 못 들어오며, 남은 사람에게 안내 한 줄 (모임 참여는 그대로)', async () => {
+    const host = await makeUser();
+    const [a, b, c] = await Promise.all([makeUser(), makeUser(), makeUser()]);
+    const g = await makeMeetup(host);
+    must(await joinAs(a, g.id, 'guest'));
+    must(await joinAs(b, g.id, 'guest'));
+    must(await joinAs(c, g.id, 'host'));
+    expect((await roomSummaries(a)).some((r) => r.id === g.id)).toBe(true);
+
+    must(await leaveRoom(a, g.id));
+    expect(errCode(await leaveRoom(a, g.id))).toBe('FORBIDDEN'); // 이미 나간 방: 안내가 더 생기지 않는다
+    expect(await messageCount(g.id)).toBe(2);
+
+    expect((await roomSummaries(a)).some((r) => r.id === g.id)).toBe(false);
+    expect(errCode(await roomView(a, g.id))).toBe('FORBIDDEN');
+    expect(errCode(await sendMessage(a, g.id, '안녕'))).toBe('FORBIDDEN');
+
+    const seen = must(await roomView(host, g.id));
+    expect(seen.members.some((m) => m.id === a.id)).toBe(false);
+    expect(seen.messages.at(-1)?.text).toBe(`${a.nickname}님이 나갔어요.`);
+    // 모임 자리는 그대로라 방이 닫히지 않는다
+    expect(G.memberIds((await findGathering(g.id))!)).toContain(a.id);
   });
 
   it('메시지가 이미 있는 방은 열기 안내를 더하지 않는다', async () => {

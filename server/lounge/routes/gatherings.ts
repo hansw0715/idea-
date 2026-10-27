@@ -15,7 +15,7 @@ import { createRateLimiter } from '../../rateLimit.js';
 import { handler, me, sendError, sendResult } from '../http.js';
 import * as service from '../services/gathering.js';
 import { APPLY_MESSAGE_MAX } from '../services/gathering.js';
-import { roomView, roomSummaries, sendMessage } from '../services/chat.js';
+import { leaveRoom, roomView, roomSummaries, sendMessage } from '../services/chat.js';
 import { hasUnsafeChars } from '../domain/chat.js';
 
 /**
@@ -274,6 +274,15 @@ gatheringsRouter.post(
     // 보낸 직후 화면을 갱신할 수 있게 방 전체를 돌려준다.
     const result = await roomView(viewer, req.params.id);
     sendResult(res, result, (room) => ({ room }));
+  }),
+);
+
+// 단톡방 나가기 (모임 참여는 그대로, 내 목록에서 방만 지운다)
+gatheringsRouter.post(
+  '/gatherings/:id/leave-room',
+  handler(async (req, res) => {
+    const result = await leaveRoom(me(res), req.params.id);
+    sendResult(res, result, () => ({ ok: true }));
   }),
 );
 
