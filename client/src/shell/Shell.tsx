@@ -269,18 +269,24 @@ export function TabBar() {
     <nav className="tabbar" aria-label="주요 메뉴">
       <ul className="tabbar__list" style={{ '--tab-count': TABS.length } as CSSProperties}>
         {shown >= 0 && (
-          <li className="tabbar__pill" role="presentation" aria-hidden="true" style={{ '--tab-index': shown } as CSSProperties} />
+          <li
+            className={`tabbar__pill${TABS[shown]?.to === '/' ? ' tabbar__pill--home' : ''}`}
+            role="presentation"
+            aria-hidden="true"
+            style={{ '--tab-index': shown } as CSSProperties}
+          />
         )}
         {TABS.map((t, index) => (
           <li key={t.to} style={{ display: 'contents' }}>
             <Link
               to={t.to}
               aria-current={target === index ? 'page' : undefined}
-              className="tabbar__item"
+              className={t.to === '/' ? 'tabbar__item tabbar__item--home' : 'tabbar__item'}
               onClick={(event) => onTabClick(event, index, t.to)}
             >
               <span className="nav-icon"><Icon name={t.icon} className="tabbar__icon" />{unread(scopeFor(t.to)!) && <span className="nav-dot" role="img" aria-label="새 알림" />}</span>
-              <span>{t.label}</span>
+              {/* 홈은 동그란 버튼만 보이고 이름은 화면 읽기용으로 */}
+              <span className={t.to === '/' ? 'sr-only' : undefined}>{t.label}</span>
             </Link>
           </li>
         ))}
