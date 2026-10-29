@@ -78,11 +78,11 @@ function ScrollToTop() {
   return null;
 }
 
-/** 하단 탭 순서: 홈이 맨 앞 (홈 · 시간표 · 학사 알림 · 라운지 · 내 정보) */
+/** 하단 탭 순서: 홈이 가운데 (시간표 · 학사 알림 · 홈 · 라운지 · 내 정보) */
 const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
-  { to: '/', label: '홈', icon: 'home', end: true },
   { to: '/timetable', label: '시간표', icon: 'calendar' },
   { to: '/campus', label: '학사 알림', icon: 'list' },
+  { to: '/', label: '홈', icon: 'home', end: true },
   ...(!LOUNGE_ENABLED ? [{ to: '/meetings', label: '회의', icon: 'users' as IconName }] : []),
   ...(LOUNGE_ENABLED ? [{ to: '/lounge', label: '라운지', icon: 'lounge' as IconName }] : []),
   { to: '/account', label: '내 정보', icon: 'user' },
