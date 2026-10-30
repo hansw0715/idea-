@@ -5,7 +5,7 @@ import { api, ApiError, clearCachedResponses, setOnUnauthorized } from './api';
 import { AuthContext, useAuth } from './auth';
 import type { User } from './types';
 import { ConfirmProvider, DisplayProvider, Spinner, ToastProvider, useToast } from './ui';
-import { AppFrame } from './shell/Shell';
+import { AppFrame, TabPagesContext } from './shell/Shell';
 import { ErrorBoundary } from './shell/ErrorScreen';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -99,6 +99,16 @@ function SessionWatcher({ onExpired }: { onExpired: () => void }) {
   return null;
 }
 
+/** 하단 탭 화면들: 화면을 밀 때 옆 탭을 미리 그리는 데 쓴다 (Shell.tsx 의 useTabSwipe) */
+const TAB_PAGES: Record<string, ReactNode> = {
+  '/': <Dashboard />,
+  '/timetable': <TimetablePage />,
+  '/campus': <Campus />,
+  '/meetings': <MeetingsEntry />,
+  '/lounge': <LoungePage />,
+  '/account': <Account />,
+};
+
 /** 라운지가 꺼져 있으면 프로필을 불러오지도, 프로필 시트를 띄우지도 않는다. */
 function MaybeLounge({ children }: { children: ReactNode }) {
   return LOUNGE_ENABLED ? <LoungeProvider>{children}</LoungeProvider> : <>{children}</>;
@@ -158,6 +168,7 @@ export default function App() {
               <MaybeLounge>
               <SchoolProvider>
                 <NotificationsProvider key={user?.id ?? 'guest'}>
+                <TabPagesContext.Provider value={TAB_PAGES}>
                 <Routes>
                   <Route path="/login" element={<Public><Login /></Public>} />
                   <Route path="/signup" element={<Public><Signup /></Public>} />
@@ -181,6 +192,7 @@ export default function App() {
                   )}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+                </TabPagesContext.Provider>
                 </NotificationsProvider>
               </SchoolProvider>
               </MaybeLounge>

@@ -728,19 +728,69 @@ html[data-swipe]::view-transition-old(appheader) {
   from { transform: translateX(-100%); }
 }
 
-/* 가운데 홈: 이름 없이 탭바 위로 튀어나온 동그란 버튼. 둥근 네모는 홈 위에서 숨긴다 */
-.tabbar { overflow: visible; }
-.tabbar__pill::before { transition: opacity 0.2s ease; }
-.tabbar__pill--home::before { opacity: 0; }
-.tabbar__item--home > .nav-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  transform: translateY(-10px);
-  color: var(--c-on-action);
+/* 가운데 홈: 이름 없이 탭바 위로 튀어나온 동그란 버튼.
+   홈이 아닐 때는 채도를 낮춘 파란 원이고, 홈으로 오면 회색 둥근 네모(선택 표시)가 홈 자리로 미끄러지면서
+   원 크기로 줄어들고 파란색으로 바뀐다. 홈에서 나갈 때는 반대로 원이 네모로 풀리며 회색이 되어 떠난다. */
+.tabbar {
+  overflow: visible;
+  --home-size: 56px;
+  --home-lift: -10px;
+  --home-idle: color-mix(in srgb, var(--c-action) 55%, var(--c-panel-strong));
+  --pill-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tabbar__pill::before {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: calc(100% - 20px);
+  height: calc(100% - 6px);
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.28s var(--pill-ease),
+    height 0.28s var(--pill-ease),
+    border-radius 0.28s var(--pill-ease),
+    transform 0.28s var(--pill-ease),
+    background-color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+.tabbar__pill--home::before {
+  width: var(--home-size);
+  height: var(--home-size);
+  border-radius: calc(var(--home-size) / 2);
+  transform: translate(-50%, calc(-50% + var(--home-lift)));
   background: var(--c-action);
-  transition: transform 0.15s ease;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--c-action) 35%, transparent);
+}
+.tabbar__item--home > .nav-icon {
+  width: var(--home-size);
+  height: var(--home-size);
+  border-radius: 50%;
+  transform: translateY(var(--home-lift));
+  color: color-mix(in srgb, var(--c-on-action) 80%, transparent);
+  background-color: var(--home-idle);
+  transition: transform 0.15s ease, background-color 0.28s ease, color 0.28s ease;
+}
+/* 선택 표시가 홈 자리에 오면 홈 원은 비워서 그 아래 파란 원이 보이게 한다 */
+.tabbar__item--home.tabbar__item--pill > .nav-icon {
+  color: var(--c-on-action);
+  background-color: transparent;
 }
 .tabbar__item--home > .nav-icon > svg { width: 26px; height: 26px; stroke-width: 2.2; }
-.tabbar__item--home:active > .nav-icon { transform: translateY(-10px) scale(0.92); }
+.tabbar__item--home:active > .nav-icon { transform: translateY(var(--home-lift)) scale(0.92); }
 .tabbar__item--home .nav-dot { right: 4px; top: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .tabbar__pill::before,
+  .tabbar__item--home > .nav-icon { transition: none; }
+}
+
+/* 손가락으로 밀 때 옆 탭 화면을 미리 그려 두는 자리 (Shell.tsx 의 useTabSwipe). 머리글 아래부터 화면 끝까지 */
+.tab-peek {
+  position: fixed;
+  bottom: 0;
+  z-index: 20;
+  overflow: hidden;
+  background: var(--c-bg);
+  pointer-events: none;
+  will-change: transform;
+}
+.tab-peek > .app-frame { min-height: 100%; border: 0; }
