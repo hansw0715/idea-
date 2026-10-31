@@ -12,7 +12,6 @@ import { AppHeader } from "../shell/Shell";
 import { api } from "../api";
 import TimetableGrid, {
   EntryInfoSheet,
-  GridLegend,
   WeekNav,
 } from "../components/TimetableGrid";
 import type { GridEntry, SelectedRange } from "../components/TimetableGrid";
@@ -209,115 +208,21 @@ export default function TimetablePage() {
   );
   const gridClose = showEvening ? CLOSE_MIN : naturalClose;
 
-  // 펼치기·접기를 스르륵 움직이게: 격자를 감싼 상자의 높이를 옛 높이 → 새 높이로 바꾸고,
-  // 펼칠 때는 늘어난 만큼 화면도 함께 내려 새로 보이는 저녁 시간이 눈앞에 오게 한다.
-  const gridClipRef = useRef<HTMLDivElement>(null);
-  const eveningAnim = useRef<number | null>(null);
+  // 펼치면 늘어난 만큼 화면도 한 번에 내려 새로 보이는 저녁 시간이 눈앞에 오게 한다.
+  const gridWrapRef = useRef<HTMLDivElement>(null);
   const expandFrom = useRef<number | null>(null);
-  /** 접기 애니메이션이 끝나고 실제로 접힐 때까지 상자 높이를 붙잡아 둔다 (풀면 한 프레임 동안 펼친 격자가 튀어 보인다) */
-  const collapsing = useRef(false);
 
-  /** 애니메이션 중 붙여 둔 높이·잘라내기·스크롤 고정을 푼다 */
-  const releaseGrid = useCallback(() => {
-    const el = gridClipRef.current;
-    if (el) {
-      el.style.height = "";
-      el.style.overflow = "";
-    }
-    document.documentElement.style.overflowAnchor = "";
-  }, []);
-
-  const animateGrid = useCallback(
-    (from: number, to: number, scroll: boolean, done?: () => void) => {
-      const el = gridClipRef.current;
-      if (eveningAnim.current !== null)
-        cancelAnimationFrame(eveningAnim.current);
-      const finish = () => {
-        eveningAnim.current = null;
-        // done(접기)이 있으면 실제로 접힌 뒤(아래 useLayoutEffect)에 푼다
-        if (done) done();
-        else releaseGrid();
-      };
-      if (
-        !el ||
-        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-      ) {
-        if (scroll) window.scrollBy(0, to - from);
-        finish();
-        return;
-      }
-      const DURATION = 280;
-      const start = performance.now();
-      let scrolled = 0;
-      // 높이가 바뀌는 동안 브라우저가 스스로 스크롤을 맞추면(스크롤 고정) 직접 내리는 것과 겹쳐 흔들린다
-      document.documentElement.style.overflowAnchor = "none";
-      el.style.overflow = "hidden";
-      el.style.height = `${from}px`;
-      const frame = (now: number) => {
-        const t = Math.min(1, (now - start) / DURATION);
-        const eased = 1 - (1 - t) ** 3;
-        el.style.height = `${from + (to - from) * eased}px`;
-        if (scroll) {
-          const want = Math.round((to - from) * eased);
-          window.scrollBy(0, want - scrolled);
-          scrolled = want;
-        }
-        if (t < 1) eveningAnim.current = requestAnimationFrame(frame);
-        else finish();
-      };
-      eveningAnim.current = requestAnimationFrame(frame);
-    },
-    [releaseGrid],
-  );
-
-  useEffect(
-    () => () => {
-      if (eveningAnim.current !== null)
-        cancelAnimationFrame(eveningAnim.current);
-      document.documentElement.style.overflowAnchor = "";
-    },
-    [],
-  );
-
-  // 접기: 격자가 실제로 짧아진 뒤 화면에 보이기 전에 붙잡아 둔 높이를 푼다
   useLayoutEffect(() => {
-    if (showEvening || !collapsing.current) return;
-    collapsing.current = false;
-    releaseGrid();
-  }, [showEvening, releaseGrid]);
-
-  // 펼친 뒤 새 격자가 그려지기 직전(화면에 보이기 전)에 옛 높이로 묶어 두고 새 높이까지 늘린다
-  useLayoutEffect(() => {
-    const el = gridClipRef.current;
     const from = expandFrom.current;
+    const el = gridWrapRef.current;
     if (!showEvening || from === null || !el) return;
     expandFrom.current = null;
-    el.style.overflow = "hidden";
-    el.style.height = `${from}px`;
-    animateGrid(from, el.scrollHeight, true);
-  }, [showEvening, animateGrid]);
+    window.scrollBy(0, el.offsetHeight - from);
+  }, [showEvening]);
 
   function toggleEvening() {
-    const el = gridClipRef.current;
-    if (!el) {
-      setShowEvening((v) => !v);
-      return;
-    }
-    const from = el.offsetHeight;
-    if (!showEvening) {
-      expandFrom.current = from;
-      setShowEvening(true);
-      return;
-    }
-    // 접기: 펼친 격자를 그대로 둔 채 줄어들 높이(접히는 시간 × 한 시간 높이)만큼 줄인 뒤 실제로 접는다
-    const body = el.querySelector<HTMLElement>(".tt-body");
-    const hours = (CLOSE_MIN - OPEN_MIN) / 60;
-    const hourPx = body ? body.offsetHeight / hours : 0;
-    const to = from - ((CLOSE_MIN - naturalClose) / 60) * hourPx;
-    animateGrid(from, to, false, () => {
-      collapsing.current = true;
-      setShowEvening(false);
-    });
+    if (!showEvening) expandFrom.current = gridWrapRef.current?.offsetHeight ?? null;
+    setShowEvening((v) => !v);
   }
 
   // 고른 요일이 보고 있는 주에서 실제로 며칠인지.
@@ -529,10 +434,6 @@ export default function TimetablePage() {
             busy={!fresh && !loadError && loadedWeek !== null}
           />
 
-          <div className="tt-page__legend">
-            <GridLegend />
-          </div>
-
           {loadedWeek !== null && (
             <p className="tt-page__guide">
               시간표를 길게 누른 채 끌어 일정을 추가할 수 있습니다.
@@ -564,19 +465,17 @@ export default function TimetablePage() {
                   </Alert>
                 </div>
               )}
-              <div className="tt-page__gridwrap">
-                <div ref={gridClipRef}>
-                  <TimetableGrid
-                    entries={gridEntries}
-                    onEntryClick={openInfo}
-                    selectable
-                    onSelectRange={openAdd}
-                    pendingRange={addOpen ? range : null}
-                    weekStart={weekStart}
-                    slide={slide}
-                    closeMin={gridClose}
-                  />
-                </div>
+              <div className="tt-page__gridwrap" ref={gridWrapRef}>
+                <TimetableGrid
+                  entries={gridEntries}
+                  onEntryClick={openInfo}
+                  selectable
+                  onSelectRange={openAdd}
+                  pendingRange={addOpen ? range : null}
+                  weekStart={weekStart}
+                  slide={slide}
+                  closeMin={gridClose}
+                />
                 {naturalClose < CLOSE_MIN && (
                   <div className="tt-page__evening">
                     <button

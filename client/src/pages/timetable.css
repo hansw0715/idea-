@@ -27,12 +27,8 @@
   margin-bottom: var(--sp-5);
 }
 
-.tt-page__legend {
-  margin: var(--sp-5) 0 var(--sp-4);
-}
-
 .tt-page__guide {
-  margin: var(--sp-2) 0 var(--sp-4);
+  margin: var(--sp-4) 0;
   font-size: var(--fs-sm);
   color: var(--c-text-sub);
 }
