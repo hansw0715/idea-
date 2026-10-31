@@ -1,0 +1,707 @@
+/* 캠퍼스 라운지 (/lounge/campus) — 흰색과 파랑 단계만 쓰는 아이소메트릭 화면.
+   색은 .mv 안에서만 정의해 앱의 나머지 화면(다크 모드 포함)에는 영향이 없다. */
+
+.mv {
+  --w: #ffffff;
+  --b0: #f5f9fe;
+  --b1: #eaf2fc;
+  --b2: #d7e7f8;
+  --b3: #b9d3f1;
+  --b4: #8db6e6;
+  --b5: #5689c8;
+  --b6: #1459a6;
+  --b7: #0f4a8c;
+  --b8: #0b3a70;
+  --b9: #082a52;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--b1);
+  color: var(--b9);
+  color-scheme: only light;
+}
+.mv--center {
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+}
+.mv-world {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 지도 아래 목록: 지도가 작은 휴대폰에서도 라운지·탁자를 바로 고른다 */
+.mv-panel {
+  flex: none;
+  max-height: 42%;
+  overflow-y: auto;
+  padding: var(--sp-5) var(--sp-5) calc(var(--sp-5) + var(--safe-bottom));
+  background: var(--w);
+  border-top: 1px solid var(--b2);
+}
+.mv-panel .mv-list-btn {
+  border-color: var(--b2);
+  background: var(--b0);
+  color: var(--b9);
+}
+.mv-panel .mv-list-btn:active {
+  background: var(--b1);
+}
+.mv-panel .mv-list-tag {
+  background: var(--b6);
+  color: var(--w);
+}
+.mv-panel .mv-list-text span {
+  color: var(--b5);
+}
+@media (min-width: 768px) {
+  .mv {
+    flex-direction: row;
+  }
+  .mv-panel {
+    order: 1;
+    width: 34rem;
+    max-height: none;
+    padding-top: calc(7.2rem + var(--safe-top));
+    border-top: 0;
+    border-left: 1px solid var(--b2);
+  }
+}
+.mv-svg {
+  display: block;
+}
+.mv-svg text {
+  font-family: var(--font);
+}
+.mv :focus-visible {
+  outline: 3px solid var(--b6);
+  outline-offset: 2px;
+}
+
+/* ── 위 · 아래 막대 (불투명 흰 면) ── */
+.mv-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: calc(6.4rem + var(--safe-top));
+  padding: var(--safe-top) var(--sp-5) 0;
+  background: var(--w);
+  border-bottom: 1px solid var(--b2);
+}
+.mv-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-height: var(--touch);
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--b3);
+  border-radius: var(--r);
+  background: var(--w);
+  color: var(--b8);
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mv-back svg {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+.mv-place {
+  flex: 1;
+  min-width: 0;
+}
+.mv-place-name {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mv-place-sub {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--b7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 시트 내용 (시트 자체는 앱 공용 Sheet) */
+.mv-sheet {
+  display: grid;
+  gap: var(--sp-5);
+}
+.mv-sheet-desc {
+  margin: 0;
+  color: var(--c-text-sub);
+}
+.mv-sheet-note {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--c-text-muted);
+}
+.mv-kind {
+  display: inline-block;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-xs);
+  background: var(--c-action-bg);
+  color: var(--c-action-text);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  line-height: 2.2rem;
+}
+.mv-list {
+  display: grid;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mv-list-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: var(--sp-5);
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--r);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mv-list-btn:active {
+  background: var(--c-action-bg);
+}
+.mv-list-tag {
+  flex: none;
+  min-width: 8.4rem;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-xs);
+  background: var(--c-action);
+  color: var(--c-on-action);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  text-align: center;
+}
+.mv-list-text {
+  display: grid;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+.mv-list-text span {
+  font-size: var(--fs-sm);
+  color: var(--c-text-muted);
+}
+.mv-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mv-people li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-4) var(--sp-1) var(--sp-1);
+  border-radius: var(--r-pill);
+  background: var(--c-panel);
+  font-size: var(--fs-sm);
+}
+.mv-people img {
+  border-radius: 50%;
+}
+
+/* ── 아이소메트릭 월드 ── */
+/* ── 땅 ── */
+.i-base {
+  fill: var(--b1);
+}
+.i-ground {
+  fill: var(--b0);
+  stroke: var(--b3);
+  stroke-width: 2;
+}
+.i-ridge {
+  fill: var(--b2);
+}
+.i-grid {
+  stroke: var(--b1);
+  stroke-width: 1.5;
+}
+.i-path-edge {
+  fill: none;
+  stroke: var(--b2);
+  stroke-width: 36;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.i-path {
+  fill: none;
+  stroke: var(--w);
+  stroke-width: 30;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.i-bridge {
+  fill: none;
+  stroke: var(--b4);
+  stroke-width: 14;
+  stroke-dasharray: 4 6;
+}
+.i-area {
+  stroke-width: 1.5;
+}
+.i-area--lawn,
+.i-area--field {
+  fill: var(--b2);
+  stroke: var(--b3);
+}
+.i-area--forest {
+  fill: var(--b1);
+  stroke: var(--b3);
+}
+.i-area--plaza,
+.i-area--garden {
+  fill: var(--w);
+  stroke: var(--b3);
+}
+.i-area--sunken {
+  fill: var(--b3);
+  stroke: var(--b4);
+}
+.i-tile {
+  stroke: var(--b2);
+  stroke-width: 1;
+}
+.i-field-line {
+  fill: none;
+  stroke: var(--w);
+  stroke-width: 2.5;
+}
+
+/* ── 건물 ── */
+.i-bld {
+  cursor: pointer;
+  outline: none;
+}
+.i-bf-t {
+  fill: var(--w);
+  stroke: var(--b3);
+  stroke-width: 1;
+  transition: fill var(--t-base);
+}
+.i-bf-l {
+  fill: var(--b1);
+  stroke: var(--b3);
+  stroke-width: 1;
+}
+.i-bf-r {
+  fill: var(--b3);
+  stroke: var(--b4);
+  stroke-width: 1;
+}
+.i-win line {
+  stroke: var(--b4);
+  stroke-width: 5;
+  stroke-dasharray: 9 5;
+}
+.i-roofline {
+  fill: none;
+  stroke: var(--b2);
+  stroke-width: 1.5;
+}
+.i-door {
+  fill: var(--b7);
+}
+.i-mullion {
+  stroke: var(--w);
+  stroke-width: 2;
+}
+.i-bld:hover .i-bf-t,
+.i-bld:focus-visible .i-bf-t {
+  fill: var(--b1);
+  stroke: var(--b6);
+  stroke-width: 2.5;
+}
+
+/* 상상관: 학교 파랑 랜드마크 */
+.i-bld--landmark .i-bf-t {
+  stroke: var(--b6);
+  stroke-width: 2;
+}
+.i-bld--landmark .i-bf-l {
+  fill: var(--b6);
+  stroke: var(--b7);
+}
+.i-bld--landmark .i-bf-r {
+  fill: var(--b8);
+  stroke: var(--b9);
+}
+.i-inset {
+  fill: var(--b1);
+  stroke: var(--b6);
+  stroke-width: 1.5;
+}
+.i-bld--landmark:hover .i-bf-t,
+.i-bld--landmark:focus-visible .i-bf-t {
+  fill: var(--b2);
+}
+
+/* 미래관: 통유리 */
+.i-bld--glass .i-bf-l {
+  fill: var(--b3);
+}
+.i-bld--glass .i-bf-r {
+  fill: var(--b5);
+}
+.i-bld--glass .i-win line {
+  stroke: var(--b1);
+}
+
+/* 기와 지붕 (총무당 · 학송관 · 의화정) */
+.i-roof {
+  fill: var(--b7);
+  stroke: var(--b8);
+}
+.i-roof-side {
+  fill: var(--b8);
+  stroke: var(--b9);
+}
+.i-roof-back {
+  fill: var(--b6);
+}
+.i-bld--brick .i-roof {
+  fill: var(--b5);
+  stroke: var(--b6);
+}
+.i-bld--brick .i-roof-side {
+  fill: var(--b6);
+}
+
+/* ── 나무 · 소품 ── */
+.i-tree-l {
+  fill: var(--b3);
+  stroke: var(--b4);
+  stroke-width: 1;
+}
+.i-tree-r {
+  fill: var(--b5);
+  stroke: var(--b5);
+  stroke-width: 1;
+}
+.i-trunk,
+.i-post {
+  stroke: var(--b7);
+  stroke-width: 3;
+}
+.i-parasol-a {
+  fill: var(--w);
+  stroke: var(--b4);
+}
+.i-parasol-b {
+  fill: var(--b6);
+}
+.i-wall-t {
+  fill: var(--w);
+  stroke: var(--b3);
+}
+.i-wall-l {
+  fill: var(--b2);
+  stroke: var(--b3);
+}
+.i-wall-r {
+  fill: var(--b4);
+  stroke: var(--b4);
+}
+.i-gatepost-t {
+  fill: var(--w);
+  stroke: var(--b5);
+}
+.i-gatepost-l {
+  fill: var(--b6);
+}
+.i-gatepost-r {
+  fill: var(--b8);
+}
+.i-plinth-t {
+  fill: var(--w);
+  stroke: var(--b4);
+}
+.i-plinth-l {
+  fill: var(--b2);
+}
+.i-plinth-r {
+  fill: var(--b4);
+}
+.i-shell {
+  fill: var(--b5);
+  stroke: var(--b7);
+}
+.i-shell-line {
+  fill: none;
+  stroke: var(--w);
+  stroke-width: 1.5;
+}
+
+/* ── 이름표 겹 ── */
+.i-overlay {
+  pointer-events: none;
+}
+.i-label {
+  fill: var(--w);
+  stroke: var(--b6);
+  stroke-width: 1.5;
+}
+.i-label-text {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--b8);
+}
+.i-pin rect {
+  fill: var(--b6);
+}
+.i-pin line {
+  stroke: var(--b6);
+  stroke-width: 2;
+}
+.i-pin text {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--w);
+}
+.i-pin > * {
+  animation: float 1.6s ease-in-out infinite alternate;
+}
+@keyframes float {
+  to {
+    transform: translateY(-5px);
+  }
+}
+.i-area-name {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--b6);
+  paint-order: stroke;
+  stroke: var(--w);
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+.i-region {
+  font-size: 22px;
+  font-weight: 700;
+  fill: var(--b7);
+  paint-order: stroke;
+  stroke: var(--w);
+  stroke-width: 5;
+}
+.i-gate rect {
+  fill: var(--b8);
+}
+.i-gate text {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--w);
+}
+
+/* ── 걷기 표시 ── */
+
+/* ── 아바타 말판 ── */
+
+/* ── 라운지 안 ── */
+.mv-world--room {
+  background: var(--b1);
+}
+.i-floor {
+  fill: var(--w);
+  stroke: var(--b3);
+  stroke-width: 2;
+}
+.i-floor-line {
+  stroke: var(--b1);
+  stroke-width: 2;
+}
+.i-room--lab .i-floor,
+.i-room--base .i-floor {
+  fill: var(--b0);
+}
+.i-rug {
+  fill: var(--b1);
+  stroke: var(--b2);
+  stroke-width: 2;
+}
+.i-door-mat {
+  fill: var(--b6);
+}
+.i-door-text {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--w);
+}
+.i-wall-back {
+  fill: var(--w);
+  stroke: var(--b3);
+}
+.i-wall-side {
+  fill: var(--b1);
+  stroke: var(--b3);
+}
+.i-window {
+  fill: var(--b2);
+  stroke: var(--b4);
+  stroke-width: 1.5;
+}
+.i-view-hill {
+  fill: var(--b3);
+}
+.i-view-city,
+.i-view-step {
+  fill: var(--b4);
+}
+.i-board {
+  fill: var(--b6);
+}
+.i-board-text {
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--w);
+}
+.i-board-sub {
+  font-size: 12px;
+  fill: var(--b2);
+}
+.i-skirting {
+  fill: none;
+  stroke: var(--b6);
+  stroke-width: 3;
+}
+.i-table-t {
+  fill: var(--w);
+  stroke: var(--b4);
+  stroke-width: 1;
+}
+.i-table-l {
+  fill: var(--b2);
+  stroke: var(--b3);
+}
+.i-table-r {
+  fill: var(--b4);
+  stroke: var(--b4);
+}
+.i-table-hit {
+  cursor: pointer;
+  outline: none;
+}
+.i-table-hit:hover .i-table-t,
+.i-table-hit:focus-visible .i-table-t {
+  fill: var(--b1);
+  stroke: var(--b6);
+  stroke-width: 2.5;
+}
+.i-kind {
+  fill: var(--b6);
+}
+.i-tableset--meal .i-kind {
+  fill: var(--b8);
+}
+.i-tableset--study .i-kind {
+  fill: var(--b5);
+}
+.i-tableset--free .i-kind {
+  fill: var(--w);
+  stroke: var(--b6);
+}
+.i-kind-text {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--w);
+}
+.i-tableset--free .i-kind-text {
+  fill: var(--b7);
+}
+.i-chair-t {
+  fill: var(--w);
+  stroke: var(--b5);
+  stroke-width: 1.5;
+}
+.i-chair-t.is-dashed {
+  stroke-dasharray: 4 3;
+}
+.i-chair-r {
+  fill: var(--b3);
+}
+.i-seat {
+  cursor: pointer;
+  outline: none;
+}
+.i-seat:hover .i-chair-t,
+.i-seat:focus-visible .i-chair-t {
+  fill: var(--b2);
+  stroke: var(--b6);
+}
+.i-seat.is-busy {
+  cursor: default;
+}
+.i-counter-t {
+  fill: var(--w);
+  stroke: var(--b5);
+}
+.i-counter-l {
+  fill: var(--b6);
+}
+.i-counter-r {
+  fill: var(--b8);
+}
+.i-machine-t {
+  fill: var(--b2);
+}
+.i-machine-l {
+  fill: var(--b7);
+}
+.i-machine-r {
+  fill: var(--b9);
+}
+.i-counter-text {
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--b7);
+  paint-order: stroke;
+  stroke: var(--w);
+  stroke-width: 4;
+}
+.i-pot-t {
+  fill: var(--b2);
+}
+.i-pot-l {
+  fill: var(--w);
+  stroke: var(--b4);
+}
+.i-pot-r {
+  fill: var(--b3);
+}
+.i-kind.is-vacant {
+  fill: var(--w);
+  stroke: var(--b6);
+  stroke-dasharray: 4 3;
+}
+.i-table-hit:has(.is-vacant) .i-kind-text {
+  fill: var(--b7);
+}

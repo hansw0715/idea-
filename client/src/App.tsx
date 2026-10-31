@@ -24,6 +24,7 @@ import MeetupPage from './lounge/MeetupPage';
 import MealPage from './lounge/MealPage';
 import GatheringPage from './lounge/GatheringPage';
 import ChatRoomPage from './lounge/ChatRoomPage';
+import CampusLoungePage from './lounge/campus/CampusLoungePage';
 import { NotificationsProvider } from './notifications/Notifications';
 import AdminPage from './lounge/AdminPage';
 import { hideSplash } from './shell/splash';
@@ -183,6 +184,7 @@ export default function App() {
                       <Route path="/account/friends" element={<Protected><Friends /></Protected>} />
                       <Route path="/lounge" element={<Protected><LoungePage /></Protected>} />
                       <Route path="/lounge/meetings" element={<Protected><Meetings /></Protected>} />
+                      <Route path="/lounge/campus" element={<Protected><CampusLoungePage /></Protected>} />
                       <Route path="/lounge/meetup" element={<Protected><MeetupPage /></Protected>} />
                       <Route path="/lounge/meal" element={<Protected><MealPage /></Protected>} />
                       <Route path="/lounge/gatherings/:id" element={<Protected><GatheringPage /></Protected>} />

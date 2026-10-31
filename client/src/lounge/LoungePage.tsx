@@ -108,7 +108,7 @@ function LoungeHome({ profile }: { profile: Profile }) {
           </span>
         </Link>
 
-        <Link to="/lounge/meetup" className="lounge-hub-btn lounge-hub-btn--meetup" aria-disabled={banned || undefined}>
+        <Link to="/lounge/campus" className="lounge-hub-btn lounge-hub-btn--meetup" aria-disabled={banned || undefined}>
           <Icon name="smile" className="lounge-hub-btn__icon" />
           <span>
             <span className="lounge-hub-btn__title">미팅</span>
