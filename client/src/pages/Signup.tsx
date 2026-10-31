@@ -649,15 +649,15 @@ export default function Signup() {
             {signingUp && <SchoolWaiting label={signingUp === 'key' ? '보안 열쇠를 만드는 중…' : '가입하는 중…'} />}
 
             <div className="school-step__actions">
+              {/* 가입 중 표시는 위의 한 곳만: 버튼은 눌리지 않게만 막는다 */}
               <Button
                 size="lg"
                 block
-                disabled={!consent}
-                loading={signingUp !== null}
+                disabled={!consent || signingUp !== null}
                 aria-describedby={consent ? undefined : 'signup-consent-reason'}
                 onClick={() => void complete()}
               >
-                {signingUp === 'key' ? '열쇠를 만드는 중…' : signingUp === 'send' ? '가입하는 중…' : '가입 완료'}
+                가입 완료
               </Button>
               <Button variant="tertiary" block disabled={signingUp !== null} onClick={() => setStep('account')}>
                 이전
