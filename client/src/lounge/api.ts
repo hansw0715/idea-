@@ -4,7 +4,14 @@
  */
 import { api } from '../api';
 import type {
+  AdminGatheringRow,
+  AdminLogEntry,
+  AdminMeetingRow,
+  AdminOverview,
   AdminStats,
+  AdminTool,
+  AdminUserAction,
+  AdminUserRow,
   CreateGatheringBody,
   FriendsView,
   GatheringAction,
@@ -108,6 +115,27 @@ export const loungeApi = {
   adminHandleReport: (reportId: string, action: ReportAction) =>
     api.post<{ ok: true }>(`${L}/admin/reports`, { reportId, action }),
   adminStats: () => api.get<AdminStats>(`${L}/admin/stats`),
+  // 관리자 대시보드·사용자·모임·회의·운영 도구 (server/lounge/services/admin.ts)
+  adminOverview: () => api.get<AdminOverview>(`${L}/admin/overview`),
+  adminLog: () => api.get<{ items: AdminLogEntry[] }>(`${L}/admin/log`).then((r) => r.items),
+  adminUsers: (q: string, filter: string) =>
+    api
+      .get<{ users: AdminUserRow[] }>(`${L}/admin/users?filter=${filter}&q=${encodeURIComponent(q)}`)
+      .then((r) => r.users),
+  adminUserAction: (userId: string, action: AdminUserAction) =>
+    api.post<{ ok: true }>(`${L}/admin/users/${userId}/action`, { action }),
+  adminGatherings: (kind: string, status: string) =>
+    api
+      .get<{ gatherings: AdminGatheringRow[] }>(`${L}/admin/gatherings?kind=${kind}&status=${status}`)
+      .then((r) => r.gatherings),
+  adminCancelGathering: (id: string, reason: string) =>
+    api.post<{ ok: true }>(`${L}/admin/gatherings/${id}/cancel`, { reason }),
+  adminKick: (id: string, userId: string) => api.post<{ ok: true }>(`${L}/admin/gatherings/${id}/kick`, { userId }),
+  adminMeetings: (q: string) =>
+    api.get<{ meetings: AdminMeetingRow[] }>(`${L}/admin/meetings?q=${encodeURIComponent(q)}`).then((r) => r.meetings),
+  adminDeleteMeeting: (id: number) => api.del<{ ok: true }>(`${L}/admin/meetings/${id}`),
+  adminTool: (tool: AdminTool) => api.post<{ message: string }>(`${L}/admin/tools/${tool}`),
+  adminBroadcast: (title: string, body: string) => api.post<{ sent: number }>(`${L}/admin/broadcast`, { title, body }),
   adminWithdrawn: () =>
     api
       .get<{ items: { hint: string; withdrawnAt: string; releasedAt: string | null }[] }>(`${L}/admin/withdrawn`)

@@ -138,6 +138,17 @@ export const LOUNGE_MIGRATIONS = `
   );
   CREATE INDEX IF NOT EXISTS idx_lounge_presence_seen ON lounge_presence(seen_at);
 
+  -- 관리 기록: 관리자 탭에서 한 조치 (services/admin.ts). 누가 언제 무엇을 했는지 대시보드에 보인다
+  CREATE TABLE IF NOT EXISTS lounge_admin_log (
+    id SERIAL PRIMARY KEY,
+    admin_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    target TEXT NOT NULL DEFAULT '',
+    detail TEXT NOT NULL DEFAULT '',
+    at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_lounge_admin_log_at ON lounge_admin_log(at);
+
   -- 친구: 아이디로 요청 → 상대가 수락하면 accepted. 한 쌍에 한 줄만 둔다 (요청한 사람 → 받은 사람)
   CREATE TABLE IF NOT EXISTS lounge_friends (
     requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

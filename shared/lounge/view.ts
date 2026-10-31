@@ -299,6 +299,73 @@ export type ReportView = {
 
 export type ReportAction = 'resolve' | 'dismiss' | 'ban' | 'unban';
 
+/** 관리자 대시보드 한눈에 보기 (개인 정보 없이 숫자와 관리 기록만) */
+export type AdminOverview = {
+  users: { total: number; profiled: number; banned: number; warned: number; newThisWeek: number; admins: number };
+  onlineNow: number;
+  reports: { open: number; thisWeek: number };
+  /** 모임 종류마다: 모집 중(live) · 오늘 만나는 · 이번 주 끝난 */
+  gatherings: { kind: string; live: number; today: number; doneThisWeek: number }[];
+  meetings: { total: number; newThisWeek: number; upcomingReservations: number };
+  quickWaiting: number;
+  push: { users: number; devices: number };
+  lectureAlerts: { pending: number; sentThisWeek: number };
+  /** 최근 14일 가입 수 (KST 날짜) */
+  signups: { date: string; count: number }[];
+  recentLog: AdminLogEntry[];
+};
+
+export type AdminLogEntry = { id: number; admin: string; action: string; target: string; detail: string; at: string };
+
+/** 관리자 > 사용자 한 줄. 실명·이메일·학과는 없다 */
+export type AdminUserRow = {
+  id: string;
+  username: string;
+  nickname: string;
+  temperature: number;
+  warnings: number;
+  banned: boolean;
+  profileDone: boolean;
+  isAdmin: boolean;
+  createdAt: string;
+  openReports: number;
+  pushDevices: number;
+};
+
+export type AdminUserAction = 'ban' | 'unban' | 'clearWarnings' | 'resetTemperature' | 'clearPush' | 'clearPresence' | 'closeReports';
+
+/** 관리자 > 모임 한 줄 (밥약·미팅·팀) */
+export type AdminGatheringRow = {
+  id: string;
+  kind: string;
+  title: string;
+  place: string;
+  meetAt: string;
+  createdAt: string;
+  status: string;
+  host: string;
+  members: { id: string; nickname: string; host: boolean }[];
+  capacity: number;
+  applicants: number;
+  reports: number;
+  messages: number;
+};
+
+/** 관리자 > 회의 한 줄 */
+export type AdminMeetingRow = {
+  id: number;
+  name: string;
+  code: string;
+  owner: string;
+  ownerUsername: string;
+  createdAt: string;
+  members: number;
+  reservations: number;
+  upcomingReservations: number;
+};
+
+export type AdminTool = 'clearQuickQueue' | 'clearPresence' | 'sweepLectureAlerts' | 'closeOldReports';
+
 export type AdminStats = {
   users: { total: number; profiled: number; banned: number; averageTemperature: number };
   gatherings: { kind: string; total: number; open: number; done: number; cancelled: number; participants: number }[];
