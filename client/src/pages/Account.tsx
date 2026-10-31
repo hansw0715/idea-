@@ -48,7 +48,11 @@ export default function Account() {
       ? shownStudentId.value
       : null,
   );
+  // 학번을 풀지 못했을 때만 가린 학번을 보여 준다 (푸는 중에는 가린 학번이 잠깐 비치지 않게 빈칸으로 둔다)
+  const [idFailed, setIdFailed] = useState(false);
   useEffect(() => {
+    // 연동 상태를 아직 확인하는 중이면 기억해 둔 학번을 지우지 않는다
+    if (school.loading) return;
     if (!school.linked || !school.canUse) {
       setStudentId(null);
       shownStudentId = null;
@@ -60,15 +64,22 @@ export default function Account() {
       .then((id) => {
         if (cancelled) return;
         setStudentId(id);
+        setIdFailed(!id);
         shownStudentId = id && user ? { userId: user.id, value: id } : null;
       })
-      .catch(() => !cancelled && setStudentId(null));
+      .catch(() => {
+        if (cancelled) return;
+        setStudentId(null);
+        setIdFailed(true);
+      });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [school.linked, school.canUse]);
-  const studentIdText = studentId ?? school.hint;
+  }, [school.loading, school.linked, school.canUse]);
+  // 이 기기에서 풀 수 있는 학번이면 다 풀릴 때까지 기다린다 (그동안 줄은 두고 값만 비운다)
+  const idPending = studentId === null && !idFailed && (school.loading || (school.linked && school.canUse));
+  const studentIdText = studentId ?? (idPending ? null : school.hint);
   const navigate = useNavigate();
   const confirm = useConfirm();
   const toast = useToast();
@@ -214,10 +225,12 @@ export default function Account() {
                   {user?.name}
                 </dd>
               </div>
-              {studentIdText && (
+              {(studentIdText || (idPending && school.linked)) && (
                 <div className="account-info__row">
                   <dt className="account-info__key">학번</dt>
-                  <dd className="account-info__val tabular">{studentIdText}</dd>
+                  <dd className="account-info__val tabular" aria-busy={idPending || undefined}>
+                    {studentIdText ?? "\u00a0"}
+                  </dd>
                 </div>
               )}
               <div className="account-info__row">

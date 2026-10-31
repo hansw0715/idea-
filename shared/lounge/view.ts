@@ -149,11 +149,14 @@ export type ChatMessageView = {
   mine: boolean;
 };
 
+/** 방 종류: 모임 단톡방(밥약·미팅·팀) 또는 1:1 대화 */
+export type RoomKind = GatheringKind | 'dm';
+
 export type RoomSummary = {
   lastActivityAt?: string | null;
   id: string;
   title: string;
-  kind: GatheringKind;
+  kind: RoomKind;
   meetAt: ISODateTime;
   place: string;
   memberCount: number;
@@ -163,7 +166,7 @@ export type RoomSummary = {
 export type RoomView = {
   id: string;
   title: string;
-  kind: GatheringKind;
+  kind: RoomKind;
   meetAt: ISODateTime;
   place: string;
   /** 취소되었거나 끝난 모임이면 읽기만 */

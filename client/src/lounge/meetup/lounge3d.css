@@ -1356,3 +1356,8 @@
 .iso-faces {
   pointer-events: none;
 }
+/* 다만 얼굴 자체는 누를 수 있다 → 그 사람 프로필 (친구 추가·1:1 채팅) */
+.iso-pick {
+  pointer-events: auto;
+  cursor: pointer;
+}

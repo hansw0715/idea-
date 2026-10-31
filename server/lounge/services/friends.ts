@@ -83,7 +83,17 @@ export async function requestFriend(me: string, username: string): Promise<Resul
     [name],
   );
   if (!target || !target.profile_done) return fail('NOT_FOUND', NOT_FOUND);
-  const targetId = String(target.id);
+  return requestFriendTo(me, String(target.id));
+}
+
+/** 라운지에서 프로필을 눌러 보내는 친구 요청 (아이디를 몰라도 된다) */
+export async function requestFriendById(me: string, targetId: string): Promise<Result<'requested' | 'accepted'>> {
+  const target = await get<{ id: number; profile_done: boolean | null }>('SELECT id, profile_done FROM users WHERE id = ?', [Number(targetId)]);
+  if (!target || !target.profile_done) return fail('NOT_FOUND', NOT_FOUND);
+  return requestFriendTo(me, String(target.id));
+}
+
+async function requestFriendTo(me: string, targetId: string): Promise<Result<'requested' | 'accepted'>> {
   if (targetId === me) return fail('INVALID', '내 아이디예요. 친구의 아이디를 적어 주세요.');
   if ((await hiddenFor(me)).has(targetId)) return fail('NOT_FOUND', NOT_FOUND);
 

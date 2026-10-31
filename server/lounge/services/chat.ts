@@ -16,16 +16,23 @@ import type { Gathering } from '../../../shared/lounge/gathering.js';
 import { findGathering, listRoomGatherings } from '../repo/gatherings.js';
 import { insertMessage, insertRoomLeave, insertSystemMessageIfEmpty, leftRoomIds, listMessages, latestRoomActivity, roomLeaverIds } from '../repo/messages.js';
 import { hiddenFor } from './safety.js';
+import { dmCreatedAt, dmMembers, dmSummaries, isDmRoom } from './dm.js';
 
 const nowISO = () => new Date().toISOString();
 
 /** 방에 처음 들어온 사람에게 최근 몇 개를 보여 줄지 */
 const RECENT_LIMIT = 200;
 
-type Loaded = { gathering: Gathering; access: RoomAccess };
+/** 방 하나: 모임 단톡방이면 gathering 이 있고, 1:1 방이면 dm(만든 때)이 있다 */
+type Loaded = { gathering: Gathering | null; dm: { createdAt: string } | null; access: RoomAccess };
 
 /** 기존 방 읽기 권한과 같은 기준. 신청자·탈퇴한 참여자·방을 나간 사람은 포함하지 않는다. */
 export async function roomSummaries(viewer: LoungeUser): Promise<RoomSummary[]> {
+  const [groups, dms] = await Promise.all([groupSummaries(viewer), dmSummaries(viewer)]);
+  return [...groups, ...dms];
+}
+
+async function groupSummaries(viewer: LoungeUser): Promise<RoomSummary[]> {
   const rows = await listRoomGatherings(viewer.id);
   const [activity, left] = await Promise.all([latestRoomActivity(viewer.id), leftRoomIds(viewer.id)]);
   const now = nowISO();
@@ -40,6 +47,7 @@ export async function roomSummaries(viewer: LoungeUser): Promise<RoomSummary[]> 
 }
 
 async function accessOf(roomId: string): Promise<Result<Loaded>> {
+  if (isDmRoom(roomId)) return dmAccessOf(roomId);
   const gathering = await findGathering(roomId);
   if (!gathering) return fail('NOT_FOUND', '없는 방이에요.');
 
@@ -48,11 +56,29 @@ async function accessOf(roomId: string): Promise<Result<Loaded>> {
   const leavers = await roomLeaverIds(roomId);
   return ok({
     gathering,
+    dm: null,
     access: {
       memberIds: memberIds(gathering).filter((id) => !leavers.has(id)),
       // 자리가 다 차면 방이 열린다. 끝난 모임도 기록을 볼 수 있게 열어 둔다.
       opened: isFull(gathering) || status === 'done',
       readOnly: status === 'cancelled' || status === 'done',
+    },
+  });
+}
+
+/** 1:1 방: 두 사람만, 늘 열려 있다. 차단 관계면 읽기만 (목록에서도 사라진다) */
+async function dmAccessOf(roomId: string): Promise<Result<Loaded>> {
+  const pair = dmMembers(roomId);
+  const createdAt = pair ? await dmCreatedAt(roomId) : null;
+  if (!pair || !createdAt) return fail('NOT_FOUND', '없는 방이에요.');
+  const [leavers, hidden] = await Promise.all([roomLeaverIds(roomId), hiddenFor(pair[0])]);
+  return ok({
+    gathering: null,
+    dm: { createdAt },
+    access: {
+      memberIds: pair.filter((id) => !leavers.has(id)),
+      opened: true,
+      readOnly: hidden.has(pair[1]) || leavers.size > 0,
     },
   });
 }
@@ -85,8 +111,9 @@ export async function roomView(viewer: LoungeUser, roomId: string, after: string
 
   const [raw, hidden] = await Promise.all([listMessages(roomId, { after, limit: RECENT_LIMIT }), hiddenFor(viewer.id)]);
   const users = await loadUsers([...access.memberIds, ...raw.flatMap((m) => (m.userId ? [m.userId] : []))]);
-  // 가린 이름(박○재)은 미팅 방에서만. 밥약 같은 다른 방에서는 함께 만나는 사람끼리 실명을 보여 준다
-  const showName = gathering.kind !== 'meetup';
+  // 가린 이름(박○재)은 미팅 방에서만. 밥약 같은 다른 방에서는 함께 만나는 사람끼리 실명을 보여 준다.
+  // 1:1 방은 라운지에서 처음 만난 사이일 수 있어 라운지 닉네임으로
+  const showName = gathering !== null && gathering.kind !== 'meetup';
 
   // 가려진 말풍선은 보낸 사람 정보도 같이 지운다 — 누가 썼는지 알아내는 통로가 되지 않게.
   const messages: ChatMessageView[] = hideBlocked(messagesAfter(raw, after), hidden).map((m) => {
@@ -103,12 +130,13 @@ export async function roomView(viewer: LoungeUser, roomId: string, after: string
     };
   });
 
+  const other = access.memberIds.find((id) => id !== viewer.id);
   return ok({
     id: roomId,
-    title: gathering.title,
-    kind: gathering.kind,
-    meetAt: gathering.meetAt,
-    place: gathering.place,
+    title: gathering ? gathering.title : (other && users.get(other)?.nickname) || '1:1 대화',
+    kind: gathering ? gathering.kind : 'dm',
+    meetAt: gathering ? gathering.meetAt : loaded.value.dm!.createdAt,
+    place: gathering ? gathering.place : '',
     readOnly: access.readOnly,
     members: access.memberIds.map((id) => {
       const u = users.get(id);
@@ -164,8 +192,8 @@ export async function leaveRoom(viewer: LoungeUser, roomId: string): Promise<Res
 
   const at = nowISO();
   if (await insertRoomLeave(viewer.id, roomId, at)) {
-    // 이름은 방에서 보이던 대로 (미팅은 가린 이름, 그 밖은 실명)
-    const name = gathering.kind === 'meetup' ? viewer.nickname : viewer.name;
+    // 이름은 방에서 보이던 대로 (미팅·1:1 은 닉네임, 그 밖은 실명)
+    const name = !gathering || gathering.kind === 'meetup' ? viewer.nickname : viewer.name;
     await insertMessage({ id: randomUUID(), roomId, userId: null, kind: 'system', text: `${name}님이 나갔어요.`, at });
   }
   return ok(null);

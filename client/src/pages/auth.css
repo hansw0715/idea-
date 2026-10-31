@@ -309,3 +309,32 @@ html.no-scroll .auth-main.download-main {
   color: var(--c-text-sub);
   line-height: 1.5;
 }
+.signup-perms__body {
+  flex: 1;
+  min-width: 0;
+}
+/* 오른쪽 상태: 필수 / 허용됨(파랑) / 꺼짐(빨강) */
+.signup-perms__state {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  align-self: center;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--c-text-sub);
+  white-space: nowrap;
+}
+.signup-perms__state svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+.signup-perms__state.is-on {
+  color: var(--c-action-text);
+}
+.signup-perms__state.is-off {
+  color: var(--c-danger-text, #d6453d);
+}
+.signup-perms__row.is-on {
+  box-shadow: inset 0 0 0 1px var(--c-action);
+}

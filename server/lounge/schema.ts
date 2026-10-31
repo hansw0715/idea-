@@ -138,6 +138,16 @@ export const LOUNGE_MIGRATIONS = `
   );
   CREATE INDEX IF NOT EXISTS idx_lounge_presence_seen ON lounge_presence(seen_at);
 
+  -- 1:1 대화방 (services/dm.ts). 방 id = dm-작은id-큰id, 두 사람 사이에 하나
+  CREATE TABLE IF NOT EXISTS lounge_dm_rooms (
+    room_id TEXT PRIMARY KEY,
+    user_a INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_b INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_lounge_dm_a ON lounge_dm_rooms(user_a);
+  CREATE INDEX IF NOT EXISTS idx_lounge_dm_b ON lounge_dm_rooms(user_b);
+
   -- 친구: 아이디로 요청 → 상대가 수락하면 accepted. 한 쌍에 한 줄만 둔다 (요청한 사람 → 받은 사람)
   CREATE TABLE IF NOT EXISTS lounge_friends (
     requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

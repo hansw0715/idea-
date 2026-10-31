@@ -136,13 +136,26 @@ function layoutBooth(g: GatheringView, cx: number, cy: number): Table {
 }
 
 /** 앉은 사람의 얼굴 (자기 색 테두리, 나는 파란 테두리) */
-function Face3({ x, y, z, m, mineId, i }: { x: number; y: number; z: number; m: PublicUser; mineId: string; i: number }) {
+/** 얼굴을 누르면 그 사람 프로필 (친구 추가·1:1 채팅). 탁자 누르기로 번지지 않게 막는다 */
+const pickProps = (id: string, onPick?: (id: string) => void) =>
+  onPick
+    ? {
+        onClick: (e: ReactMouseEvent) => {
+          e.stopPropagation();
+          onPick(id);
+        },
+      }
+    : {};
+
+function Face3({ x, y, z, m, mineId, i, onPick }: { x: number; y: number; z: number; m: PublicUser; mineId: string; i: number; onPick?: (id: string) => void }) {
   const base = iso(x, y, z);
   return (
     <g
-      className={`iso-av${m.id === mineId ? ' is-me' : ''}`}
+      className={`iso-av${m.id === mineId ? ' is-me' : ''}${onPick ? ' iso-pick' : ''}`}
       style={{ '--av': `var(--m-${m.avatarColor.replace('m', '')})`, animationDelay: `${(i % 5) * -0.7}s` } as CSSProperties}
+      {...pickProps(m.id, onPick)}
     >
+      <title>{m.nickname}</title>
       <circle cx={base.x} cy={base.y - HEAD_R - 2} r={HEAD_R + 3} className="iso-av__ring" />
       <image
         href={avatarSrc(m.avatar)}
@@ -263,11 +276,11 @@ const hashId = (id: string) => {
 };
 
 /** 서 있는 사람: 발밑 그림자, 자기 색 몸통, 동그란 얼굴. 나는 파란 테두리. */
-function StandingPerson({ x, y, p, me, i }: { x: number; y: number; p: LoungePerson; me: boolean; i: number }) {
+function StandingPerson({ x, y, p, me, i, onPick }: { x: number; y: number; p: LoungePerson; me: boolean; i: number; onPick?: (id: string) => void }) {
   const b = iso(x, y, 0);
   const color = `var(--m-${p.avatarColor.replace('m', '')})`;
   return (
-    <g className={`iso-person${me ? ' is-me' : ''}`} style={{ '--av': color } as CSSProperties}>
+    <g className={`iso-person${me ? ' is-me' : ''}${onPick ? ' iso-pick' : ''}`} style={{ '--av': color } as CSSProperties} {...pickProps(p.id, onPick)}>
       <title>{me ? `${p.nickname} (나)` : p.nickname}</title>
       <ellipse cx={b.x} cy={b.y} rx={14} ry={6} className="iso-person__shadow" />
       <g className="iso-av" style={{ animationDelay: `${(i % 6) * -0.6}s` } as CSSProperties}>
@@ -343,6 +356,7 @@ export default function IsoLounge({
   meId = '',
   meetings = NO_MEETINGS,
   onOpenMeeting,
+  onOpenUser,
   ref,
 }: {
   gatherings: GatheringView[];
@@ -364,9 +378,17 @@ export default function IsoLounge({
   /** 내 팀 회의 (탁자 칸에 회의 탁자로 놓인다) */
   meetings?: LoungeMeeting[];
   onOpenMeeting?: (id: number) => void;
+  /** 사람(서 있는 사람·앉은 얼굴)을 눌렀다 → 프로필 */
+  onOpenUser?: (userId: string) => void;
   ref?: Ref<IsoLoungeHandle>;
 }) {
   const cols = COLS;
+  // 그림(scene)은 사람 목록이 바뀔 때만 다시 만든다. 누르기 처리는 늘 같은 함수로 넘겨 다시 그리지 않게 한다
+  const openUserRef = useRef(onOpenUser);
+  openUserRef.current = onOpenUser;
+  const hasPick = Boolean(onOpenUser);
+  const pick = useCallback((id: string) => openUserRef.current?.(id), []);
+  const onPick = hasPick ? pick : undefined;
 
   const scene = useMemo(() => {
     const w = SIDE + cols * SLOT_X + RIGHT;
@@ -493,7 +515,7 @@ export default function IsoLounge({
         faces.push({
           depth: st.x + st.y,
           node: mem.user ? (
-            <Face3 key={`mf-${m.id}-${mem.id}`} x={st.x} y={st.y} z={st.z} m={mem.user} mineId={meId} i={j} />
+            <Face3 key={`mf-${m.id}-${mem.id}`} x={st.x} y={st.y} z={st.z} m={mem.user} mineId={meId} i={j} onPick={onPick} />
           ) : (
             <InitialToken key={`mf-${m.id}-${mem.id}`} x={st.x} y={st.y} z={st.z} name={mem.name} n={mem.id} />
           ),
@@ -503,7 +525,7 @@ export default function IsoLounge({
     // 모임 자리에 앉은 사람 (얼굴 층)
     for (const t of tables) {
       [...t.back, ...t.front].forEach((st, j) => {
-        if (st.member) faces.push({ depth: st.x + st.y, node: <Face3 key={`gf-${t.g.id}-${j}`} x={st.x} y={st.y} z={st.z + (t.kind === 'long' ? 0 : 2)} m={st.member} mineId={meId} i={j} /> });
+        if (st.member) faces.push({ depth: st.x + st.y, node: <Face3 key={`gf-${t.g.id}-${j}`} x={st.x} y={st.y} z={st.z + (t.kind === 'long' ? 0 : 2)} m={st.member} mineId={meId} i={j} onPick={onPick} /> });
       });
     }
     faces.sort((a, b) => a.depth - b.depth);
@@ -524,7 +546,7 @@ export default function IsoLounge({
       while (taken.has(k)) k = (k + 1) % spots.length;
       taken.add(k);
       const sp = spots[k];
-      put(`person-${person.id}`, sp.x + sp.y + 1, <StandingPerson key={`person-${person.id}`} x={sp.x} y={sp.y} p={person} me={person.id === meId} i={i} />);
+      put(`person-${person.id}`, sp.x + sp.y + 1, <StandingPerson key={`person-${person.id}`} x={sp.x} y={sp.y} p={person} me={person.id === meId} i={i} onPick={onPick} />);
     });
     // 앞뒤 순서: 뒤(x+y 가 작은 쪽)부터
     props.sort((p, q) => p.depth - q.depth);
@@ -539,7 +561,7 @@ export default function IsoLounge({
     // 처음 보여 줄 곳: 방 가운데 (밥약 띠)
     const focus = iso(fx, fy, 70);
     return { w, d, fx, fy, tables, meetingSpots, props, faces, rugs, rect, vw: rect.x1 - rect.x0, vh: rect.y1 - rect.y0, focus };
-  }, [gatherings, cols, people, meId, meetings]);
+  }, [gatherings, cols, people, meId, meetings, onPick]);
 
   const { w, d, rect, vw, vh } = scene;
 

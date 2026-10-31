@@ -12,6 +12,7 @@ import { useLounge } from './LoungeContext';
 import CreateGatheringSheet from './sheets/CreateGatheringSheet';
 import QuickMatchSheet, { prefetchQuickState } from './sheets/QuickMatchSheet';
 import TableSheet from './sheets/TableSheet';
+import UserSheet from './sheets/UserSheet';
 import { isEnded } from './world/tables';
 import { useGatherings } from './world/useGatherings';
 import { seatCount, shortMeetAt } from './parts/GatheringListItem';
@@ -243,6 +244,8 @@ function MeetupLounge({ me, banned, banReason }: { me: LoungePerson; banned: boo
   const { upsert, refresh } = gatherings;
   const { presence, seeking } = useOnline(!banned);
   const loungeRef = useRef<IsoLoungeHandle>(null);
+  // 라운지에서 누른 사람의 프로필 (친구 추가·1:1 채팅)
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);
   // 방을 떠나지 않고 여는 모임 창 (빈 의자를 눌렀으면 그 자리를 골라 둔다)
@@ -387,12 +390,14 @@ function MeetupLounge({ me, banned, banReason }: { me: LoungePerson; banned: boo
           onOpenMeeting={(id) => (myMeetingIds.has(id) ? navigate(`/meetings/${id}`) : toast('회의에 참여한 사람만 들어갈 수 있어요.'))}
           focusId={mine?.id ?? null}
           onOpen={(g, slot) => setTable({ g, slot: slot ?? null })}
+          onOpenUser={setProfileUserId}
           fill
         >
           <CreateDial onPick={pick} />
         </IsoLounge>
       </div>
 
+      <UserSheet open={profileUserId !== null} userId={profileUserId} context="lounge" onClose={() => setProfileUserId(null)} />
       <TableSheet
         open={table !== null}
         gatheringId={table?.g.id ?? null}

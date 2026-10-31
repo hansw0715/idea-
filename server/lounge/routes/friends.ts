@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { fail } from '../../../shared/lounge/types.js';
 import { createRateLimiter } from '../../rateLimit.js';
 import { handler, me, sendError } from '../http.js';
-import { acceptFriend, askMeal, friendTimetable, myFriends, removeFriend, requestFriend } from '../services/friends.js';
+import { acceptFriend, askMeal, friendTimetable, myFriends, removeFriend, requestFriend, requestFriendById } from '../services/friends.js';
+import { startDm } from '../services/dm.js';
 import { parseUserId } from './gatherings.js';
 
 /**
@@ -32,8 +33,10 @@ friendsRouter.get(
 friendsRouter.post(
   '/friends',
   handler(async (req, res) => {
+    // 아이디(username)로, 또는 라운지에서 프로필을 눌러 사용자 id(userId)로 보낸다
     const username = isObj(req.body) ? req.body.username : undefined;
-    if (typeof username !== 'string' || !username.trim()) {
+    const userId = parseUserId(isObj(req.body) ? req.body.userId : undefined);
+    if (!userId && (typeof username !== 'string' || !username.trim())) {
       return sendError(res, fail('INVALID', '친구의 아이디를 적어 주세요.').error);
     }
     const viewer = me(res);
@@ -41,9 +44,27 @@ friendsRouter.post(
       res.status(429).json({ error: '친구 요청이 너무 잦아요. 잠시 후 다시 시도해 주세요.', code: 'RATE_LIMITED' });
       return;
     }
-    const result = await requestFriend(viewer.id, username);
+    const result = userId ? await requestFriendById(viewer.id, userId) : await requestFriend(viewer.id, username as string);
     if (!result.ok) return sendError(res, result.error);
     res.json({ result: result.value, ...(await myFriends(viewer.id)) });
+  }),
+);
+
+/** 1:1 대화 열기: 상대와의 방 id 를 돌려준다 (없으면 만든다) */
+const dmLimiter = createRateLimiter(30, 60 * 60_000);
+friendsRouter.post(
+  '/dm',
+  handler(async (req, res) => {
+    const target = parseUserId(isObj(req.body) ? req.body.userId : undefined);
+    if (!target) return sendError(res, fail('INVALID', '대화할 사람을 골라 주세요.').error);
+    const viewer = me(res);
+    if (!dmLimiter.hit(viewer.id)) {
+      res.status(429).json({ error: '대화를 너무 자주 열고 있어요. 잠시 후 다시 시도해 주세요.', code: 'RATE_LIMITED' });
+      return;
+    }
+    const result = await startDm(viewer, target);
+    if (!result.ok) return sendError(res, result.error);
+    res.json(result.value);
   }),
 );
 

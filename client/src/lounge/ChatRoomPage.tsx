@@ -435,16 +435,19 @@ function ChatRoom({ roomId }: { roomId: string }) {
               onScroll={onScroll}
             >
               <section className="lounge-chat-info" aria-label="방 정보">
-                <ul className="lounge-chat-meta">
-                  <li>
-                    <Icon name="pin" />
-                    <span>{room.place}</span>
-                  </li>
-                  <li>
-                    <Icon name="clock" />
-                    <span>{formatMeetAt(room.meetAt)}</span>
-                  </li>
-                </ul>
+                {/* 1:1 대화방은 약속 장소·시간이 없다 */}
+                {room.kind !== 'dm' && (
+                  <ul className="lounge-chat-meta">
+                    <li>
+                      <Icon name="pin" />
+                      <span>{room.place}</span>
+                    </li>
+                    <li>
+                      <Icon name="clock" />
+                      <span>{formatMeetAt(room.meetAt)}</span>
+                    </li>
+                  </ul>
+                )}
                 <ul className="lounge-chat-people" aria-label={`참여자 ${room.members.length}명`}>
                   {room.members.map((m) => (
                     <li key={m.id} className="lounge-chat-person">

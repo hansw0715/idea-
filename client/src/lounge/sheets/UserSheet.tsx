@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DEFAULT_TEMPERATURE, MAX_TEMPERATURE, temperatureFace } from '../../../../shared/lounge';
 import type { PublicUser } from '../../../../shared/lounge';
 import { ApiError } from '../../api';
-import { Alert, Badge, Button, EmptyState, LoadingBlock, Sheet, useToast } from '../../ui';
+import { Alert, Badge, Button, EmptyState, Icon, LoadingBlock, Sheet, useToast } from '../../ui';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
 import { factLine } from '../parts/fact';
@@ -90,6 +91,55 @@ export default function UserSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, userId, attempt, myProfile]);
 
+  // 친구 상태: 이미 친구·요청 보냄이면 버튼을 잠근다
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState<null | 'friend' | 'dm'>(null);
+  const [friendState, setFriendState] = useState<'none' | 'requested' | 'friend'>('none');
+  useEffect(() => {
+    if (!open || !userId || isMe) return;
+    let cancelled = false;
+    setFriendState('none');
+    loungeApi
+      .friends()
+      .then((f) => {
+        if (cancelled) return;
+        if (f.friends.some((x) => x.id === userId)) setFriendState('friend');
+        else if (f.outgoing.some((x) => x.id === userId)) setFriendState('requested');
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [open, userId, isMe]);
+
+  async function addFriend() {
+    if (!userId || busy) return;
+    setBusy('friend');
+    try {
+      const r = await loungeApi.requestFriendById(userId);
+      setFriendState(r.result === 'accepted' ? 'friend' : 'requested');
+      toast(r.result === 'accepted' ? '친구가 됐어요.' : '친구 요청을 보냈어요. 상대가 수락하면 친구가 돼요.');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '친구 요청을 보내지 못했어요.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function openDm() {
+    if (!userId || busy) return;
+    setBusy('dm');
+    try {
+      const { roomId } = await loungeApi.openDm(userId);
+      onClose();
+      navigate(`/lounge/rooms/${roomId}`);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : '대화를 열지 못했어요.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   function afterBlocked(target: PublicUser) {
     onClose();
     changedRef.current?.();
@@ -176,6 +226,26 @@ export default function UserSheet({
                   프로필 이미지 바꾸기
                 </Button>
               </>
+            )}
+
+            {/* 라운지에서 만난 사람: 친구 추가 · 1:1 대화 */}
+            {!isMe && (
+              <div className="lounge-user-actions">
+                <Button
+                  variant="secondary"
+                  block
+                  loading={busy === 'friend'}
+                  disabled={busy !== null || friendState !== 'none'}
+                  onClick={() => void addFriend()}
+                >
+                  <Icon name="user-plus" className="btn__icon" />
+                  {friendState === 'friend' ? '친구예요' : friendState === 'requested' ? '요청을 보냈어요' : '친구 추가'}
+                </Button>
+                <Button variant="primary" block loading={busy === 'dm'} disabled={busy !== null} onClick={() => void openDm()}>
+                  <Icon name="message" className="btn__icon" />
+                  1:1 채팅
+                </Button>
+              </div>
             )}
 
             {!isMe && (

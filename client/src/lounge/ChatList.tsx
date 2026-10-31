@@ -31,8 +31,14 @@ export default function ChatList({ onExplore }: { onExplore: () => void }) {
         <Link className="list__item list__item--link" to={`/lounge/rooms/${room.id}`}>
           <Icon name="message" className="lounge-chat-list__icon" />
           <div className="list__body"><div className="list__main">{room.title}</div>
-            <div className="list__sub">{{ meal: '밥약', meetup: '미팅', team: '팀 모임' }[room.kind]} · {room.memberCount}명{room.readOnly ? ' · 대화 기록' : ''}</div>
-            <div className="list__sub">{new Date(room.meetAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} · {room.place}</div>
+            {room.kind === 'dm' ? (
+              <div className="list__sub">1:1 대화</div>
+            ) : (
+              <>
+                <div className="list__sub">{{ meal: '밥약', meetup: '미팅', team: '팀 모임' }[room.kind]} · {room.memberCount}명{room.readOnly ? ' · 대화 기록' : ''}</div>
+                <div className="list__sub">{new Date(room.meetAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} · {room.place}</div>
+              </>
+            )}
           </div><Icon name="chevron-right" className="list__chev" />
         </Link>
       </li>)}</ul>}
