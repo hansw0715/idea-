@@ -23,6 +23,20 @@ export function activityDate(at: string, end?: string): string {
   const time = (d: Date) => new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
   return `${date} ${time(start)}${end ? `–${time(new Date(end))}` : ''}`;
 }
+/** 미수강 강의는 출석 인정 마감 6시간 전부터 알린다 (그 전에는 학사 알림 목록에만 있다) */
+export const LECTURE_ALERT_MS = 6 * 3_600_000;
+/** 강의라면 마감이 6시간 안으로 다가왔을 때만 알림이 된다. 과제 등은 지금처럼 */
+export function lectureDueSoon(i: EclassItem, now: number): boolean {
+  if (i.kind !== 'lecture') return true;
+  const due = i.dueAt ? Date.parse(i.dueAt) : NaN;
+  return Number.isFinite(due) && due - now <= LECTURE_ALERT_MS;
+}
+const hoursLeft = (dueAt: string | null | undefined, now: number) => {
+  const due = dueAt ? Date.parse(dueAt) : NaN;
+  if (!Number.isFinite(due)) return '';
+  const h = Math.max(0, Math.ceil((due - now) / 3_600_000));
+  return h <= 1 ? ' · 곧 마감' : ` · 마감 ${h}시간 전`;
+};
 const reservationAt = (r: Reservation, minutes = r.startMin) => new Date(new Date(`${r.date}T00:00:00+09:00`).getTime() + minutes * 60000).toISOString();
 export function buildActivity(input: { inbox?: InboxNotification[]; reservations?: Reservation[]; meetings?: Meeting[]; gatherings?: GatheringView[]; rooms?: RoomSummary[]; notices?: NoticeData; timetable?: TimetableEntry[]; learning?: EclassItem[] }, now = Date.now()): Activity[] {
   const result: Activity[] = [];
@@ -47,6 +61,6 @@ export function buildActivity(input: { inbox?: InboxNotification[]; reservations
   for (const r of input.rooms ?? []) if (r.lastActivityAt) result.push({ id: `chat:${r.id}:${r.lastActivityAt}`, title: r.title, body: '채팅방에 새 대화가 있어요.', when: `약속 · ${activityDate(r.meetAt)}`, to: `/lounge/rooms/${r.id}`, at: r.lastActivityAt, scopes: ['lounge'], kind: 'chat' });
   for (const section of [input.notices?.school, input.notices?.department]) for (const n of section?.items ?? []) result.push({ id: `notice:${n.id}:${n.title}`, title: n.title, body: `${n.date} · 학교·학과 공지`, to: '/campus?tab=notices', at: `${n.date}T00:00:00+09:00`, scopes: ['campus'], kind: 'notice' });
   for (const t of input.timetable ?? []) result.push({ id: `timetable:${t.id}:${t.title}:${t.day}:${t.startMin}:${t.endMin}:${t.place}`, title: t.title, body: '시간표 일정이 추가되거나 변경됐어요.', to: '/timetable', at: '', scopes: ['timetable'], kind: 'timetable' });
-  for (const i of input.learning ?? []) if (isAvailable(i, now) && needsAttention(i, now)) result.push({ id: `learning:${i.id}:${i.dueAt}:${i.completion}`, title: i.title, body: i.courseName, to: `/campus?tab=learning&kind=${i.kind}&item=${encodeURIComponent(i.id)}`, at: i.dueAt ?? '', scopes: ['campus'], kind: 'learning' });
+  for (const i of input.learning ?? []) if (isAvailable(i, now) && needsAttention(i, now) && lectureDueSoon(i, now)) result.push({ id: `learning:${i.id}:${i.dueAt}:${i.completion}`, title: i.title, body: i.kind === 'lecture' ? `${i.courseName}${hoursLeft(i.dueAt, now)}` : i.courseName, to: `/campus?tab=learning&kind=${i.kind}&item=${encodeURIComponent(i.id)}`, at: i.dueAt ?? '', scopes: ['campus'], kind: 'learning' });
   return result;
 }

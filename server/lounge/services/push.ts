@@ -72,6 +72,11 @@ export async function deleteSubscription(userId: string, endpoint: string): Prom
 /** 그 사람의 모든 기기로 알림을 보낸다. 실패해도 예외를 던지지 않는다 */
 export async function notify(userId: string, message: PushMessage): Promise<void> {
   try { await saveNotification(userId, message); } catch { /* 원래 요청을 방해하지 않는다. */ }
+  await pushOnly(userId, message);
+}
+
+/** 알림함에 남기지 않고 폰 알림만 보낸다 (학사 알림처럼 목록은 따로 있는 경우) */
+export async function pushOnly(userId: string, message: PushMessage): Promise<void> {
   if (!keys()) return;
   try {
     const subs = await all<{ endpoint: string; p256dh: string; auth: string }>(

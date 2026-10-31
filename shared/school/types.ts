@@ -88,7 +88,12 @@ export type TimetablePreview = {
   skipped: { subject: string; reason: string }[];
 };
 
-/** `POST /api/school/timetable/import` — 학교에서 가져온 기존 일정을 모두 바꿔 넣는다 */
+/** `POST /api/school/timetable/save` 본문 — 미리보기에서 받은 수업을 그대로 보낸다 (학교를 다시 읽지 않는다) */
+export type TimetableSaveRequest = {
+  classes: SchoolClass[];
+};
+
+/** `POST /api/school/timetable/import`·`/save` — 학교에서 가져온 기존 일정을 모두 바꿔 넣는다 */
 export type TimetableImportResult = {
   imported: number;
   /** 이전에 가져왔던 일정을 지운 수 */

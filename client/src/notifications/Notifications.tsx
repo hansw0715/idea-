@@ -12,6 +12,8 @@ import type { InboxNotification } from '../../../shared/notifications';
 import type { GatheringView, RoomSummary } from '../../../shared/lounge';
 import type { Meeting, Reservation, TimetableEntry } from '../types';
 import { buildActivity, scopeFor } from './activity';
+import { isAvailable, needsAttention } from '../school/eclassLogic';
+import { isPushOff } from '../lounge/push';
 import type { Activity, NoticeData, Scope } from './activity';
 
 type Seen = Partial<Record<Scope, string[]>>;
@@ -88,6 +90,48 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; clearInterval(timer); window.removeEventListener('focus', onVisible); document.removeEventListener('visibilitychange', onVisible); };
   }, [user?.id, hasProfile, Boolean(lounge), school.linked, attempt, location.pathname]);
   useEffect(() => { window.addEventListener(ECLASS_UPDATED_EVENT, refresh); return () => window.removeEventListener(ECLASS_UPDATED_EVENT, refresh); }, [refresh]);
+
+  // 앱이 닫혀 있어도 알림이 가도록: e-class 를 읽을 때마다 아직 안 들은 강의의 마감을 서버에 알려 둔다.
+  // 서버가 마감 6시간 전에 폰으로 푸시한다 (server/lectureAlerts.ts). 목록이 지난번과 같으면 보내지 않는다.
+  useEffect(() => {
+    if (!user || !school.linked) return;
+    const report = () => {
+      const now = Date.now();
+      const items = (readEclassSnapshot(user.id)?.items ?? [])
+        .filter((i) => i.kind === 'lecture' && i.dueAt && Date.parse(i.dueAt) > now && isAvailable(i, now) && needsAttention(i, now))
+        .slice(0, 60)
+        .map((i) => ({ id: i.id, title: i.title, course: i.courseName, dueAt: i.dueAt as string }));
+      const body = JSON.stringify({ items });
+      const key = `sangsang-booke:lecture-reported:${user.id}`;
+      try { if (localStorage.getItem(key) === body) return; } catch { /* 그냥 보낸다 */ }
+      void api.put('/lecture-alerts', { items }).then(() => {
+        try { localStorage.setItem(key, body); } catch { /* 다음에 다시 보낸다 */ }
+      }).catch(() => undefined);
+    };
+    report();
+    window.addEventListener(ECLASS_UPDATED_EVENT, report);
+    return () => window.removeEventListener(ECLASS_UPDATED_EVENT, report);
+  }, [user?.id, school.linked]);
+
+  // 앱이 열려 있을 때 미수강 강의가 마감 6시간 안으로 들어오면 휴대폰 알림을 한 번 띄운다.
+  // 폰 알림(푸시)을 켜 둔 기기는 서버가 보내므로 여기서는 띄우지 않는다 (두 번 울리지 않게).
+  useEffect(() => {
+    if (!user || typeof Notification === 'undefined' || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) return;
+    // 내 정보에서 알림을 끈 기기는 띄우지 않는다
+    if (isPushOff()) return;
+    const lectures = items.filter((i) => i.kind === 'learning' && i.id.startsWith('learning:') && i.body.includes('마감'));
+    if (!lectures.length) return;
+    const key = `sangsang-booke:lecture-alerted:${user.id}`;
+    let sent: string[] = [];
+    try { sent = JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { sent = []; }
+    const fresh = lectures.filter((i) => !sent.includes(i.id));
+    if (!fresh.length) return;
+    void navigator.serviceWorker.ready.then(async (reg) => {
+      if (await reg.pushManager?.getSubscription().catch(() => null)) return;
+      for (const i of fresh) void reg.showNotification(`미수강 강의 · ${i.title}`, { body: i.body, tag: i.id, icon: '/brand/app-icon-192.png', badge: '/brand/mark-64.png', data: { url: i.to } });
+    }).catch(() => undefined);
+    try { localStorage.setItem(key, JSON.stringify([...sent, ...fresh.map((i) => i.id)].slice(-300))); } catch { /* 다음에 다시 알릴 수 있다 */ }
+  }, [items, user?.id]);
 
   const mark = useCallback((scope: Scope, item?: Activity) => {
     if (!user) return;

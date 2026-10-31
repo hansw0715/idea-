@@ -6,14 +6,15 @@ import {
   MEAL_PRESET,
   MEAL_TAGS,
   MEETUP_JOIN_POLICY,
+  MEETUP_OPEN_SIZES,
+  MEETUP_PAIR_SIZES,
   MEETUP_PRESETS,
-  MEETUP_SIZES,
   MENU_CATEGORIES,
   PLACE_TYPES,
   defaultLocalInput,
   localInputToISO,
 } from '../../../../shared/lounge';
-import type { GatheringKind, GatheringView, MeetupSize, PlaceType } from '../../../../shared/lounge';
+import type { GatheringKind, GatheringView, MeetupOpenSize, MeetupPairSize, MeetupSize, PlaceType } from '../../../../shared/lounge';
 import { Alert, Button, Choice, Icon, Segmented, SelectField, Sheet, TextField, useConfirm, useToast } from '../../ui';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
@@ -153,7 +154,11 @@ function CreateForm({
   const uid = useId();
   const fid = (f: Field) => `${uid}-${f}`;
 
-  const [size, setSize] = useState<MeetupSize>('2:2');
+  // 미팅 인원: N:N(남녀 마주 앉기, 성별 확인) 또는 N명(성별 상관없이 누구나)
+  const [sizeMode, setSizeMode] = useState<'pair' | 'open'>('pair');
+  const [pairSize, setPairSize] = useState<MeetupPairSize>('2:2');
+  const [openSize, setOpenSize] = useState<MeetupOpenSize>('4명');
+  const size: MeetupSize = sizeMode === 'pair' ? pairSize : openSize;
   const [capacity, setCapacity] = useState<number>(2);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -286,7 +291,8 @@ function CreateForm({
     }
   }
 
-  const sizeOptions = MEETUP_SIZES.map((s) => ({ value: s, label: s }));
+  const pairOptions = MEETUP_PAIR_SIZES.map((s) => ({ value: s, label: s }));
+  const openOptions = MEETUP_OPEN_SIZES.map((s) => ({ value: s, label: s }));
   const capacityOptions = MEAL_CAPACITY_OPTIONS.map((n) => ({ value: String(n), label: `${n}명` }));
   const placeTypeOptions = PLACE_TYPES.map((p) => ({ value: p, label: p }));
 
@@ -303,11 +309,20 @@ function CreateForm({
       {kind === 'meetup' ? (
         <>
           <Segmented
-            label="인원"
-            value={size}
-            onChange={setSize}
-            options={sizeOptions}
+            label="방식"
+            value={sizeMode}
+            onChange={setSizeMode}
+            options={[
+              { value: 'pair', label: '남녀 매칭' },
+              { value: 'open', label: '자유 모임' },
+            ]}
+            help={sizeMode === 'pair' ? '남자 팀과 여자 팀이 같은 인원으로 마주 앉아요.' : '성별 상관없이 누구나 함께해요.'}
           />
+          {sizeMode === 'pair' ? (
+            <Segmented label="인원 (남:여)" value={pairSize} onChange={setPairSize} options={pairOptions} />
+          ) : (
+            <Segmented label="인원" value={openSize} onChange={setOpenSize} options={openOptions} />
+          )}
           <TextField
             id={fid('title')}
             label="한 줄 소개"

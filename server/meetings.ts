@@ -9,6 +9,7 @@ import type { Interval } from './freeTime.js';
 import { OPEN_MIN, CLOSE_MIN, RESERVE_CLOSE_MIN, STEP_MIN, DAY_COUNT } from './constants.js';
 import { resolveWeekStart, weekEndOf } from './dates.js';
 import { notify } from './lounge/services/push.js';
+import { loadUsers, toPublicUser } from './lounge/users.js';
 
 export const meetingsRouter = Router();
 
@@ -201,6 +202,48 @@ meetingsRouter.get(
       [userId(res)],
     );
     res.json(rows);
+  }),
+);
+
+/**
+ * 라운지에 놓을 회의 탁자: 모든 팀의 최근 회의 30개와 참여자의 라운지 프로필.
+ * 다른 팀에게도 보이므로 실명·참가 코드는 주지 않고, 라운지 프로필을 만든 사람만 얼굴로 보낸다.
+ */
+meetingsRouter.get(
+  '/lounge',
+  wrap(async (_req, res) => {
+    const meetings = await all<{ id: number; name: string }>(
+      `SELECT m.id, m.name
+       FROM meetings m
+       WHERE EXISTS (SELECT 1 FROM meeting_members mm WHERE mm.meeting_id = m.id)
+       ORDER BY m.created_at DESC
+       LIMIT 30`,
+    );
+    const ids = meetings.map((m) => m.id);
+    const rows = ids.length
+      ? await all<{ meetingId: number; userId: number }>(
+          `SELECT meeting_id AS "meetingId", user_id AS "userId"
+           FROM meeting_members
+           WHERE meeting_id = ANY(?::int[])
+           ORDER BY joined_at`,
+          [ids],
+        )
+      : [];
+    const users = await loadUsers(rows.map((r) => String(r.userId)));
+    res.json(
+      meetings.map((m) => {
+        const mine = rows.filter((r) => r.meetingId === m.id);
+        return {
+          id: m.id,
+          name: m.name,
+          memberCount: mine.length,
+          members: mine
+            .map((r) => users.get(String(r.userId)))
+            .filter((u): u is NonNullable<typeof u> => !!u && u.profileDone && !u.banned)
+            .map(toPublicUser),
+        };
+      }),
+    );
   }),
 );
 

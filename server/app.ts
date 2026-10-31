@@ -16,6 +16,7 @@ import { healthRouter } from './health.js';
 import { manifestRouter } from './manifest.js';
 import { loungeRouter } from './lounge/index.js';
 import { schoolRouter } from './school/index.js';
+import { lectureAlertsRouter, sweepSoon } from './lectureAlerts.js';
 import { requireAuth } from './auth.js';
 
 /** DB에 닿지 못한 경우인지 구분한다. 설정 실수와 앱 버그를 헷갈리지 않게 하려는 목적. */
@@ -129,6 +130,12 @@ export function createApp() {
   app.use('/api', (_req, res, next) => {
     ready().then(() => next(), next);
   });
+  // 미수강 강의 마감 푸시: 요청이 들어올 때 1분에 한 번 마감 6시간 전인 강의를 훑는다
+  app.use('/api', (_req, _res, next) => {
+    sweepSoon();
+    next();
+  });
+  app.use('/api/lecture-alerts', lectureAlertsRouter);
 
   app.use('/api/auth', authRouter);
   app.use('/api/timetable', timetableRouter);

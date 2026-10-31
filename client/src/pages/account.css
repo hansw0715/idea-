@@ -233,3 +233,39 @@
   padding-left: var(--sp-2);
   padding-right: var(--sp-2);
 }
+
+/* 제목 오른쪽 종 버튼: 폰 알림 켜기·끄기 (켜지면 파란 바탕) */
+.account-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.account-bell {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--c-panel-strong);
+  color: var(--c-text-sub);
+  cursor: pointer;
+  transition: background var(--t-base), color var(--t-base);
+}
+.account-bell svg {
+  width: 22px;
+  height: 22px;
+}
+.account-bell.is-on {
+  background: var(--c-action-bg-strong);
+  color: var(--c-action-text);
+}
+.account-bell:disabled {
+  opacity: 0.6;
+}
+.account-bell:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

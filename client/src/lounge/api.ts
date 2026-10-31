@@ -50,6 +50,10 @@ export const loungeApi = {
   // 접속자
   presence: () => api.get<PresenceResponse>(`${L}/presence`),
   sendPresence: (input: PresenceInput) => api.post<{ ok: true }>(`${L}/presence`, input),
+  /** 라운지를 나갔다고 알린다. 앱을 닫는 중에도 끝까지 보내지도록 keepalive 로 직접 보낸다. */
+  leavePresence: () => {
+    void fetch(`/api${L}/presence`, { method: 'DELETE', credentials: 'same-origin', keepalive: true }).catch(() => undefined);
+  },
 
   // 모임
   gatherings: (kind?: GatheringKind) =>

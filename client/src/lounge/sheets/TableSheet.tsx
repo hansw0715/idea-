@@ -14,6 +14,7 @@ import { ApiError } from '../../api';
 import { Alert, Badge, Button, EmptyState, Icon, LoadingBlock, SelectField, Sheet, useConfirm, useToast } from '../../ui';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
+import { cachedGathering } from '../world/useGatherings';
 import { factLine } from '../parts/fact';
 import Avatar, { TemperatureBadge } from '../parts/Avatar';
 import InlineNotice from '../parts/InlineNotice';
@@ -79,8 +80,10 @@ export default function TableSheet({
   const toast = useToast();
   const { handleError, needsProfile } = useLounge();
 
-  const [g, setG] = useState<GatheringView | null>(null);
-  const [phase, setPhase] = useState<Phase>('loading');
+  // 초기값이 있으면 첫 그림부터 그것을 보여 준다 (불러오는 중이 한 번 깜빡이지 않게)
+  // 초기값이 없으면 지난번에 받아 둔 모임(목록·상세)으로 대신한다
+  const [g, setG] = useState<GatheringView | null>(() => initial ?? (gatheringId ? cachedGathering(gatheringId) : null));
+  const [phase, setPhase] = useState<Phase>(() => (g ? 'ready' : 'loading'));
   const [loadError, setLoadError] = useState<string | null>(null);
   const [pollFailed, setPollFailed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -152,7 +155,7 @@ export default function TableSheet({
   useEffect(() => {
     if (!open || !gatheringId) return;
     const id = gatheringId;
-    const seed = initialRef.current && initialRef.current.id === id ? initialRef.current : null;
+    const seed = initialRef.current && initialRef.current.id === id ? initialRef.current : cachedGathering(id);
     gRef.current = seed;
     setG(seed);
     setPhase(seed ? 'ready' : 'loading');
@@ -603,7 +606,8 @@ export default function TableSheet({
                     </dt>
                     <dd>
                       {formatMeetAt(g.joinDeadline)}
-                      {g.status === 'open' && <span className="lounge-gath-info__left"> ({timeLeft(g.joinDeadline)})</span>}
+                      {/* 남은 시간은 아랫줄에 따로 */}
+                      {g.status === 'open' && <span className="lounge-gath-info__left">{timeLeft(g.joinDeadline)}</span>}
                     </dd>
                   </div>
                 </dl>

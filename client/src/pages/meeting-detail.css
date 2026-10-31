@@ -464,3 +464,54 @@
   font-weight: var(--fw-bold);
   color: var(--c-warning);
 }
+
+/* ── 참여 인원 머리: 인원 수 + 오른쪽 회의 코드 칩 ─────────────── */
+.mtg-members__tally {
+  margin-left: var(--sp-3);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
+  color: var(--c-text-sub);
+}
+.mtg-codechip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 3.6rem;
+  padding: 0 1.2rem;
+  border: 1px solid var(--c-panel-border);
+  border-radius: 999px;
+  background: var(--c-panel);
+  color: var(--c-text);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--t-base), border-color var(--t-base);
+}
+.mtg-codechip__label {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.mtg-codechip__value {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+.mtg-codechip__icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--c-action-text);
+}
+@media (hover: hover) {
+  .mtg-codechip:hover { background: var(--c-action-bg-strong); }
+}
+.mtg-codechip.is-copied {
+  border-color: var(--c-action);
+  background: var(--c-action-bg-strong);
+}
+.mtg-codechip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.mtg-codechip__fallback {
+  margin: var(--sp-3) 0 var(--sp-4);
+}

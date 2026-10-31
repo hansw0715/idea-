@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { createRateLimiter } from '../../rateLimit.js';
 import { handler, me as currentUser, sendResult } from '../http.js';
+import { removePresence } from '../repo/presence.js';
 import { readPresence, writePresence } from '../services/presence.js';
 
 /**
@@ -34,5 +35,14 @@ presenceRouter.post(
       return;
     }
     sendResult(res, await writePresence(user, req.body), () => ({ ok: true }));
+  }),
+);
+
+/** 라운지를 나갈 때: 접속자에서 바로 뺀다 (TTL 을 기다리지 않게) */
+presenceRouter.delete(
+  '/presence',
+  handler(async (_req, res) => {
+    await removePresence(currentUser(res).id);
+    res.json({ ok: true });
   }),
 );

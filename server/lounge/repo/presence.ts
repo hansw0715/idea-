@@ -70,6 +70,11 @@ export async function upsertPresence(
   );
 }
 
+/** 라운지를 나갔다: 내 줄을 지워 다른 사람 화면의 접속 인원에서 바로 빠진다 */
+export async function removePresence(userId: string): Promise<void> {
+  await run(`DELETE FROM lounge_presence WHERE user_id = ?`, [Number(userId)]);
+}
+
 /**
  * 지금 접속 중인 사람(= seen_at 이 `since` 이후) + 공개 프로필, 최근 순 최대 `limit` 명.
  * 쿼리 한 번: 프로필 있는 사람만(`profile_done`), `excludeIds`(나 + 차단 관계)는 SQL 에서 빼므로

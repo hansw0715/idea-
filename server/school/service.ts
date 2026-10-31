@@ -19,6 +19,7 @@ import type {
   LinkResponse,
   LinkStatus,
   MyReservationsResult,
+  SchoolClass,
   SchoolCredentials,
   SchoolProfile,
   SchoolReservation,
@@ -143,6 +144,31 @@ export function parseCredentials(value: unknown): SchoolCredentials {
 
 const MAX_ITEMS = 30;
 const MAX_ITEM_VALUE = 200;
+
+/** 한 번에 저장할 수 있는 수업 수 (미리보기의 가져오기 상한 100개보다 넉넉히) */
+const MAX_SAVE_CLASSES = 200;
+const HM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const shortText = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max;
+
+/**
+ * `POST /timetable/save` 본문 검증. 본인 시간표라 내용은 믿되 모양(요일 0~6, "HH:mm", 글자 수, 개수)만 확인한다.
+ * 운영 시간 밖·주말 같은 걸러내기는 저장할 때 toGrid 가 미리보기와 똑같이 한다.
+ */
+export function parseSchoolClasses(value: unknown): SchoolClass[] {
+  const list = (value && typeof value === 'object' ? (value as Record<string, unknown>).classes : undefined) as unknown;
+  if (!Array.isArray(list) || list.length > MAX_SAVE_CLASSES) throw invalid('수업 목록이 올바르지 않아요.');
+  return list.map((raw) => {
+    const c = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    if (!Number.isInteger(c.day) || (c.day as number) < 0 || (c.day as number) > 6) throw invalid('수업 요일이 올바르지 않아요.');
+    if (typeof c.start !== 'string' || !HM.test(c.start) || typeof c.end !== 'string' || !HM.test(c.end)) {
+      throw invalid('수업 시간이 올바르지 않아요.');
+    }
+    if (!shortText(c.subject, 100) || !shortText(c.section, 40) || !shortText(c.professor, 100) || !shortText(c.room, 100)) {
+      throw invalid('수업 정보가 올바르지 않아요.');
+    }
+    return { day: c.day as number, start: c.start, end: c.end, subject: c.subject, section: c.section, professor: c.professor, room: c.room };
+  });
+}
 
 /** `POST /book/submit` 본문 검증 */
 export function parseBookSubmit(body: unknown): BookSubmitRequest {
@@ -431,7 +457,32 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
   async function timetableImport(uid: number, creds: SchoolCredentials): Promise<TimetableImportResult> {
     hitLimiter(schoolCallLimiter, uid);
     await requireLinked(uid, creds);
-    const t = await loadSchoolTimetable(creds);
+    return replaceSchoolEntries(uid, await loadSchoolTimetable(creds));
+  }
+
+  /**
+   * 미리보기에서 이미 받은 수업을 저장만 한다 — 학교에 다시 로그인하지 않아 가져오기가 바로 끝난다.
+   * 연동한 사람만 쓸 수 있다(학교 시간표 가져오기 기능이므로). 걸러내기·상한은 미리보기와 같다.
+   */
+  async function timetableSave(uid: number, classes: SchoolClass[]): Promise<TimetableImportResult> {
+    const row = await loadLinkRow(uid);
+    if (!row.hint || !row.hash) throw new SchoolNotLinked();
+    const grid = toGrid(classes);
+    let entries = grid.entries;
+    const skipped = [...grid.skipped];
+    if (entries.length > MAX_IMPORT) {
+      for (const e of entries.slice(MAX_IMPORT)) {
+        skipped.push({ subject: e.title, reason: `한 번에 가져올 수 있는 수업 수(${MAX_IMPORT}개)를 넘었어요.` });
+      }
+      entries = entries.slice(0, MAX_IMPORT);
+    }
+    return replaceSchoolEntries(uid, { entries, adjusted: grid.adjusted, skipped });
+  }
+
+  async function replaceSchoolEntries(
+    uid: number,
+    t: { entries: ReturnType<typeof toGrid>['entries']; adjusted: number; skipped: { subject: string; reason: string }[] },
+  ): Promise<TimetableImportResult> {
     if (t.entries.length === 0) return { imported: 0, replaced: 0, adjusted: t.adjusted, skipped: t.skipped };
 
     // 동시에 두 번 가져와도 서로의 임시 일정을 건드리지 않도록 가져올 때마다 다른 표시를 쓴다
@@ -860,6 +911,7 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
     unlink,
     timetablePreview,
     timetableImport,
+    timetableSave,
     myReservations,
     bookPreview,
     bookSubmit,

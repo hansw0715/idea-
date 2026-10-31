@@ -224,6 +224,7 @@
   min-width: 0;
 }
 .lounge-gath-info__left {
+  display: block;
   color: var(--c-action-text);
   font-weight: var(--fw-bold);
 }

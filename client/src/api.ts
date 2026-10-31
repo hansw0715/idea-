@@ -26,7 +26,7 @@ export function setOnUnauthorized(callback: () => void): void {
  * 최신 내용은 뒤에서 받아와 바꿔 넣는다 (api.cached 로 꺼내 쓴다). 로그아웃하면 지운다.
  */
 const CACHE_KEY = 'sangsang-booke:last-responses';
-const CACHE_MAX = 40;
+const CACHE_MAX = 80; // 미리 받아 두는 화면까지 담을 만큼
 let memo: Record<string, unknown> | null = null;
 
 function readCache(): Record<string, unknown> {
@@ -94,7 +94,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     const extra = data && typeof data === 'object' ? (data as Record<string, unknown>) : undefined;
     throw new ApiError(res.status, message, code, extra);
   }
-  if (method === 'GET') remember(path, data);
+  // 새 것만 받는 폴링(?after=…)은 주소가 매번 달라 저장해 두면 쓸모 있는 화면 내용을 밀어내므로 기억하지 않는다
+  if (method === 'GET' && !path.includes('after=')) remember(path, data);
   return data as T;
 }
 
@@ -102,6 +103,10 @@ export const api = {
   get: <T>(path: string) => request<T>('GET', path),
   /** 이 주소로 마지막에 받은 내용 (없으면 undefined). 첫 화면을 바로 그릴 때 쓴다 */
   cached: <T>(path: string): T | undefined => readCache()[path] as T | undefined,
+  /** 다음에 열 화면의 내용을 미리 받아 기억해 둔다 (실패해도 조용히 넘어간다) */
+  warm: (...paths: string[]) => {
+    for (const path of paths) void request('GET', path).catch(() => undefined);
+  },
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),

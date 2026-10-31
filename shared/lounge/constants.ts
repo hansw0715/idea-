@@ -80,8 +80,13 @@ export const PRESENCE_POLL_MS = 3000;
 
 export const MEETUP_HOST_SLOT = 'host';
 export const MEETUP_GUEST_SLOT = 'guest';
+/** 성별 상관없는 미팅(N명)의 한 줄 자리 */
+export const MEETUP_OPEN_SLOT = 'all';
 
-export type MeetupSize = '1:1' | '2:2' | '3:3' | '4:4';
+/** N:N 은 남녀가 마주 앉고(성별 확인), N명은 성별 상관없이 누구나 앉는다 */
+export type MeetupPairSize = '1:1' | '2:2' | '3:3' | '4:4';
+export type MeetupOpenSize = '2명' | '3명' | '4명' | '5명' | '6명';
+export type MeetupSize = MeetupPairSize | MeetupOpenSize;
 
 /** 미팅 자리: 위(host) = 남자, 아래(guest) = 여자. 주최자는 자기 성별 쪽에 앉는다 */
 const meetup = (n: number): { slots: SlotSpec[] } => ({
@@ -89,6 +94,11 @@ const meetup = (n: number): { slots: SlotSpec[] } => ({
     { key: MEETUP_HOST_SLOT, label: '남자', capacity: n, gender: 'male' },
     { key: MEETUP_GUEST_SLOT, label: '여자', capacity: n, gender: 'female' },
   ],
+});
+
+/** 성별 상관없는 미팅: 자리 한 줄에 N명 */
+const openMeetup = (n: number): { slots: SlotSpec[] } => ({
+  slots: [{ key: MEETUP_OPEN_SLOT, label: '누구나', capacity: n }],
 });
 
 /** 성별 표시 글자 */
@@ -100,8 +110,15 @@ export const MEETUP_PRESETS: Record<MeetupSize, { slots: SlotSpec[] }> = {
   '2:2': meetup(2),
   '3:3': meetup(3),
   '4:4': meetup(4),
+  '2명': openMeetup(2),
+  '3명': openMeetup(3),
+  '4명': openMeetup(4),
+  '5명': openMeetup(5),
+  '6명': openMeetup(6),
 };
 export const MEETUP_SIZES = Object.keys(MEETUP_PRESETS) as MeetupSize[];
+export const MEETUP_PAIR_SIZES: MeetupPairSize[] = ['1:1', '2:2', '3:3', '4:4'];
+export const MEETUP_OPEN_SIZES: MeetupOpenSize[] = ['2명', '3명', '4명', '5명', '6명'];
 /** 미팅은 선착순이라 누르는 즉시 확정된다. */
 export const MEETUP_JOIN_POLICY = 'auto' as const;
 

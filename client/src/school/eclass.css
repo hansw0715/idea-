@@ -101,6 +101,20 @@
 .school-eclass__tile.is-left strong {
   color: var(--c-text);
 }
+/* 학사 알림: 미수강 강의 · 미제출 과제를 한 상자로 잇고 가운데에 얇은 구분선 */
+.school-eclass__tally {
+  gap: 0;
+  border-radius: var(--r);
+  background: var(--c-bg);
+  overflow: hidden;
+}
+.school-eclass__tally .school-eclass__tile {
+  border-radius: 0;
+  background: transparent;
+}
+.school-eclass__tally .school-eclass__tile + .school-eclass__tile {
+  border-left: 1px solid var(--c-divider);
+}
 /* 항목 제목 앞 종류 표시: "과제 - 중간 보고서 제출". 색 없이 본문 글자색으로 굵게 (홈 카드와 학사 알림 목록이 함께 쓴다) */
 .school-eclass__kindtag {
   color: var(--c-text);

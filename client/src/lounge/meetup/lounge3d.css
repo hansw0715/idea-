@@ -1,0 +1,1358 @@
+/* 미팅 라운지 아이소메트릭 방 (/lounge/campus).
+   면 하나하나가 평평한 색이고, 상자의 세 면(위·왼쪽·오른쪽)은 한 단계씩 어두워진다.
+   방은 테두리 상자보다 커서 밖으로 나가는 부분은 잘리고, 상자는 화면 가장자리에서 한 칸 떨어져 있다. */
+
+.iso-lounge {
+  /* 방 */
+  --iso-bg: #d9e7f6;
+  --iso-tile: #ffffff;
+  --iso-tile-alt: #eef3f9;
+  --iso-slab-t: #ffffff;
+  --iso-slab-l: #8db8e8;
+  --iso-slab-r: #4f91d4;
+  --iso-wall: #f4f8fc;
+  --iso-wall-side: #e3edf8;
+  --iso-wall-cap: #b7d3f2;
+  --iso-wall-end: #8db8e8;
+  --iso-sky: #b9d7f4;
+  --iso-hill: #6f9fcf;
+  --iso-board: #0c3d78;
+  --iso-board-text: #ffffff;
+  --iso-board-sub: #b7d3f2;
+  --iso-rug: #dceafb;
+  --iso-rug-closed: #e6e8ea;
+  /* 가구 */
+  --iso-top-t: #1f66b5;
+  --iso-top-l: #1459a6;
+  --iso-top-r: #0c3d78;
+  --iso-leg-l: #cdd1d5;
+  --iso-leg-r: #b1b8be;
+  --iso-closed-t: #cdd1d5;
+  --iso-closed-l: #b1b8be;
+  --iso-closed-r: #8a949e;
+  --iso-stool-t: #ffffff;
+  --iso-stool-l: #dfe4ea;
+  --iso-stool-r: #c6cdd5;
+  --iso-taken-t: #b7d3f2;
+  --iso-taken-l: #8db8e8;
+  --iso-taken-r: #4f91d4;
+  --iso-pot-l: #b1b8be;
+  --iso-pot-r: #8a949e;
+  --iso-leaf-t: #6dbb80;
+  --iso-leaf-l: #3f9655;
+  --iso-leaf-r: #2d7a42;
+  --iso-ring: #ffffff;
+  /* 라운지 가구: 나무·흰 판·금속·쿠션 (카페 팔레트의 따뜻한 나무색을 학교 파랑 옆에 하나만 더한다) */
+  --iso-wood-t: #d9a066;
+  --iso-wood-l: #b97f45;
+  --iso-wood-r: #96612f;
+  --iso-shelf: #8a5a2e;
+  --iso-panel-t: #ffffff;
+  --iso-panel-l: #e4ebf3;
+  --iso-panel-r: #c9d4e1;
+  --iso-metal-t: #a9b2bc;
+  --iso-metal-l: #8a949e;
+  --iso-metal-r: #6d7882;
+  --iso-cushion-t: #b5693d;
+  --iso-cushion-l: #96532d;
+  --iso-cushion-r: #783f21;
+  --iso-cup-t: #ffffff;
+  --iso-cup-l: #e6e8ea;
+  --iso-cup-r: #cdd1d5;
+  --iso-sofa-t: #e2cfae;
+  --iso-sofa-l: #cdb48c;
+  --iso-sofa-r: #b39870;
+  --iso-seat-t: #efe2c9;
+  --iso-seat-l: #dbc7a4;
+  --iso-seat-r: #c3ab84;
+  --iso-shade-t: #fff4d6;
+  --iso-shade-l: #f3dfa8;
+  --iso-shade-r: #e2c47e;
+  --iso-rug-lounge: #f1e8da;
+  --iso-chair-t: #f4f7fb;
+  --iso-chair-l: #d8e1ec;
+  --iso-chair-r: #b9c7d8;
+  --iso-screen: #33363d;
+  --iso-frame: #ffffff;
+  --iso-art-1: #4f91d4;
+  --iso-art-2: #e8bf68;
+  --iso-art-3: #6dbb80;
+  --iso-art-4: #d97a5b;
+  --iso-bean-1-t: #8db8e8;
+  --iso-bean-1-l: #6fa0d6;
+  --iso-bean-1-r: #4f86c0;
+  --iso-bean-2-t: #f0c47a;
+  --iso-bean-2-l: #dca95a;
+  --iso-bean-2-r: #c28d3f;
+  --iso-bean-3-t: #9fd3ac;
+  --iso-bean-3-l: #7fbd8e;
+  --iso-bean-3-r: #62a272;
+  --iso-meal-t: #d9a066;
+  --iso-meal-l: #b97f45;
+  --iso-meal-r: #96612f;
+  /* 분수: 아이보리 돌과 맑은 물 (ui-ux-pro-max 물 팔레트를 학교 파랑 쪽으로 옮겼다) */
+  --iso-ivory-t: #f7f1e3;
+  --iso-ivory-s: #e7dbc0;
+  --iso-ivory-in: #d8c9a8;
+  --iso-plaza: #efe7d5;
+  --iso-plaza-in: #f6f0e3;
+  --iso-water: #8fcfec;
+  --iso-water-hi: #e3f5fd;
+  --iso-fall: rgba(143, 207, 236, 0.55);
+  /* 1인 소파: 테라코타 (Nature Distilled 팔레트) */
+  --iso-clay-t: #c67b5c;
+  --iso-clay-l: #ad6649;
+  --iso-clay-r: #8f5139;
+  --iso-clay-seat-t: #d6957a;
+  --iso-clay-seat-l: #c07f64;
+  --iso-clay-seat-r: #a56a52;
+  /* 이름표 */
+  --iso-plate: #ffffff;
+  --iso-plate-text: var(--c-text);
+  --iso-plate-sub: var(--c-text-sub);
+
+  position: relative;
+  height: clamp(42rem, calc(100dvh - var(--header-h) - var(--tabbar-h) - var(--safe-top) - var(--safe-bottom) - 3.2rem), 82rem);
+  overflow: hidden;
+  border-radius: var(--r-panel);
+  background: var(--iso-bg);
+  isolation: isolate;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .iso-lounge {
+    --iso-bg: #0c1420;
+    --iso-tile: #1d2733;
+    --iso-tile-alt: #19222d;
+    --iso-slab-t: #1d2733;
+    --iso-slab-l: #0f2e57;
+    --iso-slab-r: #0a2343;
+    --iso-wall: #1a2633;
+    --iso-wall-side: #15202c;
+    --iso-wall-cap: #2a3d55;
+    --iso-wall-end: #223246;
+    --iso-sky: #173a63;
+    --iso-hill: #0e2848;
+    --iso-board: #4f91d4;
+    --iso-board-text: #071d39;
+    --iso-board-sub: #0c3d78;
+    --iso-rug: #1c3350;
+    --iso-rug-closed: #232a32;
+    --iso-top-t: #4f91d4;
+    --iso-top-l: #2f73bd;
+    --iso-top-r: #1c589c;
+    --iso-leg-l: #3a3f45;
+    --iso-leg-r: #2a2e33;
+    --iso-closed-t: #4e555c;
+    --iso-closed-l: #3a3f45;
+    --iso-closed-r: #2a2e33;
+    --iso-stool-t: #3a4552;
+    --iso-stool-l: #2c3540;
+    --iso-stool-r: #222a33;
+    --iso-taken-t: #8db8e8;
+    --iso-taken-l: #4f91d4;
+    --iso-taken-r: #2f73bd;
+    --iso-pot-l: #4e555c;
+    --iso-pot-r: #3a3f45;
+    --iso-leaf-t: #4f9a63;
+    --iso-leaf-l: #3a7a4b;
+    --iso-leaf-r: #2b5f39;
+    --iso-ring: #16181b;
+    --iso-wood-t: #a8743f;
+    --iso-wood-l: #8a5c2f;
+    --iso-wood-r: #6c4623;
+    --iso-shelf: #4a3018;
+    --iso-panel-t: #2c3540;
+    --iso-panel-l: #232b34;
+    --iso-panel-r: #1b2229;
+    --iso-metal-t: #5f6a75;
+    --iso-metal-l: #4c5660;
+    --iso-metal-r: #3b434c;
+    --iso-cushion-t: #9a5a36;
+    --iso-cushion-l: #7c4729;
+    --iso-cushion-r: #60361f;
+    --iso-cup-t: #d5dadf;
+    --iso-cup-l: #a3acb5;
+    --iso-cup-r: #8a949e;
+    --iso-sofa-t: #6b5d4b;
+    --iso-sofa-l: #574b3c;
+    --iso-sofa-r: #453b2f;
+    --iso-seat-t: #7d6d58;
+    --iso-seat-l: #685a48;
+    --iso-seat-r: #54493a;
+    --iso-shade-t: #f3dfa8;
+    --iso-shade-l: #d9bf78;
+    --iso-shade-r: #b89a52;
+    --iso-rug-lounge: #26231e;
+    --iso-chair-t: #3a4552;
+    --iso-chair-l: #2c3540;
+    --iso-chair-r: #222a33;
+    --iso-screen: #0b0d10;
+    --iso-frame: #2a2e33;
+    --iso-art-1: #2f73bd;
+    --iso-art-2: #b89a52;
+    --iso-art-3: #3a7a4b;
+    --iso-art-4: #a3563d;
+    --iso-bean-1-t: #2f73bd;
+    --iso-bean-1-l: #245d9b;
+    --iso-bean-1-r: #1b4a7d;
+    --iso-bean-2-t: #b38a45;
+    --iso-bean-2-l: #94713a;
+    --iso-bean-2-r: #77592c;
+    --iso-bean-3-t: #4f9a63;
+    --iso-bean-3-l: #3f7d50;
+    --iso-bean-3-r: #31633f;
+    --iso-meal-t: #a8743f;
+    --iso-meal-l: #8a5c2f;
+    --iso-meal-r: #6c4623;
+    --iso-ivory-t: #d9cfb8;
+    --iso-ivory-s: #b8ab8e;
+    --iso-ivory-in: #9a8d72;
+    --iso-plaza: #2c2a25;
+    --iso-plaza-in: #34312b;
+    --iso-water: #3c8fb8;
+    --iso-water-hi: #9fd6ee;
+    --iso-fall: rgba(90, 170, 210, 0.5);
+    --iso-clay-t: #9a5a42;
+    --iso-clay-l: #7f4935;
+    --iso-clay-r: #653a2a;
+    --iso-clay-seat-t: #a9684f;
+    --iso-clay-seat-l: #8f5641;
+    --iso-clay-seat-r: #744534;
+    --iso-plate: #1e2125;
+  }
+}
+:root[data-theme='dark'] .iso-lounge {
+  --iso-bg: #0c1420;
+  --iso-tile: #1d2733;
+  --iso-tile-alt: #19222d;
+  --iso-slab-t: #1d2733;
+  --iso-slab-l: #0f2e57;
+  --iso-slab-r: #0a2343;
+  --iso-wall: #1a2633;
+  --iso-wall-side: #15202c;
+  --iso-wall-cap: #2a3d55;
+  --iso-wall-end: #223246;
+  --iso-sky: #173a63;
+  --iso-hill: #0e2848;
+  --iso-board: #4f91d4;
+  --iso-board-text: #071d39;
+  --iso-board-sub: #0c3d78;
+  --iso-rug: #1c3350;
+  --iso-rug-closed: #232a32;
+  --iso-top-t: #4f91d4;
+  --iso-top-l: #2f73bd;
+  --iso-top-r: #1c589c;
+  --iso-leg-l: #3a3f45;
+  --iso-leg-r: #2a2e33;
+  --iso-closed-t: #4e555c;
+  --iso-closed-l: #3a3f45;
+  --iso-closed-r: #2a2e33;
+  --iso-stool-t: #3a4552;
+  --iso-stool-l: #2c3540;
+  --iso-stool-r: #222a33;
+  --iso-taken-t: #8db8e8;
+  --iso-taken-l: #4f91d4;
+  --iso-taken-r: #2f73bd;
+  --iso-pot-l: #4e555c;
+  --iso-pot-r: #3a3f45;
+  --iso-leaf-t: #4f9a63;
+  --iso-leaf-l: #3a7a4b;
+  --iso-leaf-r: #2b5f39;
+  --iso-ring: #16181b;
+  --iso-wood-t: #a8743f;
+  --iso-wood-l: #8a5c2f;
+  --iso-wood-r: #6c4623;
+  --iso-shelf: #4a3018;
+  --iso-panel-t: #2c3540;
+  --iso-panel-l: #232b34;
+  --iso-panel-r: #1b2229;
+  --iso-metal-t: #5f6a75;
+  --iso-metal-l: #4c5660;
+  --iso-metal-r: #3b434c;
+  --iso-cushion-t: #9a5a36;
+  --iso-cushion-l: #7c4729;
+  --iso-cushion-r: #60361f;
+  --iso-cup-t: #d5dadf;
+  --iso-cup-l: #a3acb5;
+  --iso-cup-r: #8a949e;
+  --iso-sofa-t: #6b5d4b;
+  --iso-sofa-l: #574b3c;
+  --iso-sofa-r: #453b2f;
+  --iso-seat-t: #7d6d58;
+  --iso-seat-l: #685a48;
+  --iso-seat-r: #54493a;
+  --iso-shade-t: #f3dfa8;
+  --iso-shade-l: #d9bf78;
+  --iso-shade-r: #b89a52;
+  --iso-rug-lounge: #26231e;
+  --iso-chair-t: #3a4552;
+  --iso-chair-l: #2c3540;
+  --iso-chair-r: #222a33;
+  --iso-screen: #0b0d10;
+  --iso-frame: #2a2e33;
+  --iso-art-1: #2f73bd;
+  --iso-art-2: #b89a52;
+  --iso-art-3: #3a7a4b;
+  --iso-art-4: #a3563d;
+  --iso-bean-1-t: #2f73bd;
+  --iso-bean-1-l: #245d9b;
+  --iso-bean-1-r: #1b4a7d;
+  --iso-bean-2-t: #b38a45;
+  --iso-bean-2-l: #94713a;
+  --iso-bean-2-r: #77592c;
+  --iso-bean-3-t: #4f9a63;
+  --iso-bean-3-l: #3f7d50;
+  --iso-bean-3-r: #31633f;
+  --iso-meal-t: #a8743f;
+  --iso-meal-l: #8a5c2f;
+  --iso-meal-r: #6c4623;
+  --iso-ivory-t: #d9cfb8;
+  --iso-ivory-s: #b8ab8e;
+  --iso-ivory-in: #9a8d72;
+  --iso-plaza: #2c2a25;
+  --iso-plaza-in: #34312b;
+  --iso-water: #3c8fb8;
+  --iso-water-hi: #9fd6ee;
+  --iso-fall: rgba(90, 170, 210, 0.5);
+  --iso-clay-t: #9a5a42;
+  --iso-clay-l: #7f4935;
+  --iso-clay-r: #653a2a;
+  --iso-clay-seat-t: #a9684f;
+  --iso-clay-seat-l: #8f5641;
+  --iso-clay-seat-r: #744534;
+  --iso-plate: #1e2125;
+}
+
+/* 옆 탭에서 밀어 넘어올 때의 자리: 방 바탕색만 */
+.iso-peek {
+  height: 100dvh;
+  background: var(--c-bg);
+}
+
+/* 라운지 화면 틀: 머리글 자리까지 쓰고, 이동 메뉴(휴대폰은 하단 탭, 태블릿은 위 메뉴, 큰 화면은 왼쪽 메뉴)는 남긴다.
+   가장자리에는 아주 조금만 남긴다. */
+.lounge-me {
+  --gap: 0px; /* 가장자리까지 꽉 채운다 */
+  position: fixed;
+  /* 휴대폰: 앱 머리글(아이콘·이름) 아래부터 하단 탭 위까지 */
+  top: calc(var(--header-h) + var(--safe-top));
+  right: calc(env(safe-area-inset-right, 0px) + var(--gap));
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + var(--gap));
+  left: calc(env(safe-area-inset-left, 0px) + var(--gap));
+  z-index: 30;
+  height: auto;
+}
+@media (min-width: 768px) {
+  .lounge-me {
+    top: calc(var(--topnav-h) + var(--safe-top) + var(--gap));
+    bottom: calc(var(--safe-bottom) + var(--gap));
+  }
+}
+@media (min-width: 1100px) {
+  .lounge-me {
+    top: calc(var(--safe-top) + var(--gap));
+    left: calc(230px + var(--gap));
+  }
+}
+
+.iso-lounge__scroll {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  cursor: grab;
+  touch-action: pan-x pan-y;
+}
+.iso-lounge__scroll::-webkit-scrollbar {
+  display: none;
+}
+.iso-lounge__scroll:active {
+  cursor: grabbing;
+}
+
+.iso-lounge__world {
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.iso-lounge__svg {
+  display: block;
+}
+
+/* ── 면 색 ─────────────────────────────────────────── */
+.iso-tile {
+  fill: var(--iso-tile);
+}
+.iso-tile.is-alt {
+  fill: var(--iso-tile-alt);
+}
+.iso-slab .f-t {
+  fill: var(--iso-slab-t);
+}
+.iso-slab .f-l {
+  fill: var(--iso-slab-l);
+}
+.iso-slab .f-r {
+  fill: var(--iso-slab-r);
+}
+.iso-wall-back .f-l {
+  fill: var(--iso-wall);
+}
+.iso-wall-back .f-t,
+.iso-wall-side .f-t {
+  fill: var(--iso-wall-cap);
+}
+.iso-wall-back .f-r,
+.iso-wall-side .f-l {
+  fill: var(--iso-wall-end);
+}
+.iso-wall-side .f-r {
+  fill: var(--iso-wall-side);
+}
+.iso-sky {
+  fill: var(--iso-sky);
+}
+.iso-hill {
+  fill: var(--iso-hill);
+}
+.iso-board {
+  fill: var(--iso-board);
+}
+.iso-board__title {
+  fill: var(--iso-board-text);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.iso-board__sub {
+  fill: var(--iso-board-sub);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.iso-rug {
+  fill: var(--iso-rug);
+}
+.iso-rug.is-closed {
+  fill: var(--iso-rug-closed);
+}
+
+.iso-top .f-t {
+  fill: var(--iso-top-t);
+}
+.iso-top .f-l {
+  fill: var(--iso-top-l);
+}
+.iso-top .f-r {
+  fill: var(--iso-top-r);
+}
+.iso-leg .f-l,
+.iso-leg .f-t {
+  fill: var(--iso-leg-l);
+}
+.iso-leg .f-r {
+  fill: var(--iso-leg-r);
+}
+.iso-table.is-closed .iso-top .f-t {
+  fill: var(--iso-closed-t);
+}
+.iso-table.is-closed .iso-top .f-l {
+  fill: var(--iso-closed-l);
+}
+.iso-table.is-closed .iso-top .f-r {
+  fill: var(--iso-closed-r);
+}
+.iso-stool .f-t {
+  fill: var(--iso-stool-t);
+}
+.iso-stool .f-l {
+  fill: var(--iso-stool-l);
+}
+.iso-stool .f-r {
+  fill: var(--iso-stool-r);
+}
+.iso-stool.is-taken .f-t {
+  fill: var(--iso-taken-t);
+}
+.iso-stool.is-taken .f-l {
+  fill: var(--iso-taken-l);
+}
+.iso-stool.is-taken .f-r {
+  fill: var(--iso-taken-r);
+}
+.iso-pot .f-t,
+.iso-pot .f-l {
+  fill: var(--iso-pot-l);
+}
+.iso-pot .f-r {
+  fill: var(--iso-pot-r);
+}
+.iso-leaf .f-t {
+  fill: var(--iso-leaf-t);
+}
+.iso-leaf .f-l {
+  fill: var(--iso-leaf-l);
+}
+.iso-leaf .f-r {
+  fill: var(--iso-leaf-r);
+}
+
+/* ── 가구 ─────────────────────────────────────────── */
+.iso-wood .f-t {
+  fill: var(--iso-wood-t);
+}
+.iso-wood .f-l {
+  fill: var(--iso-wood-l);
+}
+.iso-wood .f-r {
+  fill: var(--iso-wood-r);
+}
+.iso-panel .f-t {
+  fill: var(--iso-panel-t);
+}
+.iso-panel .f-l {
+  fill: var(--iso-panel-l);
+}
+.iso-panel .f-r {
+  fill: var(--iso-panel-r);
+}
+.iso-metal .f-t {
+  fill: var(--iso-metal-t);
+}
+.iso-metal .f-l {
+  fill: var(--iso-metal-l);
+}
+.iso-metal .f-r {
+  fill: var(--iso-metal-r);
+}
+.iso-cushion .f-t {
+  fill: var(--iso-cushion-t);
+}
+.iso-cushion .f-l {
+  fill: var(--iso-cushion-l);
+}
+.iso-cushion .f-r {
+  fill: var(--iso-cushion-r);
+}
+.iso-cup .f-t {
+  fill: var(--iso-cup-t);
+}
+.iso-cup .f-l {
+  fill: var(--iso-cup-l);
+}
+.iso-cup .f-r {
+  fill: var(--iso-cup-r);
+}
+.iso-sofa .f-t {
+  fill: var(--iso-sofa-t);
+}
+.iso-sofa .f-l {
+  fill: var(--iso-sofa-l);
+}
+.iso-sofa .f-r {
+  fill: var(--iso-sofa-r);
+}
+.iso-seat .f-t {
+  fill: var(--iso-seat-t);
+}
+.iso-seat .f-l {
+  fill: var(--iso-seat-l);
+}
+.iso-seat .f-r {
+  fill: var(--iso-seat-r);
+}
+.iso-shade .f-t {
+  fill: var(--iso-shade-t);
+}
+.iso-shade .f-l {
+  fill: var(--iso-shade-l);
+}
+.iso-shade .f-r {
+  fill: var(--iso-shade-r);
+}
+.iso-shelf {
+  fill: var(--iso-shelf);
+}
+.iso-rug-lounge {
+  fill: var(--iso-rug-lounge);
+}
+.iso-rug-lounge.is-closed {
+  fill: var(--iso-rug-closed);
+}
+.iso-book--1 {
+  fill: var(--m-1);
+}
+.iso-book--2 {
+  fill: var(--m-2);
+}
+.iso-book--3 {
+  fill: var(--m-3);
+}
+.iso-book--4 {
+  fill: var(--m-4);
+}
+.iso-book--5 {
+  fill: var(--m-5);
+}
+.iso-book--6 {
+  fill: var(--m-6);
+}
+.iso-book--7 {
+  fill: var(--m-7);
+}
+.iso-book--8 {
+  fill: var(--m-8);
+}
+.iso-board__title--sm {
+  font-size: 18px;
+}
+
+.iso-chair .f-t {
+  fill: var(--iso-chair-t);
+}
+.iso-chair .f-l {
+  fill: var(--iso-chair-l);
+}
+.iso-chair .f-r {
+  fill: var(--iso-chair-r);
+}
+.iso-bean--1 .f-t {
+  fill: var(--iso-bean-1-t);
+}
+.iso-bean--1 .f-l {
+  fill: var(--iso-bean-1-l);
+}
+.iso-bean--1 .f-r {
+  fill: var(--iso-bean-1-r);
+}
+.iso-bean--2 .f-t {
+  fill: var(--iso-bean-2-t);
+}
+.iso-bean--2 .f-l {
+  fill: var(--iso-bean-2-l);
+}
+.iso-bean--2 .f-r {
+  fill: var(--iso-bean-2-r);
+}
+.iso-bean--3 .f-t {
+  fill: var(--iso-bean-3-t);
+}
+.iso-bean--3 .f-l {
+  fill: var(--iso-bean-3-l);
+}
+.iso-bean--3 .f-r {
+  fill: var(--iso-bean-3-r);
+}
+.iso-screen {
+  fill: var(--iso-screen);
+}
+.iso-frame {
+  fill: var(--iso-frame);
+}
+.iso-art--1 {
+  fill: var(--iso-art-1);
+}
+.iso-art--2 {
+  fill: var(--iso-art-2);
+}
+.iso-art--3 {
+  fill: var(--iso-art-3);
+}
+.iso-art--4 {
+  fill: var(--iso-art-4);
+}
+/* 밥약 자리는 나무 탁자 */
+.iso-table.is-meal .iso-top .f-t {
+  fill: var(--iso-meal-t);
+}
+.iso-table.is-meal .iso-top .f-l {
+  fill: var(--iso-meal-l);
+}
+.iso-table.is-meal .iso-top .f-r {
+  fill: var(--iso-meal-r);
+}
+/* 빈자리: 누르면 그 자리에 앉는 창이 열린다 */
+.iso-seat-free {
+  cursor: pointer;
+}
+.iso-seat-free:hover .f-t {
+  fill: var(--iso-taken-t);
+}
+
+
+.iso-clay .f-t {
+  fill: var(--iso-clay-t);
+}
+.iso-clay .f-l {
+  fill: var(--iso-clay-l);
+}
+.iso-clay .f-r {
+  fill: var(--iso-clay-r);
+}
+.iso-clay-seat .f-t {
+  fill: var(--iso-clay-seat-t);
+}
+.iso-clay-seat .f-l {
+  fill: var(--iso-clay-seat-l);
+}
+.iso-clay-seat .f-r {
+  fill: var(--iso-clay-seat-r);
+}
+
+/* 책상 위 책: 표지 색은 사람 색 팔레트에서, 옆면은 한 단계 어둡게 */
+.iso-bookbox--1 { --bk: var(--m-1); }
+.iso-bookbox--2 { --bk: var(--m-3); }
+.iso-bookbox--3 { --bk: var(--m-7); }
+.iso-bookbox--4 { --bk: var(--m-4); }
+.iso-bookbox .f-t {
+  fill: var(--bk);
+}
+.iso-bookbox .f-l,
+.iso-bookbox .f-r {
+  fill: var(--bk);
+  filter: brightness(0.8);
+}
+.iso-page .f-t {
+  fill: #fbfaf6;
+}
+.iso-page .f-l,
+.iso-page .f-r {
+  fill: #e7e2d6;
+}
+
+/* 회의 참여자: 이름 첫 글자 동그라미 */
+.iso-initial__disc {
+  fill: var(--av);
+  stroke: var(--iso-ring);
+  stroke-width: 2;
+}
+.iso-initial__text {
+  fill: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* 밥약 찾는 중: 아주 작은 말풍선 */
+.iso-seek__box {
+  fill: var(--iso-plate, #ffffff);
+  stroke: var(--c-action);
+  stroke-width: 1.4;
+}
+.iso-seek__text {
+  fill: var(--c-action-text);
+  font-size: 15.5px;
+  font-weight: 700;
+}
+
+/* 서 있는 사람: 라운지에 들어와 있는 사람 */
+.iso-person__shadow {
+  fill: rgba(12, 30, 60, 0.18);
+}
+.iso-person__body {
+  fill: var(--av);
+}
+.iso-person.is-me .iso-av__ring {
+  stroke: var(--c-action);
+  stroke-width: 4;
+}
+
+/* 앉은 사람: 자기 색 테두리의 동그란 얼굴이 숨 쉬듯 살짝 오르내린다 */
+.iso-av {
+  animation: iso-bob 3.6s ease-in-out infinite;
+}
+.iso-av__ring {
+  fill: var(--av, var(--iso-ring));
+  stroke: var(--iso-ring);
+  stroke-width: 2;
+}
+.iso-av.is-me .iso-av__ring {
+  stroke: var(--c-action);
+  stroke-width: 4;
+}
+@keyframes iso-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* 탁자: 들어올 때 위에서 내려앉고, 가리키면 살짝 뜬다 */
+.iso-table {
+  cursor: pointer;
+}
+.iso-table__lift {
+  transition: transform var(--t-base);
+}
+.iso-table:hover .iso-table__lift {
+  transform: translateY(-4px);
+}
+.iso-enter {
+  animation: iso-drop 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes iso-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── 이름표 (버튼) ─────────────────────────────────── */
+.iso-plate {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  max-width: 12rem;
+  padding: 0.3rem 0.8rem 0.4rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--iso-plate);
+  color: var(--iso-plate-text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transform: translate(-50%, -100%) scale(var(--ps, 1));
+  transform-origin: 50% 100%;
+  box-shadow: 0 0.4rem 1.2rem rgba(12, 61, 120, 0.18);
+  animation: iso-plate-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transition: transform var(--t-base), box-shadow var(--t-base);
+}
+/* 꼬리: 이름표가 어느 탁자 것인지 가리킨다 */
+.iso-plate::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -0.4rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  background: inherit;
+  border-radius: 0 0 2px 0;
+  transform: translateX(-50%) rotate(45deg);
+}
+.iso-plate:hover {
+  transform: translate(-50%, calc(-100% - 4px)) scale(var(--ps, 1));
+}
+.iso-plate:active {
+  transform: translate(-50%, -100%) scale(calc(var(--ps, 1) * 0.97));
+}
+.iso-plate:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.iso-plate.is-mine {
+  background: var(--c-action);
+  color: var(--c-on-action);
+}
+.iso-plate.is-meeting .iso-plate__chip {
+  background: var(--c-action-bg-strong);
+  color: var(--c-action-text);
+}
+.iso-plate.is-closed:not(.is-mine) {
+  color: var(--c-text-muted);
+}
+.iso-plate__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.iso-plate__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.iso-plate__chip {
+  flex: none;
+  padding: 0 0.4rem;
+  border-radius: var(--r-xs);
+  background: var(--c-panel-strong);
+  color: var(--c-text-sub);
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+.iso-plate.is-mine .iso-plate__chip {
+  background: var(--white);
+  color: var(--primary-60);
+}
+.iso-plate__meta {
+  display: block;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  color: var(--iso-plate-sub);
+  white-space: nowrap;
+}
+.iso-plate.is-mine .iso-plate__meta {
+  color: var(--c-on-action);
+}
+/* 위치(transform)와 따로 움직이도록 translate 속성만 쓴다 — 가리킴·누름 효과를 덮지 않게 */
+@keyframes iso-plate-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* ── 방 위에 떠 있는 조작 ──────────────────────────── */
+/* 오른쪽 아래 만들기: 작은 동그라미 +, 누르면 위로 밥약·회의·미팅이 펼쳐진다 */
+.iso-dial {
+  position: absolute;
+  right: var(--sp-6);
+  bottom: var(--sp-6);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-4);
+}
+.iso-dial__menu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+.iso-dial__menu li {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 180ms ease-out, transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.iso-dial.is-open .iso-dial__menu {
+  pointer-events: auto;
+}
+.iso-dial.is-open .iso-dial__menu li {
+  opacity: 1;
+  transform: none;
+}
+.iso-dial__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--touch);
+  padding: 0 var(--sp-6) 0 var(--sp-5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--iso-plate);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+  box-shadow: 0 0.4rem 1.2rem rgba(12, 61, 120, 0.2);
+  transition: background-color var(--t-base), transform var(--t-base);
+}
+.iso-dial__item svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--c-action);
+}
+.iso-dial__item:hover {
+  background: var(--c-panel);
+}
+.iso-dial__item:active {
+  transform: scale(0.97);
+}
+.iso-dial__item:focus-visible,
+.iso-dial__fab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.iso-dial__fab {
+  display: grid;
+  place-items: center;
+  width: 5.2rem;
+  height: 5.2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--c-action);
+  color: var(--c-on-action);
+  cursor: pointer;
+  box-shadow: 0 0.6rem 1.6rem rgba(12, 61, 120, 0.3);
+  transition: background-color var(--t-base), transform var(--t-collapse);
+}
+.iso-dial__fab svg {
+  width: 2.4rem;
+  height: 2.4rem;
+  transition: transform var(--t-collapse);
+}
+.iso-dial__fab:hover {
+  background: var(--c-action-hover);
+}
+.iso-dial.is-open .iso-dial__fab svg {
+  transform: rotate(45deg);
+}
+/* 왼쪽 위: 나가기 버튼과 접속 인원 */
+.iso-top-bar {
+  position: absolute;
+  top: var(--sp-5);
+  left: var(--sp-5);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.iso-online {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  height: 3.2rem;
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-pill);
+  background: var(--iso-plate);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  box-shadow: 0 0.4rem 1.2rem rgba(12, 61, 120, 0.18);
+}
+.iso-online__dot {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--success-50);
+}
+.iso-exit {
+  display: grid;
+  place-items: center;
+  width: var(--touch);
+  height: var(--touch);
+  border-radius: var(--r);
+  background: var(--iso-plate);
+  color: var(--c-text);
+  box-shadow: 0 0.4rem 1.2rem rgba(12, 61, 120, 0.18);
+  transition: background-color var(--t-base), transform var(--t-base);
+}
+.iso-exit svg {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+.iso-exit:hover {
+  background: var(--c-panel);
+}
+.iso-exit:active {
+  transform: scale(0.96);
+}
+.iso-exit:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+/* 왼쪽 위: 나가기 버튼과 접속 인원 */
+.iso-top-bar {
+  position: absolute;
+  top: var(--sp-5);
+  left: var(--sp-5);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.iso-online {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  height: 3.2rem;
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-pill);
+  background: var(--iso-plate);
+  color: var(--c-text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  box-shadow: 0 0.4rem 1.2rem rgba(12, 61, 120, 0.18);
+}
+.iso-online__dot {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--success-50);
+}
+.iso-exit {
+  display: grid;
+  place-items: center;
+  width: var(--touch);
+  height: var(--touch);
+  border-radius: var(--r);
+  background: var(--iso-plate);
+  color: var(--c-text);
+  box-shadow: 0 0.4rem 1.2rem rgba(12, 61, 120, 0.18);
+  transition: background-color var(--t-base), transform var(--t-base);
+}
+.iso-exit svg {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+.iso-exit:hover {
+  background: var(--c-panel);
+}
+.iso-exit:active {
+  transform: scale(0.96);
+}
+.iso-exit:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.iso-create {
+  position: absolute;
+  right: var(--sp-6);
+  bottom: var(--sp-6);
+  z-index: 2;
+  gap: var(--sp-3);
+  box-shadow: 0 0.6rem 1.6rem rgba(12, 61, 120, 0.28);
+}
+.iso-create .icon,
+.iso-create svg {
+  width: 2rem;
+  height: 2rem;
+}
+.iso-empty {
+  position: absolute;
+  left: 50%;
+  top: 7.6rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-7);
+  border-radius: var(--r);
+  background: var(--iso-plate);
+  color: var(--c-text);
+  text-align: center;
+  transform: translateX(-50%);
+  box-shadow: 0 0.4rem 1.2rem rgba(12, 61, 120, 0.18);
+  white-space: nowrap;
+}
+.iso-empty strong {
+  font-size: var(--fs-md);
+}
+.iso-empty span {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iso-av,
+  .iso-enter,
+  .iso-plate {
+    animation: none;
+  }
+}
+
+/* ── 개인 화면 (/lounge) ──────────────────────────────
+   위에서부터: 머리(나가기·라운지 이름·접속 인원) → 내 모임 → 방(오른쪽 아래 + 메뉴).
+   글자는 내용 14px·보조 12px, 누르는 곳은 44px 이상 (테이스트 스킬 앱 화면 휴대폰 규칙). */
+.lounge-me {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas: 'head' 'mine' 'map';
+  gap: var(--sp-3);
+  background: var(--c-bg);
+}
+.lounge-me__head {
+  grid-area: head;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: var(--touch);
+  padding-left: var(--sp-2);
+}
+.lounge-me__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--touch);
+  height: var(--touch);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--c-panel);
+  color: var(--c-text);
+  cursor: pointer;
+  transition: background-color var(--t-base);
+}
+.lounge-me__icon svg {
+  width: 2rem;
+  height: 2rem;
+}
+.lounge-me__icon:hover {
+  background: var(--c-panel-strong);
+}
+.lounge-me__title {
+  flex: 1;
+  min-width: 0;
+}
+.lounge-me__title h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
+}
+.lounge-me__online {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.lounge-me__dot {
+  flex: none;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--success-50);
+}
+
+/* 내 모임 */
+.lounge-me__mine {
+  grid-area: mine;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  width: 100%;
+  min-height: 5.2rem;
+  margin: 0;
+  padding: var(--sp-3) var(--sp-5);
+  border: 0;
+  border-radius: var(--r-panel);
+  background: var(--c-action-bg);
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--t-base);
+}
+.lounge-me__mine:hover {
+  background: var(--c-action-bg-strong);
+}
+.lounge-me__mine-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  background: var(--c-action);
+  color: var(--c-on-action);
+}
+.lounge-me__mine-icon svg {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+.lounge-me__mine-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.lounge-me__mine-text strong {
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.lounge-me__mine-text span {
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.lounge-me__chev {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+  color: var(--c-text-muted);
+}
+
+/* 방 */
+.lounge-me__map {
+  grid-area: map;
+  position: relative;
+  min-height: 22rem;
+  overflow: hidden;
+  border-radius: var(--r-panel);
+}
+.iso-lounge.iso-lounge--fill {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  border-radius: 0;
+}
+
+/* 방이 라운지 화면 전체(제목 줄까지)를 채우고, 제목·접속 인원·채팅방과 내 모임은 방 위에 떠 있다 */
+.lounge-me {
+  display: block;
+}
+.lounge-me__map {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  border-radius: 0;
+}
+.lounge-me__head {
+  position: absolute;
+  top: var(--sp-4);
+  left: var(--sp-4);
+  right: var(--sp-4);
+  z-index: 3;
+  justify-content: space-between;
+  min-height: 0;
+  padding: 0;
+  pointer-events: none;
+}
+.lounge-me__head > * {
+  pointer-events: auto;
+}
+.lounge-me__title {
+  flex: 0 1 auto;
+  padding: 0 var(--sp-2);
+}
+/* 접속 인원은 배경 없이 방 위에 바로 */
+.lounge-me__head .lounge-me__online {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  color: var(--c-text);
+}
+.lounge-me__head .lounge-me__icon {
+  background: var(--c-bg);
+  box-shadow: 0 0.4rem 1.2rem rgba(12, 61, 120, 0.16);
+}
+.lounge-me__mine {
+  position: absolute;
+  top: calc(var(--sp-4) + 5.6rem);
+  left: var(--sp-4);
+  right: var(--sp-4);
+  z-index: 3;
+  width: auto;
+  box-shadow: 0 0.4rem 1.2rem rgba(12, 61, 120, 0.16);
+}
+@media (min-width: 900px) {
+  .lounge-me__mine {
+    right: auto;
+    width: 36rem;
+  }
+}
+/* 앉은 사람 얼굴 층은 누르기를 막지 않는다 (자리·탁자를 그대로 누를 수 있게) */
+.iso-faces {
+  pointer-events: none;
+}

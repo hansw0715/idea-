@@ -73,7 +73,8 @@ function TimetableSheetBody({ open, onClose, onImported, onRelink, viewAction }:
     setPhase('importing');
     setError(null);
     try {
-      const result = await withCredentials((creds) => schoolApi.timetableImport(creds));
+      // 미리보기에서 이미 받은 수업을 저장만 한다 (학교를 한 번 더 읽지 않는다)
+      const result = await schoolApi.timetableSave(preview.classes);
       toast(
         result.imported > 0
           ? `${result.imported}개 수업을 가져왔어요.`
@@ -117,8 +118,7 @@ function TimetableSheetBody({ open, onClose, onImported, onRelink, viewAction }:
     >
       {phase === 'loading' && !preview && !error && <SchoolWaiting label="학교에서 시간표를 불러오는 중…" overdue={overdue} />}
 
-      {phase === 'importing' && <SchoolWaiting label="시간표에 가져오는 중…" overdue={overdue} />}
-
+      {/* 가져오는 동안은 버튼의 '가져오는 중…'만 보인다 (미리보기를 가리지 않는다) */}
       {error !== null && (
         <div className="school-alert">
           <SchoolErrorAlert

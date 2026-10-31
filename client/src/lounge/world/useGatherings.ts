@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GatheringView } from '../../../../shared/lounge';
+import { api } from '../../api';
 import { loungeApi } from '../api';
 import { useLounge } from '../LoungeContext';
 
@@ -7,6 +8,28 @@ import { useLounge } from '../LoungeContext';
 export const GATHERINGS_POLL_MS = 5000;
 
 const isMine = (g: GatheringView) => g.viewer.isHost || g.viewer.isMember || g.viewer.isApplicant;
+
+/** 공개 목록 ∪ 내 모임 (목록이 100개로 잘려도 내 모임은 빠지지 않게) */
+function merge(all: GatheringView[], mine: GatheringView[]): GatheringView[] {
+  const merged = new Map<string, GatheringView>();
+  for (const g of all) merged.set(g.id, g);
+  for (const g of mine) if (!merged.has(g.id)) merged.set(g.id, g);
+  return [...merged.values()];
+}
+
+/** 지난번에 받아 둔 목록 (둘 다 있어야 쓴다) */
+function cachedLists(): { all: GatheringView[]; mine: GatheringView[] } | null {
+  const all = api.cached<{ gatherings: GatheringView[] }>('/lounge/gatherings')?.gatherings;
+  const mine = api.cached<{ gatherings: GatheringView[] }>('/lounge/mine')?.gatherings;
+  return all && mine ? { all: merge(all, mine), mine } : null;
+}
+
+/** 모임 하나를 지난번에 받아 둔 내용에서 찾는다 (모임 화면을 바로 그릴 때) */
+export function cachedGathering(id: string): GatheringView | null {
+  const one = api.cached<{ gathering: GatheringView }>(`/lounge/gatherings/${id}`)?.gathering;
+  if (one) return one;
+  return cachedLists()?.all.find((g) => g.id === id) ?? null;
+}
 
 /**
  * 모임 목록 폴링(5초, 탭이 보일 때만)과 즉시 갱신.
@@ -21,9 +44,11 @@ export function useGatherings(enabled: boolean) {
   const handleErrorRef = useRef(handleError);
   handleErrorRef.current = handleError;
 
-  const [list, setList] = useState<GatheringView[]>([]);
-  const [mineList, setMineList] = useState<GatheringView[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  // 지난번 목록이 있으면 그것부터 그리고(불러오는 중 없이) 뒤에서 새로 받는다
+  const [seed] = useState(cachedLists);
+  const [list, setList] = useState<GatheringView[]>(seed?.all ?? []);
+  const [mineList, setMineList] = useState<GatheringView[]>(seed?.mine ?? []);
+  const [loaded, setLoaded] = useState(seed !== null);
   const [error, setError] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
 
@@ -66,13 +91,12 @@ export function useGatherings(enabled: boolean) {
           again = true; // 읽는 동안 모임이 바뀌었다: 이 응답은 버리고 바로 다시 읽는다
           return;
         }
-        const merged = new Map<string, GatheringView>();
-        for (const g of all) merged.set(g.id, g);
-        for (const g of mine) if (!merged.has(g.id)) merged.set(g.id, g);
-        setList(stable([...merged.values()]));
+        const merged = merge(all, mine);
+        setList(stable(merged));
         setMineList(stable(mine));
         // 목록에서 사라진 모임의 캐시는 버린다 (오래 켜 둬도 메모리가 늘지 않게)
-        for (const id of cache.current.keys()) if (!merged.has(id)) cache.current.delete(id);
+        const ids = new Set(merged.map((g) => g.id));
+        for (const id of cache.current.keys()) if (!ids.has(id)) cache.current.delete(id);
         setLoaded(true);
         setError(null);
         setStale(false);

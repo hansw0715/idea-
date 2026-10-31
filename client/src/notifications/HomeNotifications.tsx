@@ -5,12 +5,15 @@ import type { IconName } from '../ui';
 import { useNotifications } from './Notifications';
 import type { Activity } from './activity';
 
+/** 홈 알림은 12시간이 지나면 자동으로 사라진다 */
+const HOME_KEEP_MS = 12 * 3_600_000;
 const icons: Record<Activity['kind'], IconName> = { reservation: 'calendar', lounge: 'lounge', meeting: 'users', notice: 'list', friend: 'user-plus', chat: 'message', timetable: 'calendar', learning: 'list' };
 export default function HomeNotifications() {
   const { items, loading, failed, unread, mark, refresh } = useNotifications();
   const [expanded, setExpanded] = useState(false);
-  // 학교 소식과 수업은 바로 아래 전용 섹션에서 보여 준다.
-  const feed = items.filter((i) => !['notice', 'timetable', 'learning'].includes(i.kind)).sort((a, b) => {
+  // 학교 소식과 수업은 바로 아래 전용 섹션에서 보여 준다. 지난 일은 12시간이 지나면 홈에서 사라진다 (다가올 약속·예약은 남는다)
+  const cutoff = Date.now() - HOME_KEEP_MS;
+  const feed = items.filter((i) => !['notice', 'timetable', 'learning'].includes(i.kind) && !(Date.parse(i.at) < cutoff)).sort((a, b) => {
     const isNew = Number(unread('home', b)) - Number(unread('home', a));
     if (isNew) return isNew;
     if (a.kind === 'reservation' && b.kind === 'reservation') return a.at.localeCompare(b.at);

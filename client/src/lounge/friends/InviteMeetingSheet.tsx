@@ -11,7 +11,8 @@ import { loungeApi } from '../api';
  */
 export default function InviteMeetingSheet({ friend, onClose }: { friend: QuickMember | null; onClose: () => void }) {
   const toast = useToast();
-  const [meetings, setMeetings] = useState<Meeting[] | null>(null);
+  // 지난번에 받은 내 회의 목록으로 첫 그림부터 그리고, 뒤에서 새로 받아 바꾼다
+  const [meetings, setMeetings] = useState<Meeting[] | null>(() => api.cached<Meeting[]>('/meetings') ?? null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
 

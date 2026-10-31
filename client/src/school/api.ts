@@ -17,7 +17,9 @@ import type {
   LinkStatus,
   MyReservationsResult,
   SchoolCredentials,
+  SchoolClass,
   TimetableImportResult,
+  TimetableSaveRequest,
   TimetablePreview,
 } from '../../../shared/school/types';
 
@@ -32,6 +34,8 @@ export const schoolApi = {
 
   timetablePreview: (creds: SchoolCredentials) => api.post<TimetablePreview>(`${S}/timetable/preview`, { creds }),
   timetableImport: (creds: SchoolCredentials) => api.post<TimetableImportResult>(`${S}/timetable/import`, { creds }),
+  /** 미리보기에서 받은 수업을 저장만 한다 (학교에 다시 로그인하지 않아 바로 끝난다) */
+  timetableSave: (classes: SchoolClass[]) => api.post<TimetableImportResult>(`${S}/timetable/save`, { classes } satisfies TimetableSaveRequest),
 
   reservations: (creds: SchoolCredentials) => api.post<MyReservationsResult>(`${S}/reservations`, { creds }),
 

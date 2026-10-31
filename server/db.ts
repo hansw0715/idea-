@@ -211,6 +211,18 @@ export const SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_timetable_user ON timetable_entries(user_id);
   CREATE INDEX IF NOT EXISTS idx_reservations_facility_date ON reservations(facility_id, date);
   CREATE INDEX IF NOT EXISTS idx_members_user ON meeting_members(user_id);
+
+  -- 미수강 강의 마감 푸시: 앱이 알려 준 마감 목록 (server/lectureAlerts.ts)
+  CREATE TABLE IF NOT EXISTS lecture_alerts (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    item_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    course TEXT NOT NULL,
+    due_at TIMESTAMPTZ NOT NULL,
+    sent_at TIMESTAMPTZ,
+    PRIMARY KEY (user_id, item_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_lecture_alerts_due ON lecture_alerts(due_at) WHERE sent_at IS NULL;
 `;
 
 /**

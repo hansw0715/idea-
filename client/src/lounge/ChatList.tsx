@@ -2,20 +2,27 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { RoomSummary } from '../../../shared/lounge';
 import { Alert, Button, EmptyState, Icon, LoadingBlock } from '../ui';
+import { api } from '../api';
 import { loungeApi } from './api';
 
 export default function ChatList({ onExplore }: { onExplore: () => void }) {
-  const [rooms, setRooms] = useState<RoomSummary[] | null>(null);
+  // 지난번 목록부터 바로 보여 주고 뒤에서 새로 받는다
+  const [rooms, setRooms] = useState<RoomSummary[] | null>(() => api.cached<{ rooms: RoomSummary[] }>('/lounge/rooms')?.rooms ?? null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
     setError(null);
-    loungeApi.rooms().then((list) => { if (!cancelled) setRooms(list); })
+    loungeApi.rooms().then((list) => {
+      if (cancelled) return;
+      setRooms(list);
+      // 위쪽 방 몇 개의 대화를 미리 받아 둔다 → 방에 들어가자마자 대화가 보인다
+      api.warm(...list.slice(0, 5).map((room) => `/lounge/gatherings/${room.id}/messages`));
+    })
       .catch((err: unknown) => { if (!cancelled) setError(err instanceof Error ? err.message : '잠시 후 다시 시도해 주세요.'); });
     return () => { cancelled = true; };
   }, [attempt]);
-  if (error) return <Alert tone="danger" title="채팅 목록을 불러오지 못했어요" actions={<Button variant="secondary" onClick={() => setAttempt((n) => n + 1)}>다시 시도하기</Button>}>{error}</Alert>;
+  if (error && rooms === null) return <Alert tone="danger" title="채팅 목록을 불러오지 못했어요" actions={<Button variant="secondary" onClick={() => setAttempt((n) => n + 1)}>다시 시도하기</Button>}>{error}</Alert>;
   if (rooms === null) return <LoadingBlock>참여한 채팅방을 불러오고 있어요.</LoadingBlock>;
   return <section className="section" aria-labelledby="lounge-chats-title">
     <div className="section__head"><h2 id="lounge-chats-title" className="section__title">내 채팅방</h2><span className="text-sub text-sm">{rooms.length}개</span></div>

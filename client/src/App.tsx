@@ -19,12 +19,11 @@ import Account from './pages/Account';
 import { LoungeProvider } from './lounge/LoungeContext';
 import { LOUNGE_ENABLED } from './features';
 import { SchoolProvider } from './school/SchoolContext';
-import LoungePage from './lounge/LoungePage';
 import MeetupPage from './lounge/MeetupPage';
 import MealPage from './lounge/MealPage';
 import GatheringPage from './lounge/GatheringPage';
 import ChatRoomPage from './lounge/ChatRoomPage';
-import MeetupLoungePage from './lounge/MeetupLoungePage';
+import MeetupLoungePage, { LoungePeek } from './lounge/MeetupLoungePage';
 import { NotificationsProvider } from './notifications/Notifications';
 import AdminPage from './lounge/AdminPage';
 import { hideSplash } from './shell/splash';
@@ -106,7 +105,7 @@ const TAB_PAGES: Record<string, ReactNode> = {
   '/timetable': <TimetablePage />,
   '/campus': <Campus />,
   '/meetings': <MeetingsEntry />,
-  '/lounge': <LoungePage />,
+  '/lounge': <LoungePeek />,
   '/account': <Account />,
 };
 
@@ -182,9 +181,9 @@ export default function App() {
                   {LOUNGE_ENABLED && (
                     <>
                       <Route path="/account/friends" element={<Protected><Friends /></Protected>} />
-                      <Route path="/lounge" element={<Protected><LoungePage /></Protected>} />
+                      <Route path="/lounge" element={<Protected><MeetupLoungePage /></Protected>} />
                       <Route path="/lounge/meetings" element={<Protected><Meetings /></Protected>} />
-                      <Route path="/lounge/campus" element={<Protected><MeetupLoungePage /></Protected>} />
+                      <Route path="/lounge/campus" element={<Navigate to="/lounge" replace />} />
                       <Route path="/lounge/meetup" element={<Protected><MeetupPage /></Protected>} />
                       <Route path="/lounge/meal" element={<Protected><MealPage /></Protected>} />
                       <Route path="/lounge/gatherings/:id" element={<Protected><GatheringPage /></Protected>} />

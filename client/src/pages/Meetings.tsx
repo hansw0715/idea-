@@ -69,7 +69,10 @@ export default function Meetings() {
     api
       .get<Meeting[]>('/meetings')
       .then((list) => {
-        if (!cancelled) setMeetings(list);
+        if (cancelled) return;
+        setMeetings(list);
+        // 위쪽 회의 몇 개를 미리 받아 둔다 → 눌러 들어가면 바로 보인다
+        api.warm(...list.slice(0, 5).flatMap((m) => [`/meetings/${m.id}`, `/reservations/meeting/${m.id}`]));
       })
       .catch((err: unknown) => {
         if (!cancelled) {

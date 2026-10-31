@@ -10,7 +10,7 @@ import type { KeyboardEvent } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { CHAT_POLL_MS, MAX_MESSAGE_LENGTH, formatMeetAt } from '../../../shared/lounge';
 import type { ChatMessageView, PublicUser, RoomView } from '../../../shared/lounge';
-import { ApiError } from '../api';
+import { api, ApiError } from '../api';
 import { AppHeader, useHideTabBar } from '../shell/Shell';
 import { Alert, Button, EmptyState, Icon, LoadingBlock, Sheet, btnClass, useConfirm, useToast } from '../ui';
 import { loungeApi } from './api';
@@ -120,11 +120,18 @@ function ChatRoom({ roomId }: { roomId: string }) {
   useHideTabBar();
   const { profile, handleError } = useLounge();
 
-  const [phase, setPhase] = useState<Phase>('loading');
+  // 지난번에 받은 대화가 있으면 그것부터 바로 그리고, 새 메시지는 뒤에서 받아 이어 붙인다
+  const [seed] = useState(() => {
+    const last = api.cached<{ room: RoomView }>(`/lounge/gatherings/${roomId}/messages`)?.room;
+    if (!last) return null;
+    const { messages: list, ...meta } = last;
+    return { meta, messages: sortMessages(list) };
+  });
+  const [phase, setPhase] = useState<Phase>(seed ? 'ready' : 'loading');
   const [denied, setDenied] = useState<{ title: string; description: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [room, setRoom] = useState<RoomMeta | null>(null);
-  const [messages, setMessages] = useState<ChatMessageView[]>([]);
+  const [room, setRoom] = useState<RoomMeta | null>(seed?.meta ?? null);
+  const [messages, setMessages] = useState<ChatMessageView[]>(seed?.messages ?? []);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -133,8 +140,8 @@ function ChatRoom({ roomId }: { roomId: string }) {
   const [pickOpen, setPickOpen] = useState(false);
   const [targetId, setTargetId] = useState<string | null>(null);
 
-  const messagesRef = useRef<ChatMessageView[]>([]);
-  const phaseRef = useRef<Phase>('loading');
+  const messagesRef = useRef<ChatMessageView[]>(seed?.messages ?? []);
+  const phaseRef = useRef<Phase>(seed ? 'ready' : 'loading');
   const deniedCodeRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
   const failCountRef = useRef(0);
@@ -143,8 +150,8 @@ function ChatRoom({ roomId }: { roomId: string }) {
   handleErrorRef.current = handleError;
   /** 맨 아래를 보고 있는가 — 새 메시지가 올 때 따라 내려갈지 정한다 */
   const atBottomRef = useRef(true);
-  /** 다음 그리기 뒤에 맨 아래로 내려갈지 */
-  const stickRef = useRef(false);
+  /** 다음 그리기 뒤에 맨 아래로 내려갈지 (지난 대화로 바로 열 때는 맨 아래부터) */
+  const stickRef = useRef(seed !== null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const moreRef = useRef<HTMLButtonElement>(null);
@@ -166,7 +173,7 @@ function ChatRoom({ roomId }: { roomId: string }) {
     });
     if (!ok) return;
     toast('채팅방에서 나갔어요.');
-    navigate('/lounge?tab=chats', { replace: true });
+    navigate('/lounge?chats=1', { replace: true });
   }
   const sendingRef = useRef(false);
   /** 한글 같은 조합 입력 중인가 (조합 중 Enter 는 글자를 확정하는 키다) */
@@ -377,7 +384,7 @@ function ChatRoom({ roomId }: { roomId: string }) {
 
   return (
     <div className={`lounge-chat-shell${ready ? ' lounge-chat-root' : ''}`}>
-      <AppHeader title={title} backTo="/lounge?tab=chats" actions={moreButton} />
+      <AppHeader title={title} backTo="/lounge?chats=1" actions={moreButton} />
 
       {phase === 'loading' && (
         <main id="main" className="app-main">

@@ -8,6 +8,7 @@ import { LOUNGE_ENABLED } from "../features";
 import LoungeProfileCard from "../lounge/account/LoungeProfileCard";
 import LoungeAccountRows from "../lounge/account/LoungeAccountRows";
 import SchoolLinkCard from "../school/SchoolLinkCard";
+import { disablePush, enablePush, pushActive, pushSupported } from "../lounge/push";
 import { useSchool } from "../school/SchoolContext";
 import {
   Alert,
@@ -71,6 +72,31 @@ export default function Account() {
   const navigate = useNavigate();
   const confirm = useConfirm();
   const toast = useToast();
+
+  // 폰 알림 켜기·끄기 (제목 옆 종 버튼). 이 기기 기준이다
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  useEffect(() => {
+    void pushActive().then(setPushOn).catch(() => setPushOn(false));
+  }, []);
+  async function togglePush() {
+    if (pushBusy) return;
+    setPushBusy(true);
+    try {
+      if (pushOn) {
+        await disablePush();
+        setPushOn(false);
+        toast("알림을 껐어요.");
+      } else if (await enablePush().catch(() => false)) {
+        setPushOn(true);
+        toast("알림을 켰어요.");
+      } else {
+        toast("알림을 켜지 못했어요. 폰 설정에서 이 앱의 알림을 허용해 주세요.");
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }
 
   const [loggingOut, setLoggingOut] = useState(false);
   const [open, setOpen] = useState(false);
@@ -157,8 +183,20 @@ export default function Account() {
     <>
       <AppHeader />
       <main id="main" className="app-main">
-        <div className="page-head">
+        <div className="page-head account-head">
           <h1 className="page-title">내 정보</h1>
+          {pushSupported() && (
+            <button
+              type="button"
+              className={`account-bell${pushOn ? " is-on" : ""}`}
+              aria-pressed={pushOn}
+              aria-label={pushOn ? "알림 끄기" : "알림 켜기"}
+              disabled={pushBusy}
+              onClick={() => void togglePush()}
+            >
+              <Icon name={pushOn ? "bell" : "bell-off"} />
+            </button>
+          )}
         </div>
 
         <section className="section" aria-labelledby="account-info-title">

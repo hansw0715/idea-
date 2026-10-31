@@ -198,16 +198,31 @@
   color: var(--c-text-sub);
   font-size: var(--fs-sm);
 }
-.home-empty a {
+.home-empty a,
+.home-empty__add {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   min-height: 44px;
   text-decoration: none;
 }
+/* 홈에서 바로 일정 추가: 링크처럼 보이는 버튼 */
+.home-empty__add {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--c-action-text);
+  font: inherit;
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+}
 .home-empty svg {
   width: 16px;
   height: 16px;
+}
+/* 일정이 있는 날: 목록 바로 아래에 같은 '일정 추가하기' */
+.home-agenda__add {
+  padding: 4px 0 0;
 }
 .home-meetings a {
   display: flex;
@@ -621,12 +636,12 @@
 }
 
 /* 홈은 일정 → 통합 알림 → 강의·과제 → 학교 소식 순서로 읽는다. */
-.home-notifications { background: var(--c-action-bg); }
+/* 알림 상자도 다른 홈 상자와 같은 회색 면 (혼자 파랗지 않게). 안쪽 항목은 흰 카드, 아이콘·시간은 차분한 글자색 */
 .home-notifications__lead { color: var(--c-text-sub); font-size: var(--fs-sm); line-height: 1.6; margin: 4px 0 12px; }
 .home-notifications__list { list-style: none; padding: 0; margin: 0; }
 .home-notifications__list li + li { border-top: 1px solid var(--c-divider); }
 .home-notifications__list a { display: flex; align-items: center; gap: 12px; padding: 16px 0; color: var(--c-text); text-decoration: none; min-height: 64px; }
-.home-notifications__icon { width: 22px; height: 22px; flex: none; color: var(--c-action-text); }
+.home-notifications__icon { width: 22px; height: 22px; flex: none; color: var(--c-text-sub); }
 .home-notifications__body { flex: 1; min-width: 0; display: grid; gap: 4px; }
 .home-notifications__body strong { font-size: var(--fs-sm); font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .home-notifications__body > span { font-size: var(--fs-xs); line-height: 1.6; color: var(--c-text-sub); }
@@ -638,7 +653,7 @@
 .home-notifications__list li { min-width: 0; background: var(--c-bg); border-radius: var(--r-panel); }
 .home-notifications__list li + li { border: 0; }
 .home-notifications__list a { padding: 16px; border-radius: inherit; }
-.home-notifications__body > .home-notifications__when { display: flex; align-items: flex-start; gap: 5px; color: var(--c-action-text); font-weight: 500; }
+.home-notifications__body > .home-notifications__when { display: flex; align-items: flex-start; gap: 5px; color: var(--c-text-sub); font-weight: 500; }
 .home-notifications__when > svg { width: 14px; height: 14px; flex: none; margin-top: 3px; }
 /* 강의·과제 제목 줄: 오른쪽 끝 새로고침 버튼 (높이는 제목 줄에 맞춘다) */
 .home-learning__head {

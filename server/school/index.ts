@@ -3,7 +3,7 @@ import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { userId } from '../auth.js';
 import { get } from '../db.js';
 import { errorResponseOf, sessionGone } from './http.js';
-import { createSchoolService, parseCredentials } from './service.js';
+import { createSchoolService, parseCredentials, parseSchoolClasses } from './service.js';
 import type { SchoolService } from './service.js';
 
 /**
@@ -65,6 +65,10 @@ export function createSchoolRouter(service: SchoolService): Router {
   }));
   router.post('/timetable/import', route(async (req, res) => {
     res.json(await service.timetableImport(userId(res), parseCredentials(bodyOf(req).creds)));
+  }));
+  // 미리보기에서 받은 수업을 저장만 (학교를 다시 읽지 않는다)
+  router.post('/timetable/save', route(async (req, res) => {
+    res.json(await service.timetableSave(userId(res), parseSchoolClasses(bodyOf(req))));
   }));
 
   router.post('/reservations', route(async (req, res) => {

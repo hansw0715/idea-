@@ -78,9 +78,14 @@ export default function MeetingDetail() {
   const week = useWeek();
   const { weekStart } = week;
 
-  const [detail, setDetail] = useState<MeetingDetailData | null>(null);
-  const [memberEntries, setMemberEntries] = useState<MemberTimetableEntry[]>([]);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  // 지난번에 받아 둔 회의 내용이 있으면 그것부터 바로 그리고 뒤에서 새로 받는다
+  const [detail, setDetail] = useState<MeetingDetailData | null>(() => (id ? api.cached<MeetingDetailData>(`/meetings/${id}`) ?? null : null));
+  const [memberEntries, setMemberEntries] = useState<MemberTimetableEntry[]>(
+    () => (id ? api.cached<MemberTimetableEntry[]>(`/meetings/${id}/timetable?week=${weekStart}`) ?? [] : []),
+  );
+  const [reservations, setReservations] = useState<Reservation[]>(
+    () => (id ? api.cached<Reservation[]>(`/reservations/meeting/${id}`) ?? [] : []),
+  );
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [reservationsFailed, setReservationsFailed] = useState(false);
   const [timetableFailed, setTimetableFailed] = useState(false);
@@ -126,11 +131,14 @@ export default function MeetingDetail() {
     };
   }, []);
 
-  // 다른 회의로 주소가 바뀌면 이전 회의의 내용을 비운다.
+  // 다른 회의로 주소가 바뀌면 이전 회의의 내용을 비운다 (그 회의를 받아 둔 적이 있으면 그것으로 바꾼다).
+  const firstId = useRef(id);
   useEffect(() => {
-    setDetail(null);
+    if (firstId.current === id) return; // 처음 열 때는 위에서 이미 받아 둔 내용으로 채웠다
+    firstId.current = undefined;
+    setDetail(id ? api.cached<MeetingDetailData>(`/meetings/${id}`) ?? null : null);
     setMemberEntries([]);
-    setReservations([]);
+    setReservations(id ? api.cached<Reservation[]>(`/reservations/meeting/${id}`) ?? [] : []);
     setLoadError(null);
     setParticipants(null);
     previousMembers.current = [];
@@ -504,80 +512,42 @@ export default function MeetingDetail() {
           </section>
         )}
 
-        {/* ① 회의 코드 */}
-        <section className="section" aria-labelledby="mtg-code-title">
-          <div className="mtg-code">
-            <div className="mtg-code__row">
-              <h2 className="mtg-code__label" id="mtg-code-title">
-                회의 코드
-              </h2>
-              {copyState === 'failed' ? (
-                <input
-                  ref={codeInputRef}
-                  className="input mtg-code__input code-chip"
-                  readOnly
-                  value={detail.code}
-                  aria-label="회의 코드 (길게 눌러 복사할 수 있습니다)"
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-              ) : (
-                <p className="mtg-code__value code-chip">
-                  <span aria-hidden="true">{detail.code}</span>
-                  <span className="sr-only">{detail.code.split('').join(' ')}</span>
-                </p>
-              )}
-              <Button variant="text" size="sm" onClick={copyCode} className="mtg-code__copy" aria-label={copyState === 'copied' ? '회의 코드 복사됨' : '회의 코드 복사'}>
-                <Icon name={copyState === 'copied' ? 'check' : 'copy'} className="btn__icon" />
-                {copyState === 'copied' ? '복사됨' : '복사'}
-              </Button>
-            </div>
-            {copyState === 'failed' && (
-              <p className="field__help" role="status">
-                자동으로 복사하지 못했습니다. 위 코드를 길게 눌러 복사해 주세요.
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* ② 회의 예약하기 (이 화면의 유일한 Primary) */}
-        <section className="section" aria-label="회의 예약">
-          <Button
-            variant="primary"
-            size="lg"
-            block
-            onClick={openBooking}
-            disabled={noParticipants || school.loading}
-            aria-describedby={noParticipants ? 'mtg-book-help' : undefined}
-          >
-            회의 예약하기
-          </Button>
-          {noParticipants && <p className="text-sub text-sm mtg-book-help" id="mtg-book-help">참여할 팀원을 선택해 주세요.</p>}
-
-          {!school.loading && (!school.linked || !school.canUse) && (
-            <div className="mtg-result">
-              <Alert
-                tone="info"
-                title={school.linked ? '이 기기에서는 학교 계정을 다시 연동해야 해요.' : '학교 계정을 연동해야 시설을 예약할 수 있어요.'}
-                actions={
-                  <Button variant="secondary" size="sm" onClick={() => setLinkOpen(true)}>
-                    {school.linked ? '다시 연동하기' : '학교 계정 연동하기'}
-                  </Button>
-                }
-              />
-            </div>
-          )}
-        </section>
-
-        {/* ③ 팀원 */}
+        {/* ① 팀원 (오른쪽에 회의 코드) */}
         <section className="section" aria-labelledby="mtg-members-title">
           <div className="section__head">
             <h2 className="section__title" id="mtg-members-title">
               참여 인원
+              <span className="mtg-members__tally" aria-live="polite" aria-atomic="true">
+                <strong className="mtg-members__count">{activeIds.length}</strong>/{detail.members.length}명
+              </span>
             </h2>
-            <p className="text-sub text-sm" aria-live="polite" aria-atomic="true">
-              <strong className="mtg-members__count">{activeIds.length}명</strong> / {detail.members.length}명
-            </p>
+            {/* 회의 코드: 인원 오른쪽에 작은 칩으로. 누르면 복사된다 */}
+            <button
+              type="button"
+              className={`mtg-codechip${copyState === 'copied' ? ' is-copied' : ''}`}
+              onClick={copyCode}
+              aria-label={`회의 코드 ${detail.code.split('').join(' ')}, ${copyState === 'copied' ? '복사됨' : '눌러서 복사'}`}
+            >
+              <span className="mtg-codechip__label" aria-hidden="true">코드</span>
+              <span className="mtg-codechip__value" aria-hidden="true">{detail.code}</span>
+              <Icon name={copyState === 'copied' ? 'check' : 'copy'} className="mtg-codechip__icon" />
+            </button>
           </div>
+          {copyState === 'failed' && (
+            <div className="mtg-codechip__fallback">
+              <input
+                ref={codeInputRef}
+                className="input mtg-code__input code-chip"
+                readOnly
+                value={detail.code}
+                aria-label="회의 코드 (길게 눌러 복사할 수 있습니다)"
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <p className="field__help" role="status">
+                자동으로 복사하지 못했습니다. 코드를 길게 눌러 복사해 주세요.
+              </p>
+            </div>
+          )}
           <p className="section__sub mtg-members__sub">
             선택한 팀원의 시간표만 반영합니다.
           </p>
@@ -590,7 +560,7 @@ export default function MeetingDetail() {
           )}
         </section>
 
-        {/* ④ 팀원 시간표 */}
+        {/* ② 팀원 시간표 */}
         <section className="section" aria-labelledby="mtg-tt-title">
           <div className="section__head">
             <h2 className="section__title" id="mtg-tt-title">
@@ -639,7 +609,36 @@ export default function MeetingDetail() {
           )}
         </section>
 
-        {/* ⑤ 예약 현황 */}
+        {/* ③ 회의 예약하기 (이 화면의 유일한 Primary): 팀원 시간표를 본 뒤 바로 아래에서 */}
+        <section className="section" aria-label="회의 예약">
+          <Button
+            variant="primary"
+            size="lg"
+            block
+            onClick={openBooking}
+            disabled={noParticipants || school.loading}
+            aria-describedby={noParticipants ? 'mtg-book-help' : undefined}
+          >
+            회의 예약하기
+          </Button>
+          {noParticipants && <p className="text-sub text-sm mtg-book-help" id="mtg-book-help">참여할 팀원을 선택해 주세요.</p>}
+
+          {!school.loading && (!school.linked || !school.canUse) && (
+            <div className="mtg-result">
+              <Alert
+                tone="info"
+                title={school.linked ? '이 기기에서는 학교 계정을 다시 연동해야 해요.' : '학교 계정을 연동해야 시설을 예약할 수 있어요.'}
+                actions={
+                  <Button variant="secondary" size="sm" onClick={() => setLinkOpen(true)}>
+                    {school.linked ? '다시 연동하기' : '학교 계정 연동하기'}
+                  </Button>
+                }
+              />
+            </div>
+          )}
+        </section>
+
+        {/* ④ 예약 현황 */}
         <section className="section" aria-labelledby="mtg-res-title">
           <div className="section__head">
             <h2 className="section__title" id="mtg-res-title" tabIndex={-1} ref={resHeadingRef}>
@@ -776,7 +775,7 @@ export default function MeetingDetail() {
           )}
         </section>
 
-        {/* ⑥ 위험 구역 */}
+        {/* ⑤ 위험 구역 */}
         <section className="section mtg-danger" aria-labelledby="mtg-danger-title">
           <h2 className="section__title" id="mtg-danger-title">
             {isOwner ? '회의 삭제' : '회의 나가기'}

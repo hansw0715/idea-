@@ -81,6 +81,38 @@ const EMPTY_STATUS: LinkStatus = { linked: false, hint: null, linkedAt: null, ci
 
 const deps = { vault, remote: schoolApi } as const;
 
+/**
+ * 지난번 연동 상태 요약 (사용자마다). 다시 열 때 "불러오는 중" 대신 이것으로 먼저 그리고 뒤에서 새로 확인한다.
+ * 암호문(cipher)은 담지 않는다. 틀려도 학교 기능을 쓰는 순간 다시 확인하므로 해가 없다.
+ */
+const SUMMARY_PREFIX = 'sangsang-booke:school-link:';
+function readSummary(uid: number): Loaded | null {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SUMMARY_PREFIX + uid) ?? 'null') as Omit<LinkStatus, 'cipher'> & { keyOk: boolean } | null;
+    if (!raw || typeof raw.linked !== 'boolean') return null;
+    const { keyOk, ...status } = raw;
+    return { uid, status: { ...status, cipher: null }, keyOk: Boolean(keyOk), error: null };
+  } catch {
+    return null;
+  }
+}
+function writeSummary(l: Loaded): void {
+  try {
+    const { linked, hint, linkedAt, profileHint } = l.status;
+    localStorage.setItem(SUMMARY_PREFIX + l.uid, JSON.stringify({ linked, hint, linkedAt, profileHint, keyOk: l.keyOk }));
+  } catch {
+    /* 막힌 환경 — 다음에는 불러오는 중이 잠깐 보인다 */
+  }
+}
+/** 로그아웃하면 이 기기의 요약을 모두 지운다 */
+function clearSummaries(): void {
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith(SUMMARY_PREFIX)) localStorage.removeItem(k);
+  } catch {
+    /* 무시 */
+  }
+}
+
 /** 로그인한 동안 학교 연동 상태를 들고 있다. 로그아웃하면 비운다. */
 export function SchoolProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -93,7 +125,7 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
   const nameRef = useRef<string | null>(user?.username ?? null);
   nameRef.current = user?.username ?? null;
 
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [loaded, setLoaded] = useState<Loaded | null>(() => (uid !== null ? readSummary(uid) : null));
 
   const refresh = useCallback(async () => {
     const id = uidRef.current;
@@ -106,7 +138,9 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
       const name = nameRef.current;
       const keyOk = status.linked && status.cipher && name ? await vault.canOpen(id, name, status.cipher) : false;
       if (uidRef.current !== id) return;
-      setLoaded({ uid: id, status, keyOk, error: null });
+      const next = { uid: id, status, keyOk, error: null };
+      writeSummary(next);
+      setLoaded(next);
     } catch (err) {
       if (uidRef.current !== id) return;
       const message = err instanceof Error ? err.message : '학교 연동 상태를 불러오지 못했어요.';
@@ -117,11 +151,18 @@ export function SchoolProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // 로그인했던 사람이 로그아웃했을 때만 요약을 지운다 (앱을 켜는 순간 아직 로그인 확인 전인 null 은 제외)
+  const prevUid = useRef(uid);
   useEffect(() => {
+    const was = prevUid.current;
+    prevUid.current = uid;
     if (uid === null) {
       setLoaded(null);
+      if (was !== null) clearSummaries();
       return;
     }
+    // 다른 계정으로 바뀌었다면 그 사람의 지난 요약으로 먼저 그린다
+    setLoaded((prev) => (prev && prev.uid === uid ? prev : readSummary(uid)));
     void refresh();
   }, [uid, refresh]);
 

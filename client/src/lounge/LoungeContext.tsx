@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { ApiError } from '../api';
+import { api, ApiError } from '../api';
 import { useAuth } from '../auth';
-import type { Profile } from '../../../shared/lounge';
+import type { MeResponse, Profile } from '../../../shared/lounge';
 import { loungeApi } from './api';
 import ProfileSheet from './sheets/ProfileSheet';
 
@@ -31,6 +31,8 @@ interface LoungeState {
 
 const LoungeContext = createContext<LoungeState | null>(null);
 
+const ME_PATH = '/lounge/me';
+
 export function useLounge(): LoungeState {
   const ctx = useContext(LoungeContext);
   if (!ctx) throw new Error('useLounge 는 LoungeProvider 안에서만 쓸 수 있습니다.');
@@ -45,10 +47,12 @@ export function useLoungeOptional(): LoungeState | null {
 /** 로그인한 동안 내 라운지 프로필을 들고 있고, 프로필 만들기 시트를 한 곳에서 연다. */
 export function LoungeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [profile, setProfileState] = useState<Profile | null>(null);
-  const [needsProfile, setNeedsProfile] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(Boolean(user));
+  // 지난번에 받은 내 라운지 정보가 있으면 기다리지 않고 그것부터 보여 주고, 뒤에서 새로 받는다
+  const [last] = useState(() => (user && !user.adminSession ? api.cached<MeResponse>(ME_PATH) : undefined));
+  const [profile, setProfileState] = useState<Profile | null>(last?.profile ?? null);
+  const [needsProfile, setNeedsProfile] = useState(last?.needsProfile ?? false);
+  const [isAdmin, setIsAdmin] = useState(last?.isAdmin ?? false);
+  const [loading, setLoading] = useState(Boolean(user) && !last);
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -59,6 +63,8 @@ export function LoungeProvider({ children }: { children: ReactNode }) {
       setNeedsProfile(me.needsProfile);
       setIsAdmin(me.isAdmin);
       setError(null);
+      // 라운지에서 곧 열 화면(모임 목록·내 모임·채팅방)을 미리 받아 둔다 → 들어가자마자 바로 보인다
+      if (me.profile && !me.profile.banned) api.warm('/lounge/gatherings', '/lounge/mine', '/lounge/rooms');
     } catch (err) {
       setError(err instanceof Error ? err.message : '라운지 정보를 불러오지 못했습니다.');
     } finally {
@@ -75,7 +81,8 @@ export function LoungeProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    // 저장해 둔 정보가 같은 사람 것이면 화면은 그대로 두고 뒤에서만 새로 받는다
+    if (!api.cached<MeResponse>(ME_PATH)) setLoading(true);
     void refresh();
   }, [user, refresh]);
 

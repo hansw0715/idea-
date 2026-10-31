@@ -21,6 +21,7 @@ import { Alert, Button, Icon } from "../ui";
 import EclassHomeCard from "../school/EclassHomeCard";
 import HomeNotifications from "../notifications/HomeNotifications";
 import HomeNotices from "./HomeNotices";
+import AddScheduleSheet from "../components/AddScheduleSheet";
 import Avatar from "../lounge/parts/Avatar";
 import { useLoungeOptional } from "../lounge/LoungeContext";
 import type { Meeting, Reservation, TimetableEntry } from "../types";
@@ -60,6 +61,8 @@ export default function Dashboard() {
   const data = loaded?.week === weekStart ? loaded.data : null;
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // 홈에서 바로 일정 추가 (시간표 탭으로 가지 않는다)
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,10 +261,10 @@ export default function Dashboard() {
               ) : agenda.length === 0 ? (
                 <div className="home-empty">
                   <p>등록된 일정이 없습니다.</p>
-                  <Link to={`/timetable?week=${weekStart}`}>
+                  <button type="button" className="home-empty__add" onClick={() => setAddOpen(true)}>
                     시간표에 일정 추가하기
                     <Icon name="plus" />
-                  </Link>
+                  </button>
                 </div>
               ) : (
                 <ul>
@@ -287,12 +290,28 @@ export default function Dashboard() {
                   <Icon name="chevron-right" />
                 </Link>
               )}
+              {/* 일정이 있는 날에도 그 아래에서 바로 추가 */}
+              {data && agenda.length > 0 && (
+                <div className="home-empty home-agenda__add">
+                  <button type="button" className="home-empty__add" onClick={() => setAddOpen(true)}>
+                    시간표에 일정 추가하기
+                    <Icon name="plus" />
+                  </button>
+                </div>
+              )}
             </div>
           </section>
           <HomeNotifications />
           <EclassHomeCard />
           <HomeNotices compact />
         </div>
+        <AddScheduleSheet
+          open={addOpen}
+          onClose={() => setAddOpen(false)}
+          weekStart={weekStart}
+          day={day}
+          onAdded={() => setAttempt((n) => n + 1)}
+        />
       </main>
     </>
   );

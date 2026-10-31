@@ -720,10 +720,10 @@
   margin-bottom: var(--sp-6);
 }
 
+/* 학기 · 학과(교양)는 한 줄씩 전체 폭으로: 반씩 나누면 '겨울학기'·긴 학과 이름이 잘린다 */
 .tt-cs__pair {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: var(--sp-4);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .tt-cs__count {

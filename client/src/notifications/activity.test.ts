@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { activityDate, buildActivity, scopeFor } from './activity';
 import type { Reservation } from '../types';
+import type { EclassItem } from '../../../shared/school/eclass';
 
 describe('통합 알림', () => {
   const reservation = { id: 1, date: '2026-10-26', startMin: 600, endMin: 660, meetingId: 2, meetingName: '캡스톤', facilityId: 3, facilityName: '스터디룸', schoolStatus: 'planned' } as Reservation;
@@ -25,5 +26,18 @@ describe('통합 알림', () => {
     expect(items[1].when).toBe(items[0].when);
     expect(items[2].when).toContain('일정 미정');
     expect(activityDate('2026-10-25T15:30:00Z')).toMatch(/10월 26일.*00:30/);
+  });
+  it('미수강 강의는 마감 6시간 안으로 들어올 때만 알림이 되고, 과제는 지금처럼 알린다', () => {
+    const now = Date.parse('2026-11-02T12:00:00+09:00');
+    const item = (id: string, kind: EclassItem['kind'], dueAt: string | null): EclassItem => ({ id, courseId: 'c', courseName: '자료구조', title: id, kind, url: '', completion: 'pending', attendance: 'unknown', dueAt, availableAt: null, progress: 0 });
+    const learning = [
+      item('3시간 남은 강의', 'lecture', '2026-11-02T15:00:00+09:00'),
+      item('10시간 남은 강의', 'lecture', '2026-11-02T22:00:00+09:00'),
+      item('마감 모르는 강의', 'lecture', null),
+      item('사흘 남은 과제', 'assignment', '2026-11-05T12:00:00+09:00'),
+    ];
+    const titles = buildActivity({ learning }, now).map((a) => a.title);
+    expect(titles).toEqual(['3시간 남은 강의', '사흘 남은 과제']);
+    expect(buildActivity({ learning }, now)[0].body).toBe('자료구조 · 마감 3시간 전');
   });
 });
