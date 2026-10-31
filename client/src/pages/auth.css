@@ -231,16 +231,16 @@ html.no-scroll .auth-main.download-main {
 }
 
 /* 아이폰: 버튼을 누르면 화면 아래 사파리 공유 버튼 쪽을 가리킨다 */
+/* 아이폰 크롬의 공유 버튼은 위쪽 주소창 오른쪽에 있어 오른쪽 위를 가리킨다 */
 .share-pointer {
   position: fixed;
-  left: 50%;
-  bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px));
+  right: var(--gutter);
+  top: calc(var(--sp-5) + env(safe-area-inset-top, 0px));
   z-index: 50;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--sp-1);
-  transform: translateX(-50%);
   pointer-events: none;
 }
 .share-pointer__bubble {
@@ -258,6 +258,7 @@ html.no-scroll .auth-main.download-main {
   color: inherit;
 }
 .share-pointer__arrow {
+  margin-right: var(--sp-4);
   color: var(--c-action);
   font-size: 3.2rem;
   font-weight: var(--fw-bold);
@@ -266,7 +267,7 @@ html.no-scroll .auth-main.download-main {
 }
 @keyframes share-bounce {
   50% {
-    transform: translateY(0.8rem);
+    transform: translateY(-0.8rem);
   }
 }
 @media (prefers-reduced-motion: reduce) {

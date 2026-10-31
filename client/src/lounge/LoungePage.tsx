@@ -7,6 +7,7 @@ import { Alert, Button, Icon, LoadingBlock, Tabs } from '../ui';
 import ChatList from './ChatList';
 import { useLounge } from './LoungeContext';
 import GatheringListItem from './parts/GatheringListItem';
+import { prefetchQuickState } from './sheets/QuickMatchSheet';
 import { isEnded } from './world/tables';
 import { useGatherings } from './world/useGatherings';
 import './hub.css';
@@ -83,6 +84,11 @@ function LoungeHome({ profile }: { profile: Profile }) {
   const navigate = useNavigate();
   const banned = profile.banned;
 
+  // 밥약을 누르면 기다리지 않고 바로 뜨도록 내 밥약 상태를 미리 받아 둔다
+  useEffect(() => {
+    if (!banned) prefetchQuickState();
+  }, [banned]);
+
   const openTable = (g: GatheringView) => navigate(`/lounge/gatherings/${g.id}`, { state: { backTo: '/lounge' } });
 
   const mine = gatherings.mine.filter((g) => !isEnded(g));
@@ -108,18 +114,19 @@ function LoungeHome({ profile }: { profile: Profile }) {
           </span>
         </Link>
 
+        <MeetingCard />
+
         <Link to="/lounge/campus" className="lounge-hub-btn lounge-hub-btn--meetup" aria-disabled={banned || undefined}>
           <Icon name="smile" className="lounge-hub-btn__icon" />
           <span>
             <span className="lounge-hub-btn__title">미팅</span>
-            <span className="lounge-hub-btn__sub">자리에 앉아 여러 가지 만남에 참여해요.</span>
+            <span className="lounge-hub-btn__sub">열려 있는 미팅을 한눈에 보고 참여해요.</span>
           </span>
           <span className="lounge-hub-btn__go">
             <span className="bold">미팅 보러 가기</span>
             <Icon name="chevron-right" />
           </span>
         </Link>
-        <MeetingCard />
       </div>
 
       {mine.length > 0 && (

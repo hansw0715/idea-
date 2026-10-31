@@ -1,0 +1,189 @@
+/* 미팅 라운지 벤토 그리드 (/lounge/campus).
+   모든 칸은 같은 크기의 정사각형이다 (미팅 만들기 칸과 미팅 칸). */
+
+.bento {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 640px) {
+  .bento {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 960px) {
+  .bento {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.bento__cell {
+  min-width: 0;
+  aspect-ratio: 1;
+}
+
+.bento-tile {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  overflow: hidden;
+  border: 1px solid var(--c-panel-border);
+  border-radius: var(--r-panel);
+  background: var(--c-panel);
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.bento-tile:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bento-tile {
+    transition: none;
+  }
+  .bento-tile:active {
+    transform: none;
+  }
+}
+
+/* 미팅 만들기: 앱의 주 색으로 꽉 채운 칸 */
+.bento-tile--create {
+  justify-content: flex-end;
+  border-color: var(--c-action);
+  background: var(--c-action);
+  color: var(--c-on-action);
+}
+.bento-tile--empty {
+  justify-content: flex-end;
+  cursor: default;
+}
+.bento-tile--empty:active {
+  transform: none;
+}
+.bento-tile__plus {
+  width: 3.2rem;
+  height: 3.2rem;
+  margin-bottom: auto;
+  stroke-width: 2;
+}
+.bento-tile--empty .bento-tile__plus {
+  color: var(--c-text-muted);
+}
+
+/* 미팅 칸: 위는 정원만큼 나눈 자리(프로필 사진), 아래 띠에 제목·시간·자리 수 */
+.bento-tile--meetup {
+  gap: 0;
+  padding: 0;
+}
+.bento-tile.is-closed {
+  color: var(--c-text-sub);
+}
+.bento-tile.is-closed .bento-seats {
+  opacity: 0.55;
+}
+
+.bento-seats {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: var(--sp-2) var(--sp-2) 0;
+}
+.bento-seats__seat {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  padding: 3px;
+}
+.bento-seats__seat > img {
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  object-fit: cover;
+  border-radius: var(--r);
+  background: var(--c-bg);
+}
+/* 빈 자리 */
+.bento-seats__seat:not(:has(img))::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: var(--r);
+  background: color-mix(in srgb, var(--c-text) 6%, var(--c-bg));
+}
+.bento-seats__seat > svg {
+  position: relative;
+  width: 40%;
+  max-width: 2.4rem;
+  height: auto;
+  color: var(--c-text-muted);
+}
+
+/* 내 미팅 · 마감: 자리 위 왼쪽에 작게 */
+.bento-tile__status {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 0.2rem var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--c-bg);
+  color: var(--c-text-sub);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.bento-tile.is-mine .bento-tile__status {
+  background: var(--c-action);
+  color: var(--c-on-action);
+}
+
+.bento-tile__info {
+  display: grid;
+  gap: 0.2rem;
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  min-width: 0;
+}
+.bento-tile__title {
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.bento-tile--create .bento-tile__title {
+  font-size: var(--fs-md);
+  white-space: normal;
+}
+.bento-tile__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-width: 0;
+  font-size: var(--fs-xs);
+  color: var(--c-text-sub);
+}
+.bento-tile__meta > .tabular {
+  flex: none;
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+}
+.bento-tile__when {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.bento-tile--create .bento-tile__meta {
+  color: inherit;
+  opacity: 0.85;
+}

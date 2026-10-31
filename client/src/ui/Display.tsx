@@ -54,6 +54,8 @@ export function DisplayProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     apply(theme);
     try { localStorage.setItem(THEME_KEY, theme); } catch { /* 이 방문에만 적용 */ }
+    // 로딩 화면·앱 설정 파일(안드로이드 시작 화면 색)도 바뀐 모드로 (index.html 의 첫 스크립트)
+    (window as Window & { __sbScheme?: () => void }).__sbScheme?.();
   }, [theme]);
   useEffect(() => {
     try {

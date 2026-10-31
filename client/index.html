@@ -16,8 +16,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>상상Book-E</title>
     <script>
-      // 정해 둔 브라우저가 아니면 들어오자마자 그 브라우저로 다시 연다 (카카오톡 등 앱 안 브라우저, 크롬, 구글 앱 모두).
-      // 안드로이드는 삼성 인터넷, 아이폰은 사파리. 없으면 그대로 둔다. 설치한 앱으로 연 화면은 넘기지 않는다.
+      // 정해 둔 브라우저가 아니면 들어오자마자 그 브라우저로 다시 연다 (카카오톡 등 앱 안 브라우저, 삼성 인터넷, 사파리, 구글 앱 모두).
+      // 안드로이드·아이폰 모두 크롬. 없으면 그대로 둔다. 설치한 앱으로 연 화면은 넘기지 않는다.
+      // (크롬으로 설치해야 다크 모드에서 검은 시작 화면 등 앱 설정 파일의 색이 그대로 쓰인다)
       (function () {
         var ua = navigator.userAgent || '';
         var url = location.href;
@@ -26,15 +27,20 @@
         var inApp = /KAKAOTALK|Line\/|NAVER|Instagram|FBAN|FBAV|everytimeApp|DaumApps|wv\)/i.test(ua);
         var installedApp =
           navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-        var samsung = /SamsungBrowser/i.test(ua) && !inApp;
-        var safari = /Version\/[\d.]+.*Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Whale|YaBrowser|DuckDuckGo/i.test(ua) && !inApp;
-        if (installedApp || (android && samsung) || (ios && safari)) return;
-        // 삼성 인터넷이 없어 되돌아온 경우(stay=1)에는 다시 넘기지 않는다 (무한 반복 방지)
+        // 크롬: 같은 엔진을 쓰는 다른 브라우저(삼성 인터넷·엣지·오페라·웨일 등)와 구글 앱(GSA)은 뺀다
+        var chrome =
+          /Chrome\/[\d.]+/.test(ua) &&
+          !/SamsungBrowser|EdgA|OPR\/|Whale|YaBrowser|UCBrowser|MiuiBrowser|HeyTap|DuckDuckGo|GSA\/|Version\/[\d.]+ Chrome/i.test(ua) &&
+          !inApp;
+        // 아이폰 크롬은 CriOS 로 알린다
+        var chromeIos = /CriOS\//.test(ua) && !inApp;
+        if (installedApp || (android && chrome) || (ios && chromeIos)) return;
+        // 크롬이 없어 되돌아온 경우(stay=1)에는 다시 넘기지 않는다 (무한 반복 방지)
         if (/[?&]stay=1/.test(url) || (!android && !ios && !inApp)) return;
         if (android) {
           location.href =
             'intent://' + url.replace(/^https?:\/\//, '') +
-            '#Intent;scheme=https;package=com.sec.android.app.sbrowser;S.browser_fallback_url=' +
+            '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' +
             encodeURIComponent(
               /KAKAOTALK/i.test(ua)
                 ? 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url)
@@ -42,11 +48,17 @@
             ) +
             ';end';
         } else if (ios) {
-          // 아이폰은 사파리로 연다 (iOS 17 이상). 안 열리면 카카오톡은 기본 브라우저로
-          location.href = 'x-safari-' + url;
+          // 아이폰은 googlechrome(s):// 주소로 크롬에 넘긴다 (크롬에서도 공유 → 홈 화면에 추가로 설치된다, iOS 16.4 이상).
+          // 크롬이 없거나 열기를 취소하면 화면이 그대로 남는다. 이 탭에서는 한 번만 시도해 경고가 반복되지 않게 하고,
+          // 카카오톡은 기본 브라우저로 내보낸다 (거기서 다시 크롬으로 넘긴다)
+          try {
+            if (sessionStorage.getItem('sb-to-chrome')) return;
+            sessionStorage.setItem('sb-to-chrome', '1');
+          } catch (e) {}
+          location.href = url.replace(/^http(s?):\/\//, 'googlechrome$1://');
           if (/KAKAOTALK/i.test(ua))
             setTimeout(function () {
-              location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
+              if (!document.hidden) location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
             }, 1500);
         } else if (/KAKAOTALK/i.test(ua)) {
           location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
@@ -58,42 +70,43 @@
     <link rel="icon" href="/brand/app-icon-64.png" type="image/png" />
     <link rel="apple-touch-icon" href="/brand/app-icon-apple.png" />
     <script>
-      // 휴대폰의 화면 모드를 쿠키로 알려 둔다. 앱 설정 파일(/api/manifest)이 이걸 보고
-      // 설치한 앱의 맨 아래 버튼 줄 색을 정한다. 휴대폰 설정이 바뀌면 다시 적는다
+      // 지금 화면 모드(앱 "내 정보 → 화면"에서 고른 밝게·어둡게, 아니면 휴대폰 설정)를
+      //  1) 로딩 화면(#splash) 색 — html[data-splash]
+      //  2) 앱 설정 파일(/api/manifest) 주소와 쿠키 — 안드로이드가 설치·업데이트 때 이 색으로 시작 화면·버튼 줄을 칠한다
+      // 에 반영한다. 앱 안에서 모드를 바꾸면 ui/Display.tsx 가 window.__sbScheme() 을 다시 부른다
       (function () {
         try {
           var mq = window.matchMedia('(prefers-color-scheme: dark)');
-          var save = function () {
-            document.cookie = 'sb-scheme=' + (mq.matches ? 'dark' : 'light') + '; path=/; max-age=31536000; samesite=lax; secure';
-          };
-          save();
-          mq.addEventListener('change', save);
-          // 안드로이드 시작 화면 색은 설치(다운로드)할 때의 화면 모드로 정해진다.
-          // 그 뒤에 보이는 로딩 화면(#splash)도 같은 색이 되도록 설치 때 모드를 기억해 둔다
-          var KEY = 'sb-install-scheme';
-          var now = function () {
-            return mq.matches ? 'dark' : 'light';
-          };
-          window.addEventListener('appinstalled', function () {
+          var manifest = document.createElement('link');
+          manifest.rel = 'manifest';
+          manifest.crossOrigin = 'use-credentials';
+          var apply = function () {
+            var chosen = null;
             try {
-              localStorage.setItem(KEY, now());
+              chosen = localStorage.getItem('sangsang-booke:appearance');
             } catch (e) {}
-          });
-          var installed = navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-          if (installed) {
-            var scheme = localStorage.getItem(KEY);
-            if (scheme !== 'dark' && scheme !== 'light') {
-              // 이 기능 전에 설치했거나 설치 신호를 못 받았으면 첫 실행 때 모드를 쓴다
-              scheme = now();
-              localStorage.setItem(KEY, scheme);
-            }
+            var scheme = chosen === 'dark' || chosen === 'light' ? chosen : mq.matches ? 'dark' : 'light';
             document.documentElement.setAttribute('data-splash', scheme);
+            document.cookie = 'sb-scheme=' + scheme + '; path=/; max-age=31536000; samesite=lax; secure';
+            // 설치할 때 이 파일을 쿠키 없이 받아도 맞는 색이 되도록 주소에 모드를 넣는다 (server/manifest.ts)
+            manifest.href = '/api/manifest?scheme=' + scheme;
+          };
+          apply();
+          document.head.appendChild(manifest);
+          window.__sbScheme = apply;
+          mq.addEventListener('change', apply);
+        } catch (e) {
+          // 모드를 못 읽어도 설치는 되도록 기본 설정 파일은 건다
+          if (!document.querySelector('link[rel="manifest"]')) {
+            var fallback = document.createElement('link');
+            fallback.rel = 'manifest';
+            fallback.href = '/api/manifest';
+            fallback.crossOrigin = 'use-credentials';
+            document.head.appendChild(fallback);
           }
-        } catch (e) {}
+        }
       })();
     </script>
-    <!-- 쿠키(sb-scheme)를 함께 보내야 서버가 휴대폰 화면 모드를 안다 (설정 파일은 기본으로 쿠키 없이 받는다) -->
-    <link rel="manifest" href="/api/manifest" crossorigin="use-credentials" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <!-- KRDS 기본 서체 Pretendard GOV -->
     <link
@@ -178,13 +191,13 @@
         from { transform: translateX(-100%); }
         to { transform: translateX(250%); }
       }
-      /* 설치한 앱은 설치 때 화면 모드(data-splash), 브라우저는 지금 휴대폰 모드를 따른다 */
+      /* 지금 화면 모드(data-splash: 앱에서 고른 모드, 아니면 휴대폰 설정)를 따른다. 스크립트가 못 돌면 휴대폰 설정 */
       @media (prefers-color-scheme: dark) {
-        html:not([data-splash='light']) #splash { background: #16181b; color: #f4f5f6; }
-        html:not([data-splash='light']) .splash__scope { color: #a1a9b0; }
-        html:not([data-splash='light']) .splash__mark { box-shadow: 0 10px 30px rgb(0 0 0 / 0.4); }
-        html:not([data-splash='light']) .splash__bar { background: rgb(255 255 255 / 0.12); }
-        html:not([data-splash='light']) .splash__bar::after { background: #6aa7ec; }
+        html:not([data-splash]) #splash { background: #16181b; color: #f4f5f6; }
+        html:not([data-splash]) .splash__scope { color: #a1a9b0; }
+        html:not([data-splash]) .splash__mark { box-shadow: 0 10px 30px rgb(0 0 0 / 0.4); }
+        html:not([data-splash]) .splash__bar { background: rgb(255 255 255 / 0.12); }
+        html:not([data-splash]) .splash__bar::after { background: #6aa7ec; }
       }
       html[data-splash='dark'] #splash { background: #16181b; color: #f4f5f6; }
       html[data-splash='dark'] .splash__scope { color: #a1a9b0; }

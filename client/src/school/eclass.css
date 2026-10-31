@@ -16,6 +16,33 @@
   background: var(--c-panel);
   border-color: var(--c-panel-border);
 }
+/* 불러오기 실패 안내: 경고 상자 없이 바탕 위 작은 회색 글 + 오른쪽 글자 버튼 */
+.school-eclass__notice {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  padding: 0 var(--sp-1);
+}
+.school-eclass__notice-icon {
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--c-text-sub);
+}
+.school-eclass__notice-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+  line-height: 1.5;
+}
+.school-eclass__notice .school-eclass__textbtn {
+  flex: none;
+  min-height: 2.4rem;
+  text-decoration: none;
+}
 .school-eclass__warnings {
   margin: 0;
   padding-left: var(--sp-5);

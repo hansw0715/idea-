@@ -272,33 +272,31 @@ export default function EclassHome() {
     >
       {!snapshot && head}
 
+      {/* 빨간 경고 상자 대신, 바탕에 녹아드는 조용한 한 줄 + 글자 버튼 ("이번주 완료 보기"와 같은 결) */}
       {error && (
-        <Alert
-          tone="danger"
-          title="e-class 정보를 불러오지 못했어요"
-          actions={
-            error.relink ? (
-              <Link
-                to="/account"
-                className={btnClass({ variant: "secondary", size: "sm" })}
-              >
-                내 정보로 가기
-              </Link>
-            ) : (
-              <Button
-                variant="secondary"
-                size="sm"
-                loading={loading}
-                onClick={() => void refresh()}
-              >
-                다시 불러오기
-              </Button>
-            )
-          }
-        >
-          {error.message}
-          {snapshot ? " 마지막으로 확인한 정보를 보여 드려요." : ""}
-        </Alert>
+        <div className="school-eclass__notice" role="status">
+          <Icon name="info" className="school-eclass__notice-icon" />
+          <p className="school-eclass__notice-text">
+            <span className="sr-only">e-class 정보를 불러오지 못했어요. </span>
+            {error.message}
+            {snapshot ? " 마지막으로 확인한 정보를 보여 드려요." : ""}
+          </p>
+          {error.relink ? (
+            <Link to="/account" className="school-eclass__textbtn">
+              내 정보로 가기
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className="school-eclass__textbtn"
+              disabled={loading}
+              aria-busy={loading || undefined}
+              onClick={() => void refresh()}
+            >
+              {loading ? "확인 중" : "다시 불러오기"}
+            </button>
+          )}
+        </div>
       )}
 
       {!snapshot ? (

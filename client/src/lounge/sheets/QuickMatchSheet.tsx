@@ -7,6 +7,8 @@
  * 3·4명을 고르고 나 말고 한 명 이상 모였으면 "N명으로 바로 시작"으로 지금 인원만으로 방을 열 수 있다.
  * 밥약은 실제로 만날 사람끼리라 모인 사람의 실명을 보여 준다.
  * 진실은 서버다. 소켓이 없어서 열려 있는 동안 2초마다 상태를 묻는다(탭이 보일 때만). 시트를 닫아도 대기는 서버에 남는다.
+ * 열 때 로딩 화면을 띄우지 않는다: 마지막으로 받은 상태(없으면 첫 화면)를 바로 그리고, 서버 답이 오면 바꾼다.
+ * 라운지 첫 화면이 미리 한 번 물어 둔다(prefetchQuickState).
  * 내 위치는 매칭에만 쓰이고 매칭이 끝나면 서버가 지운다. 상대에게는 거리도 보이지 않는다.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -30,6 +32,19 @@ export type QuickMatchSheetProps = {
 };
 
 const POLL_MS = 2000;
+
+/** 마지막으로 받은 내 밥약 상태 — 다시 열 때 기다리지 않고 바로 그린다 */
+let lastQuick: QuickState | null = null;
+
+/** 라운지 첫 화면에서 미리 불러 둔다. 실패해도 시트가 열리면서 다시 묻는다 */
+export function prefetchQuickState(): void {
+  loungeApi
+    .quick()
+    .then((s) => {
+      lastQuick = s;
+    })
+    .catch(() => undefined);
+}
 
 /** 고를 수 있는 인원(본인 포함) */
 type PartySize = '2' | '3' | '4';
@@ -80,20 +95,20 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed, presentati
   const confirm = useConfirm();
   const { handleError } = useLounge();
 
-  const [state, setState] = useState<QuickState | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [state, setState] = useState<QuickState | null>(() => lastQuick);
   const [busy, setBusy] = useState<null | 'locating' | 'start' | 'answer' | 'startNow'>(null);
   const [error, setError] = useState<string | null>(null);
   const [ended, setEnded] = useState<Ended>(null);
   const [size, setSize] = useState<PartySize>('2');
   /** 친구끼리만 찾기 (라운지 친구 중 가까운 사람과만) */
   const [friendsOnly, setFriendsOnly] = useState(false);
-  const lastRoom = useRef<string | null>(null);
+  const lastRoom = useRef<string | null>(lastQuick?.room?.status === 'pending' ? lastQuick.room.id : null);
   const confirmedSent = useRef<string | null>(null);
   const onConfirmedRef = useRef(onConfirmed);
   onConfirmedRef.current = onConfirmed;
 
   const apply = useCallback((next: QuickState) => {
+    lastQuick = next;
     setState(next);
     // 대기가 끝났다(10분 동안 근처에 아무도 없었다) — 연결됐던 방이 깨져서 끝난 경우는 아래에서 "거절·시간 초과"로 바꾼다
     if ((next.request?.status as string | undefined) === 'expired') setEnded('expired');
@@ -112,8 +127,6 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed, presentati
       apply(await loungeApi.quick());
     } catch (err) {
       if (!handleError(err)) setError(err instanceof Error ? err.message : '상태를 불러오지 못했어요.');
-    } finally {
-      setLoaded(true);
     }
   }, [apply, handleError]);
 
@@ -274,132 +287,128 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed, presentati
 
   return (
     <LoungeSurface presentation={presentation} open={open} onClose={onClose} title="밥약" footer={footer}>
-      {!loaded ? (
-        <LoadingBlock>불러오는 중입니다.</LoadingBlock>
-      ) : (
-        <div className="lounge-quick">
-          {error && (
-            <Alert tone="danger" title="잠깐 문제가 있어요">
-              {error}
-            </Alert>
-          )}
+      <div className="lounge-quick">
+        {error && (
+          <Alert tone="danger" title="잠깐 문제가 있어요">
+            {error}
+          </Alert>
+        )}
 
-          {(phase === 'idle' || phase === 'ended') && (
-            <div className="lounge-quick-hero">
-              <Icon name="utensils" className="lounge-quick-hero__icon" />
-              <h3 className="lounge-quick-hero__title">
-                {ended === 'declined'
-                  ? '누군가 거절했거나 시간이 지났어요'
-                  : ended === 'expired'
-                    ? '근처에 아직 아무도 없어요'
-                    : ended === 'cancelled'
-                      ? '찾기를 그만뒀어요'
-                      : '가까이 있는 학우와 밥 한 끼'}
-              </h3>
-              <p className="lounge-quick-hero__text">
-                {ended === 'expired'
-                  ? `${QUICK_WAIT_MIN}분 동안 근처에서 찾지 못했어요. 잠시 뒤에 다시 시도해 보세요.`
-                  : '같은 인원을 고른 가까운 학우끼리 모여요. 다 모이면 수락이나 거절만 하면 돼요.'}
-              </p>
-            </div>
-          )}
+        {(phase === 'idle' || phase === 'ended') && (
+          <div className="lounge-quick-hero">
+            <Icon name="utensils" className="lounge-quick-hero__icon" />
+            <h3 className="lounge-quick-hero__title">
+              {ended === 'declined'
+                ? '누군가 거절했거나 시간이 지났어요'
+                : ended === 'expired'
+                  ? '근처에 아직 아무도 없어요'
+                  : ended === 'cancelled'
+                    ? '찾기를 그만뒀어요'
+                    : '가까이 있는 학우와 밥 한 끼'}
+            </h3>
+            <p className="lounge-quick-hero__text">
+              {ended === 'expired'
+                ? `${QUICK_WAIT_MIN}분 동안 근처에서 찾지 못했어요. 잠시 뒤에 다시 시도해 보세요.`
+                : '같은 인원을 고른 가까운 학우끼리 모여요. 다 모이면 수락이나 거절만 하면 돼요.'}
+            </p>
+          </div>
+        )}
 
-          {(phase === 'idle' || phase === 'ended') && (
-            <Segmented
-              label="몇 명이서 먹을까요? (나 포함)"
-              value={size}
-              onChange={setSize}
-              options={SIZE_OPTIONS}
-              help="같은 인원을 고른 사람끼리만 모여요."
-            />
-          )}
-          {(phase === 'idle' || phase === 'ended') && (
-            <Choice
-              type="checkbox"
-              label="친구끼리만"
-              description="라운지 친구 중 가까이 있는 사람과만 모여요."
-              checked={friendsOnly}
-              onChange={(e) => setFriendsOnly(e.target.checked)}
-            />
-          )}
+        {(phase === 'idle' || phase === 'ended') && (
+          <Segmented
+            label="몇 명이서 먹을까요?"
+            value={size}
+            onChange={setSize}
+            options={SIZE_OPTIONS}
+            help="같은 인원을 고른 사람끼리만 모여요."
+          />
+        )}
+        {(phase === 'idle' || phase === 'ended') && (
+          <Choice
+            type="checkbox"
+            label="친구끼리만"
+            description="라운지 친구 중 가까이 있는 사람과만 모여요."
+            checked={friendsOnly}
+            onChange={(e) => setFriendsOnly(e.target.checked)}
+          />
+        )}
 
-          {phase === 'locating' && <LoadingBlock>내 위치를 확인하는 중입니다.</LoadingBlock>}
+        {phase === 'locating' && <LoadingBlock>내 위치를 확인하는 중입니다.</LoadingBlock>}
 
-          {phase === 'searching' && (
-            <div className="lounge-quick-peer" role="status" aria-live="polite">
-              <h3 className="lounge-quick-hero__title">
-                {wanted}명 중 {Math.max(1, forming.length)}명 모였어요
-              </h3>
-              {state?.request?.friendsOnly && <p className="lounge-quick-hero__text">친구끼리만 찾는 중이에요.</p>}
-              <ul className="lounge-quick-seats">
-                {seats.map((u, i) => (
-                  <li key={u?.id ?? `empty-${i}`} className={`lounge-quick-seat${u ? '' : ' lounge-quick-seat--empty'}`}>
-                    {u ? (
-                      <>
-                        <Avatar user={u} size="lg" />
-                        <span className="lounge-quick-seat__name">
-                          {u.id === state?.meId ? '나' : displayName(u)}
-                        </span>
-                        {u.id !== state?.meId && <span className="lounge-quick-seat__fact">{factLine(u)}</span>}
-                      </>
-                    ) : (
-                      <>
-                        <span className="lounge-quick-seat__wait" aria-hidden="true">
-                          <span className="lounge-quick-pulse" />
-                        </span>
-                        <span className="lounge-quick-seat__name">찾는 중</span>
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-sub text-sm">
-                {canStartNow
-                  ? `${wanted - forming.length}명 더 모이면 바로 연결돼요. 기다리지 않고 지금 ${forming.length}명으로 시작할 수도 있어요.`
-                  : `${wanted - Math.max(1, forming.length)}명 더 모이면 바로 연결돼요. 이 화면을 나가도 계속 찾고 있어요.`}
-              </p>
-            </div>
-          )}
-
-          {phase === 'matched' && room && (
-            <div className="lounge-quick-peer" role="status" aria-live="polite">
-              <h3 className="lounge-quick-hero__title">
-                {members.length === 2 ? '밥 같이 먹을 학우를 찾았어요' : `${members.length}명이 모였어요`}
-              </h3>
-              <ul className="lounge-quick-peer__list">
-                {members.map((u) => {
-                  const accepted = room.answers[u.id] === 'accepted';
-                  return (
-                    <li key={u.id} className="lounge-quick-peer__card">
+        {phase === 'searching' && (
+          <div className="lounge-quick-peer" role="status" aria-live="polite">
+            <h3 className="lounge-quick-hero__title">
+              {wanted}명 중 {Math.max(1, forming.length)}명 모였어요
+            </h3>
+            {state?.request?.friendsOnly && <p className="lounge-quick-hero__text">친구끼리만 찾는 중이에요.</p>}
+            <ul className="lounge-quick-seats">
+              {seats.map((u, i) => (
+                <li key={u?.id ?? `empty-${i}`} className={`lounge-quick-seat${u ? '' : ' lounge-quick-seat--empty'}`}>
+                  {u ? (
+                    <>
                       <Avatar user={u} size="lg" />
-                      <div className="lounge-quick-peer__who">
-                        <p className="bold">{u.id === state?.meId ? `${displayName(u)} (나)` : displayName(u)}</p>
-                        <p className="text-sub text-sm">{factLine(u)}</p>
-                      </div>
-                      <span className={`badge ${accepted ? 'badge--success' : 'badge--gray'}`}>
-                        {accepted ? '수락' : '기다리는 중'}
+                      <span className="lounge-quick-seat__name">
+                        {u.id === state?.meId ? '나' : displayName(u)}
                       </span>
-                    </li>
-                  );
-                })}
-              </ul>
-              <p className="text-sub text-sm">
-                {iAccepted
-                  ? '다른 사람이 수락하기를 기다리는 중이에요.'
-                  : members.length === 2
-                    ? '둘 다 수락하면 바로 약속이 만들어져요.'
-                    : `${members.length}명 모두 수락하면 바로 약속이 만들어져요.`}
-              </p>
-            </div>
-          )}
+                      {u.id !== state?.meId && <span className="lounge-quick-seat__fact">{factLine(u)}</span>}
+                    </>
+                  ) : (
+                    <>
+                      <span className="lounge-quick-seat__wait" aria-hidden="true">
+                        <span className="lounge-quick-pulse" />
+                      </span>
+                      <span className="lounge-quick-seat__name">찾는 중</span>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p className="text-sub text-sm">
+              {canStartNow
+                ? `${wanted - forming.length}명 더 모이면 바로 연결돼요. 기다리지 않고 지금 ${forming.length}명으로 시작할 수도 있어요.`
+                : `${wanted - Math.max(1, forming.length)}명 더 모이면 바로 연결돼요. 이 화면을 나가도 계속 찾고 있어요.`}
+            </p>
+          </div>
+        )}
 
-          {phase === 'confirmed' && (
-            <Alert tone="success" title="매칭이 확정됐어요">
-              단톡방에서 어디서 만날지 정해 보세요. 연락처는 공개되지 않아요.
-            </Alert>
-          )}
-        </div>
-      )}
+        {phase === 'matched' && room && (
+          <div className="lounge-quick-peer" role="status" aria-live="polite">
+            <h3 className="lounge-quick-hero__title">
+              {members.length === 2 ? '밥 같이 먹을 학우를 찾았어요' : `${members.length}명이 모였어요`}
+            </h3>
+            <ul className="lounge-quick-peer__list">
+              {members.map((u) => {
+                const accepted = room.answers[u.id] === 'accepted';
+                return (
+                  <li key={u.id} className="lounge-quick-peer__card">
+                    <Avatar user={u} size="lg" />
+                    <div className="lounge-quick-peer__who">
+                      <p className="bold">{u.id === state?.meId ? `${displayName(u)} (나)` : displayName(u)}</p>
+                      <p className="text-sub text-sm">{factLine(u)}</p>
+                    </div>
+                    <span className={`badge ${accepted ? 'badge--success' : 'badge--gray'}`}>
+                      {accepted ? '수락' : '기다리는 중'}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="text-sub text-sm">
+              {iAccepted
+                ? '다른 사람이 수락하기를 기다리는 중이에요.'
+                : members.length === 2
+                  ? '둘 다 수락하면 바로 약속이 만들어져요.'
+                  : `${members.length}명 모두 수락하면 바로 약속이 만들어져요.`}
+            </p>
+          </div>
+        )}
+
+        {phase === 'confirmed' && (
+          <Alert tone="success" title="매칭이 확정됐어요">
+            단톡방에서 어디서 만날지 정해 보세요. 연락처는 공개되지 않아요.
+          </Alert>
+        )}
+      </div>
     </LoungeSurface>
   );
 }

@@ -3,7 +3,7 @@ import { hideSplash } from '../shell/splash';
 import InstallButton, { isIos } from '../shell/InstallBanner';
 import './auth.css';
 
-/** 사파리 공유 버튼 모양 (네모 위로 화살표) */
+/** iOS 공유 버튼 모양 (네모 위로 화살표) */
 function ShareIcon() {
   return (
     <svg className="install-guide__share" viewBox="0 0 24 24" aria-hidden="true">
@@ -13,11 +13,13 @@ function ShareIcon() {
   );
 }
 
-/** 사파리 주소창 왼쪽의 메뉴 버튼 모양 (줄 세 개, 아래 줄이 짧다). 공유 버튼이 안 보이면 이걸 누른다 */
-function SafariMenuIcon() {
+/** 아이폰 크롬 아래 막대의 더보기 버튼 모양 (점 세 개). 공유 버튼이 안 보이면 이걸 누른다 */
+function ChromeMoreIcon() {
   return (
-    <svg className="install-guide__share" viewBox="0 0 24 24" aria-label="메뉴" role="img">
-      <path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    <svg className="install-guide__share" viewBox="0 0 24 24" aria-label="더보기" role="img">
+      <circle cx="5" cy="12" r="2" fill="currentColor" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" />
+      <circle cx="19" cy="12" r="2" fill="currentColor" />
     </svg>
   );
 }
@@ -25,7 +27,8 @@ function SafariMenuIcon() {
 /**
  * 사이트는 앱 설치용으로만 쓴다. 브라우저로 들어오면 어떤 주소든 이 화면만 보인다.
  * 큰 로고, "앱 설치하기" 버튼, 그 아래 Android · iOS · Mac 설치 방법.
- * 아이폰은 버튼으로 설치 창을 띄울 수 없어, 누르면 화면 아래 공유 버튼 쪽을 화살표로 가리킨다.
+ * 아이폰은 크롬으로 열어 설치한다 (index.html 이 넘긴다). 버튼으로 설치 창을 띄울 수 없어,
+ * 누르면 크롬 주소창 오른쪽의 공유 버튼 쪽을 화살표로 가리킨다.
  * 설치한 앱(홈 화면 아이콘)으로 열면 이 화면 대신 로그인 화면부터 원래 앱이 열린다 (main.tsx).
  */
 export default function DownloadPage() {
@@ -71,7 +74,7 @@ export default function DownloadPage() {
             <h2 className="install-guide__os">iOS</h2>
             <ol>
               <li>
-                화면 아래 <ShareIcon /> <strong>공유</strong> 버튼 (안 보이면 <SafariMenuIcon />)
+                크롬 주소창 오른쪽 <ShareIcon /> <strong>공유</strong> 버튼 (안 보이면 <ChromeMoreIcon /> → <strong>공유</strong>)
               </li>
               <li>
                 <strong>홈 화면에 추가</strong> → 오른쪽 위 <strong>추가</strong>
@@ -93,11 +96,11 @@ export default function DownloadPage() {
       </main>
       {pointShare && (
         <div className="share-pointer" role="status">
+          <span className="share-pointer__arrow" aria-hidden="true">
+            ↑
+          </span>
           <span className="share-pointer__bubble">
             여기 <ShareIcon /> 공유 → <strong>홈 화면에 추가</strong>
-          </span>
-          <span className="share-pointer__arrow" aria-hidden="true">
-            ↓
           </span>
         </div>
       )}

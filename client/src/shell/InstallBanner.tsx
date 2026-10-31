@@ -6,7 +6,7 @@ import { Button } from '../ui';
  * 브라우저는 사이트가 스스로 앱 모드로 바꾸는 것을 막으므로, 홈 화면에 한 번 추가하는 단계는 꼭 필요하다.
  *  - 안드로이드(크롬 등): 브라우저가 주는 설치 이벤트를 받아 두었다가 누르면 바로 설치 창을 띄운다.
  *    크롬은 잠시 써 본 뒤에야 이벤트를 주므로, 이벤트가 없으면 "⋮ 메뉴 → 홈 화면에 추가" 안내를 펼친다
- *  - 아이폰(사파리): 설치 창을 띄울 수 없어 "공유 → 홈 화면에 추가" 안내를 펼친다
+ *  - 아이폰(크롬): 설치 창을 띄울 수 없어 "공유 → 홈 화면에 추가" 안내를 펼친다
  * 이미 홈 화면에서 연 경우(standalone)·PC 에서는 보이지 않는다.
  */
 
@@ -69,7 +69,7 @@ const isMobile = () => /android|iphone|ipad|ipod/i.test(navigator.userAgent);
 /**
  * big: 설치 화면의 큰 버튼. PC 에서도 보인다. 설치 방법 설명은 설치 화면(DownloadPage)이 따로 보여 준다.
  * 브라우저가 설치 창을 띄울 수 있으면 화면 어디를 눌러도 바로 설치 창이 뜬다.
- * onIosHelp: 아이폰에서 누르면 부른다 (사파리는 설치 창을 줄 수 없어 공유 버튼을 가리켜 준다).
+ * onIosHelp: 아이폰에서 누르면 부른다 (아이폰 브라우저는 설치 창을 줄 수 없어 공유 버튼을 가리켜 준다).
  */
 export default function InstallButton({ big = false, onIosHelp }: { big?: boolean; onIosHelp?: () => void }) {
   const [, rerender] = useState(0);
@@ -105,7 +105,7 @@ export default function InstallButton({ big = false, onIosHelp }: { big?: boolea
   async function install() {
     if (!deferred) {
       // 크롬이 설치 창을 아직 줄 수 없으면(방금 지운 앱·닫은 설치 창 등) 메뉴로 설치하는 방법을 펼친다.
-      // 설치 화면(big)은 설명이 화면에 이미 있다. 아이폰은 사파리가 설치 창을 줄 수 없어 공유 버튼을 가리켜 준다
+      // 설치 화면(big)은 설명이 화면에 이미 있다. 아이폰은 브라우저가 설치 창을 줄 수 없어 공유 버튼을 가리켜 준다
       if (!big) setShowHelp(true);
       else if (isIos()) onIosHelp?.();
       return;
@@ -141,7 +141,7 @@ export default function InstallButton({ big = false, onIosHelp }: { big?: boolea
         <p className="install-cta__help">
           {ios ? (
             <>
-              아래 <strong>공유 버튼</strong> → <strong>홈 화면에 추가</strong>를 누르면 주소창 없이 앱처럼 열려요.
+              주소창의 <strong>공유 버튼</strong> → <strong>홈 화면에 추가</strong>를 누르면 주소창 없이 앱처럼 열려요.
             </>
           ) : (
             <>
