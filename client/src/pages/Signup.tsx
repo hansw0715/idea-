@@ -18,9 +18,9 @@ import { Alert, Button, Choice, Icon, PasswordField, Segmented, Stepper, TextFie
 import { pushSupported, syncPush } from '../lounge/push';
 import './auth.css';
 
-/** 알림·위치 허용(필수) → 한성대 정보 시스템 → 플랫폼 아이디·비밀번호 → 연동 동의 → 가입 완료 */
-const STEPS = ['권한 허용', '학교 인증', '계정 만들기', '연동 동의', '가입 완료'];
-type Step = 'permissions' | 'school' | 'account' | 'consent' | 'done';
+/** 한성대 정보 시스템 → 플랫폼 아이디·비밀번호 → 연동 동의 → 알림·위치 허용(필수) → 가입 완료 */
+const STEPS = ['학교 인증', '계정 만들기', '연동 동의', '권한 허용', '가입 완료'];
+type Step = 'school' | 'account' | 'consent' | 'permissions' | 'done';
 /** idle: 아직 안 물음 · on: 허용 · off: 거절(폰 설정에서 켜야 함) · none: 이 기기에 그 기능이 없음(막지 않는다) */
 type Grant = 'idle' | 'on' | 'off' | 'none';
 
@@ -81,7 +81,7 @@ const lead: Record<Step, string> = {
   school: '먼저 한성대 학생인지 학교 계정으로 확인해요.',
   account: '이 서비스에서 쓸 아이디와 비밀번호를 만들어 주세요.',
   consent: '학교 계정을 안전하게 연동하는 방법을 확인하고 동의해 주세요.',
-  permissions: '가입하기 전에 알림과 위치를 허용해 주세요. 둘 다 허용해야 다음으로 넘어가요.',
+  permissions: '앱을 쓰려면 알림과 위치를 허용해 주세요. 둘 다 허용해야 다음으로 넘어가요.',
   done: '가입과 학교 연동이 끝났어요.',
 };
 
@@ -98,8 +98,7 @@ export default function Signup() {
   const navigate = useNavigate();
   const toast = useToast();
 
-  // 가입은 알림·위치 허용부터 (필수)
-  const [step, setStep] = useState<Step>('permissions');
+  const [step, setStep] = useState<Step>('school');
   const [verified, setVerified] = useState<SchoolVerifyResponse | null>(null);
   /**
    * 학교 인증을 마친 학번·비밀번호. 암호화는 ②에서 정할 플랫폼 비밀번호로 만든 키로 하므로, 가입을 마칠 때까지만
@@ -309,11 +308,11 @@ export default function Signup() {
       // 입력했던 비밀번호는 더 쓰지 않으니 상태에서 비운다
       setPassword('');
       setConfirm('');
-      // 가입이 끝나면 알림·위치 허용 단계로 (허용 창은 버튼을 눌러야 뜰 수 있다)
-      // 첫 단계에서 알림을 허락받았으니, 이제 로그인된 상태로 이 기기를 폰 알림에 조용히 등록한다
+      // 연동 동의로 가입이 끝나면 알림·위치 허용 단계로 (필수. 허용 창은 버튼을 눌러야 뜰 수 있다)
+      // 이미 알림을 허락해 둔 기기면 지금 로그인된 상태로 폰 알림에 조용히 등록한다
       void syncPush();
-      setStep('done');
-      setFocusTarget(ID.done);
+      setStep('permissions');
+      setFocusTarget(ID.permissions);
     } catch (err) {
       if (!alive.current) return;
       const code = err instanceof ApiError ? err.code : undefined;
@@ -347,15 +346,18 @@ export default function Signup() {
     navigate(destination, { replace: true });
   }
 
-  const currentIndex = step === 'permissions' ? 1 : step === 'school' ? 2 : step === 'account' ? 3 : step === 'consent' ? 4 : 5;
+  const currentIndex = step === 'school' ? 1 : step === 'account' ? 2 : step === 'consent' ? 3 : step === 'permissions' ? 4 : 5;
 
   /** 아직 허락하지 않은 것만 차례로 묻는다 (알림 → 위치). 허용 창은 버튼을 누른 순간에만 뜰 수 있다 */
   async function grantAll() {
     setGranting(true);
     try {
       if (!granted(grants.notif)) {
+        // 누른 순간 곧바로 묻는다 (앞에 기다림이 끼면 폰이 허용 창을 띄우지 않는다)
         const p = await Notification.requestPermission().catch(() => 'denied' as NotificationPermission);
         setGrants((g) => ({ ...g, notif: p === 'granted' ? 'on' : p === 'denied' ? 'off' : 'idle' }));
+        // 허락했으면 이 기기를 폰 알림에 등록한다 (가입으로 이미 로그인된 상태)
+        if (p === 'granted') void syncPush();
       }
       if (!granted(grants.geo)) {
         const geo = await askLocation();
@@ -403,60 +405,7 @@ export default function Signup() {
           </div>
         )}
 
-        {/* ───────── ① 알림·위치 허용 (필수) ───────── */}
-        {step === 'permissions' && (
-          <div>
-            <h2 className="school-step__title" id={ID.permissions} tabIndex={-1}>
-              알림과 위치를 허용해 주세요
-            </h2>
-            <ul className="signup-perms">
-              <li className={`signup-perms__row${granted(grants.notif) ? ' is-on' : ''}`}>
-                <Icon name="bell" className="signup-perms__icon" />
-                <div className="signup-perms__body">
-                  <p className="signup-perms__name">알림</p>
-                  <p className="signup-perms__text">미수강 강의 마감, 친구 요청, 밥약·회의 초대를 앱이 꺼져 있어도 폰으로 알려 드려요.</p>
-                </div>
-                <PermState g={grants.notif} />
-              </li>
-              <li className={`signup-perms__row${granted(grants.geo) ? ' is-on' : ''}`}>
-                <Icon name="pin" className="signup-perms__icon" />
-                <div className="signup-perms__body">
-                  <p className="signup-perms__name">정확한 위치</p>
-                  <p className="signup-perms__text">밥약에서 가까이 있는 사람을 찾을 때 써요. 허용 창이 뜨면 &lsquo;정확한 위치&rsquo;를 골라 주세요. 저장하거나 다른 사람에게 보여 주지 않아요.</p>
-                </div>
-                <PermState g={grants.geo} />
-              </li>
-            </ul>
-            {(grants.notif === 'off' || grants.geo === 'off') && (
-              <div className="auth-alert">
-                <Alert
-                  tone="warning"
-                  title="허용하지 않은 권한이 있어요"
-                  actions={
-                    <Button variant="secondary" size="sm" onClick={() => void recheck()}>
-                      다시 확인하기
-                    </Button>
-                  }
-                >
-                  폰 설정 → 애플리케이션 → 상상Book-E → 권한에서 {[grants.notif === 'off' && '알림', grants.geo === 'off' && '위치(정확한 위치)'].filter(Boolean).join('과 ')}을 허용한 뒤 다시 확인해 주세요.
-                </Alert>
-              </div>
-            )}
-            <div className="school-step__actions">
-              {allGranted ? (
-                <Button size="lg" block onClick={() => { setStep('school'); setFocusTarget('signup-title'); }}>
-                  다음
-                </Button>
-              ) : (
-                <Button size="lg" block loading={granting} onClick={() => void grantAll()}>
-                  {granting ? '허용하는 중…' : '모두 허용하기'}
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ───────── ② 학교 인증 ───────── */}
+        {/* ───────── ① 학교 인증 ───────── */}
         {step === 'school' && (
           <form onSubmit={(e) => void verifySchool(e)} noValidate autoComplete="off" aria-busy={verifying || undefined}>
             {schoolError !== null && (
@@ -544,7 +493,7 @@ export default function Signup() {
           </form>
         )}
 
-        {/* ───────── ③ 플랫폼 아이디·비밀번호 ───────── */}
+        {/* ───────── ② 플랫폼 아이디·비밀번호 ───────── */}
         {step === 'account' && verified && (
           <form onSubmit={submitAccount} noValidate>
             <div className="auth-alert">
@@ -621,7 +570,7 @@ export default function Signup() {
           </form>
         )}
 
-        {/* ───────── ④ 연동 동의 ───────── */}
+        {/* ───────── ③ 연동 동의 ───────── */}
         {step === 'consent' && verified && (
           <div>
             {error && (
@@ -716,6 +665,59 @@ export default function Signup() {
           </div>
         )}
 
+        {/* ───────── ④ 알림·위치 허용 (필수) ───────── */}
+        {step === 'permissions' && pendingUser && (
+          <div>
+            <h2 className="school-step__title" id={ID.permissions} tabIndex={-1}>
+              알림과 위치를 허용해 주세요
+            </h2>
+            <ul className="signup-perms">
+              <li className={`signup-perms__row${granted(grants.notif) ? ' is-on' : ''}`}>
+                <Icon name="bell" className="signup-perms__icon" />
+                <div className="signup-perms__body">
+                  <p className="signup-perms__name">알림</p>
+                  <p className="signup-perms__text">미수강 강의 마감, 친구 요청, 밥 먹자! 등의 알림을 보내드려요. 내 정보에서 끌 수 있어요.</p>
+                </div>
+                <PermState g={grants.notif} />
+              </li>
+              <li className={`signup-perms__row${granted(grants.geo) ? ' is-on' : ''}`}>
+                <Icon name="pin" className="signup-perms__icon" />
+                <div className="signup-perms__body">
+                  <p className="signup-perms__name">위치</p>
+                  <p className="signup-perms__text">밥약에서 가까이 있는 학우를 찾을 때 써요. 저장하거나 보여지지 않아요.</p>
+                </div>
+                <PermState g={grants.geo} />
+              </li>
+            </ul>
+            {(grants.notif === 'off' || grants.geo === 'off') && (
+              <div className="auth-alert">
+                <Alert
+                  tone="warning"
+                  title="허용하지 않은 권한이 있어요"
+                  actions={
+                    <Button variant="secondary" size="sm" onClick={() => void recheck()}>
+                      다시 확인하기
+                    </Button>
+                  }
+                >
+                  폰 설정 → 애플리케이션 → 상상Book-E → 권한에서 {[grants.notif === 'off' && '알림', grants.geo === 'off' && '위치'].filter(Boolean).join('과 ')}을 허용한 뒤 다시 확인해 주세요.
+                </Alert>
+              </div>
+            )}
+            <div className="school-step__actions">
+              {allGranted ? (
+                <Button size="lg" block onClick={() => { setStep('done'); setFocusTarget(ID.done); }}>
+                  다음
+                </Button>
+              ) : (
+                <Button size="lg" block loading={granting} onClick={() => void grantAll()}>
+                  {granting ? '허용하는 중…' : '모두 허용하기'}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* ───────── ⑤ 가입 완료 ───────── */}
         {step === 'done' && pendingUser && (
           <div>
@@ -740,7 +742,7 @@ export default function Signup() {
           </div>
         )}
 
-        {step !== 'done' && (
+        {step !== 'done' && step !== 'permissions' && (
           <div className="auth-foot">
             <span>이미 계정이 있나요?</span>
             <Link to="/login" className={btnClass({ variant: 'text' })}>
