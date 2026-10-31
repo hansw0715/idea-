@@ -68,6 +68,27 @@
           };
           save();
           mq.addEventListener('change', save);
+          // 안드로이드 시작 화면 색은 설치(다운로드)할 때의 화면 모드로 정해진다.
+          // 그 뒤에 보이는 로딩 화면(#splash)도 같은 색이 되도록 설치 때 모드를 기억해 둔다
+          var KEY = 'sb-install-scheme';
+          var now = function () {
+            return mq.matches ? 'dark' : 'light';
+          };
+          window.addEventListener('appinstalled', function () {
+            try {
+              localStorage.setItem(KEY, now());
+            } catch (e) {}
+          });
+          var installed = navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+          if (installed) {
+            var scheme = localStorage.getItem(KEY);
+            if (scheme !== 'dark' && scheme !== 'light') {
+              // 이 기능 전에 설치했거나 설치 신호를 못 받았으면 첫 실행 때 모드를 쓴다
+              scheme = now();
+              localStorage.setItem(KEY, scheme);
+            }
+            document.documentElement.setAttribute('data-splash', scheme);
+          }
         } catch (e) {}
       })();
     </script>
@@ -157,13 +178,19 @@
         from { transform: translateX(-100%); }
         to { transform: translateX(250%); }
       }
+      /* 설치한 앱은 설치 때 화면 모드(data-splash), 브라우저는 지금 휴대폰 모드를 따른다 */
       @media (prefers-color-scheme: dark) {
-        #splash { background: #16181b; color: #f4f5f6; }
-        .splash__scope { color: #a1a9b0; }
-        .splash__mark { box-shadow: 0 10px 30px rgb(0 0 0 / 0.4); }
-        .splash__bar { background: rgb(255 255 255 / 0.12); }
-        .splash__bar::after { background: #6aa7ec; }
+        html:not([data-splash='light']) #splash { background: #16181b; color: #f4f5f6; }
+        html:not([data-splash='light']) .splash__scope { color: #a1a9b0; }
+        html:not([data-splash='light']) .splash__mark { box-shadow: 0 10px 30px rgb(0 0 0 / 0.4); }
+        html:not([data-splash='light']) .splash__bar { background: rgb(255 255 255 / 0.12); }
+        html:not([data-splash='light']) .splash__bar::after { background: #6aa7ec; }
       }
+      html[data-splash='dark'] #splash { background: #16181b; color: #f4f5f6; }
+      html[data-splash='dark'] .splash__scope { color: #a1a9b0; }
+      html[data-splash='dark'] .splash__mark { box-shadow: 0 10px 30px rgb(0 0 0 / 0.4); }
+      html[data-splash='dark'] .splash__bar { background: rgb(255 255 255 / 0.12); }
+      html[data-splash='dark'] .splash__bar::after { background: #6aa7ec; }
       /* 움직임 줄이기: 튀어 오르기·이동 없이 나타나고 사라지기만 */
       @media (prefers-reduced-motion: reduce) {
         .splash__mark, .splash__name, .splash__scope, .splash__bar { animation: none; }
