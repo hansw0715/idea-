@@ -487,8 +487,9 @@ export default function Signup() {
 
             {verifying && <SchoolWaiting label="학교에 확인하는 중…" />}
 
-            <Button type="submit" size="lg" block loading={verifying}>
-              {verifying ? '학교에 확인하는 중…' : '학생 인증하기'}
+            {/* 확인 중 표시는 위의 한 곳만: 버튼은 눌리지 않게만 막는다 */}
+            <Button type="submit" size="lg" block disabled={verifying}>
+              학생 인증하기
             </Button>
           </form>
         )}
