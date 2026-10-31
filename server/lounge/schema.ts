@@ -24,6 +24,7 @@ export const LOUNGE_TABLES = [
   'lounge_friends',
   'lounge_push_subscriptions',
   'lounge_notifications',
+  'lounge_admin_log',
 ] as const;
 
 export const LOUNGE_MIGRATIONS = `

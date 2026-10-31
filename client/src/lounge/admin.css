@@ -12,6 +12,15 @@
 .lounge-admin-tabs {
   margin-bottom: var(--sp-6);
 }
+/* 탭이 7개라 좁은 화면에서는 글자를 한 줄로 두고 탭 줄만 옆으로 민다 (글자가 세로로 쪼개지지 않게) */
+.lounge-admin-tabs .tabs {
+  scrollbar-width: none;
+}
+.lounge-admin-tabs .tabs__tab {
+  flex: 1 0 auto;
+  white-space: nowrap;
+  padding-inline: var(--sp-4);
+}
 
 /* 탭 패널 안의 위쪽 줄: 설명 + 새로 고치기 */
 .lounge-admin-toolbar {
@@ -245,72 +254,309 @@
   padding: var(--sp-4) var(--sp-5);
 }
 
-/* ── 대시보드 ────────────────────────────────────────────────── */
-.lounge-admin-dash__title {
-  margin: var(--sp-6) 0 var(--sp-3);
+/* ── 대시보드 (adm-) ─────────────────────────────────────────────
+   색은 데이터와 주의가 필요한 숫자에만. 숫자는 큰 글자 + 작은 회색 단위, 칸은 1px 선으로만 나눈다. */
+.adm-dash {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
 }
-.lounge-admin-dash__title:first-of-type {
-  margin-top: 0;
+.adm-num {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  white-space: nowrap;
 }
-/* 눌러서 그 탭으로 가는 숫자 카드: 카드 모양 그대로 버튼 */
-.lounge-admin-tile {
-  width: 100%;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  transition: border-color var(--t-base), box-shadow var(--t-base);
+.adm-num__v {
+  font-variant-numeric: tabular-nums;
 }
-@media (hover: hover) {
-  .lounge-admin-tile:hover {
-    border-color: var(--c-action);
-  }
-}
-.lounge-admin-tile:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-.lounge-admin-tile.is-urgent {
-  border-color: var(--c-danger, #d6453d);
-}
-.lounge-admin-tile.is-urgent .lounge-admin-stat__value {
-  color: var(--c-danger-text, #d6453d);
-}
-.lounge-admin-dash__stats {
-  margin-top: var(--sp-8, 3.2rem);
+.adm-num__u {
+  font-size: 0.6em;
+  font-weight: var(--fw-regular);
+  color: var(--c-text-sub);
 }
 
-/* 최근 14일 가입 막대 */
-.lounge-admin-chart {
-  margin-top: var(--sp-3);
+/* ① 처리할 일 */
+.adm-lead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  border: 1px solid var(--c-panel-border);
+  border-radius: var(--r-panel, var(--r));
+  background: var(--c-panel);
 }
-.lounge-admin-bars {
+.adm-lead.is-alert {
+  border-color: var(--c-danger, #d6453d);
+}
+.adm-lead__label,
+.adm-lead__sub {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.adm-lead__value {
+  margin: 0.2rem 0;
+  font-size: 3.2rem;
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  color: var(--c-text);
+}
+.adm-lead.is-alert .adm-lead__value {
+  color: var(--c-danger-text, #d6453d);
+}
+.adm-lead__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  flex: none;
+}
+
+/* ② 핵심 숫자 띠: 칸 사이 1px 선 */
+.adm-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--c-panel-border);
+  border-radius: var(--r-panel, var(--r));
+  background: var(--c-panel);
+  overflow: hidden;
+}
+.adm-strip__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: var(--sp-4) var(--sp-5);
+}
+.adm-strip__cell + .adm-strip__cell {
+  border-left: 1px solid var(--c-divider);
+}
+.adm-strip dt {
+  font-size: var(--fs-sm);
+  color: var(--c-text-sub);
+}
+.adm-strip dd {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: var(--fw-bold);
+  line-height: 1.25;
+  color: var(--c-text);
+}
+.adm-strip dd.adm-strip__sub {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+  color: var(--c-text-sub);
+}
+@media (max-width: 640px) {
+  .adm-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .adm-strip__cell + .adm-strip__cell {
+    border-left: 0;
+  }
+  .adm-strip__cell:nth-child(even) {
+    border-left: 1px solid var(--c-divider);
+  }
+  .adm-strip__cell:nth-child(n + 3) {
+    border-top: 1px solid var(--c-divider);
+  }
+  .adm-lead__value {
+    font-size: 2.8rem;
+  }
+}
+
+/* ③ 판: 넓은 화면은 두 줄, 좁으면 한 줄 */
+.adm-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+}
+@media (min-width: 900px) {
+  .adm-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.adm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+.adm-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 3.2rem;
+}
+.adm-panel__head h3 {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+.adm-panel__head > .btn--text {
+  margin-right: calc(var(--sp-3) * -1);
+}
+.adm-panel__aside {
+  font-size: 2rem;
+  font-weight: var(--fw-bold);
+}
+
+/* 가입 막대: 지난날은 옅게, 오늘만 진하게 */
+.adm-bars {
   display: grid;
   grid-template-columns: repeat(14, minmax(0, 1fr));
-  align-items: end;
   gap: 0.4rem;
-  height: 12rem;
-  margin: var(--sp-3) 0 0;
+  height: 14rem;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
-.lounge-admin-bars__day {
+.adm-bars__day {
   display: grid;
   grid-template-rows: 1.6rem 1fr 1.6rem;
-  height: 100%;
   min-width: 0;
   text-align: center;
 }
-.lounge-admin-bars__n,
-.lounge-admin-bars__date {
+.adm-bars__n,
+.adm-bars__date {
   font-size: 1.1rem;
+  line-height: 1.6rem;
   color: var(--c-text-sub);
+  font-variant-numeric: tabular-nums;
 }
-.lounge-admin-bars__bar {
-  align-self: end;
+.adm-bars__track {
+  position: relative;
+  border-bottom: 1px solid var(--c-divider);
+}
+.adm-bars__bar {
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: 0;
   min-height: 2px;
   border-radius: 3px 3px 0 0;
+  background: color-mix(in srgb, var(--c-action) 40%, transparent);
+}
+.adm-bars__day.is-today .adm-bars__bar {
   background: var(--c-action);
+}
+.adm-bars__day.is-today .adm-bars__n,
+.adm-bars__day.is-today .adm-bars__date {
+  color: var(--c-text);
+  font-weight: var(--fw-bold);
+}
+
+/* 라벨 왼쪽 · 숫자 오른쪽 목록 */
+.adm-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.adm-rows > li + li {
+  border-top: 1px solid var(--c-divider);
+}
+.adm-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 4.8rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+}
+button.adm-row {
+  cursor: pointer;
+}
+button.adm-row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--r-xs);
+}
+.adm-row__label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-sm);
+}
+.adm-row .adm-num {
+  font-size: 1.8rem;
+  font-weight: var(--fw-bold);
+}
+.adm-row__chev {
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--c-text-sub);
+}
+.adm-row.is-zero .adm-row__label,
+.adm-row.is-zero .adm-num__v {
+  color: var(--c-text-sub);
+  font-weight: var(--fw-regular);
+}
+.adm-row.is-warn .adm-num__v {
+  color: var(--c-danger-text, #d6453d);
+}
+.adm-row.is-warn .adm-row__label::before {
+  content: '';
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.8rem;
+  border-radius: 50%;
+  background: var(--c-danger, #d6453d);
+  vertical-align: 0.1em;
+}
+
+/* 모임 표: 선과 정렬만 (줄무늬·머리 띠 없음), 숫자는 오른쪽 */
+.adm-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+.adm-table th,
+.adm-table td {
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--c-divider);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.adm-table tr:last-child th,
+.adm-table tr:last-child td {
+  border-bottom: 0;
+}
+.adm-table thead th {
+  padding-top: 0;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+  color: var(--c-text-sub);
+}
+.adm-table th:first-child {
+  width: 28%;
+  text-align: left;
+}
+.adm-table tbody th {
+  font-weight: var(--fw-bold);
+}
+.adm-table td {
+  font-size: 1.8rem;
+  font-weight: var(--fw-bold);
+}
+.adm-table td.is-zero {
+  color: var(--c-text-sub);
+  font-weight: var(--fw-regular);
+}
+
+.adm-log-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
 }
 
 /* 관리 기록 */
@@ -486,4 +732,11 @@
 }
 .lounge-admin-tools .lounge-admin-toolbar {
   align-items: center;
+}
+/* 운영 도구의 묶음 제목 */
+.lounge-admin-dash__title {
+  margin: var(--sp-6) 0 var(--sp-3);
+}
+.lounge-admin-tools > .lounge-admin-dash__title:first-child {
+  margin-top: 0;
 }

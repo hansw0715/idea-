@@ -26,6 +26,7 @@ import { insertMessage } from '../repo/messages.js';
 import { loadUsers, setBanned, liftBanDb } from '../users.js';
 import { pushOnly } from './push.js';
 import { sweepLectureAlerts } from '../../lectureAlerts.js';
+import { adminStats } from './stats.js';
 
 const DAY = 86_400_000;
 const nowISO = () => new Date().toISOString();
@@ -76,7 +77,9 @@ export async function adminOverview(now = Date.now()): Promise<AdminOverview> {
   const since7 = new Date(now - 7 * DAY).toISOString();
   const since14 = new Date(now - 14 * DAY).toISOString();
   const today = kstDate(now);
-  const [users, online, reports, meetings, quick, push, lecture, signupRows, gatherings, log] = await Promise.all([
+  // 부가 숫자(알림·매칭·강의 알림)는 하나가 실패해도 대시보드 전체가 깨지지 않게 0 으로 둔다
+  const soft = <T,>(p: Promise<T>): Promise<T | undefined> => p.catch(() => undefined);
+  const [users, online, reports, meetings, quick, push, lecture, signupRows, gatherings, log, stats] = await Promise.all([
     get<{ total: number; profiled: number; banned: number; warned: number; new7: number; admins: number }>(
       `SELECT COUNT(*)::int AS total,
               (COUNT(*) FILTER (WHERE profile_done))::int AS profiled,
@@ -102,15 +105,19 @@ export async function adminOverview(now = Date.now()): Promise<AdminOverview> {
               (SELECT COUNT(*) FROM reservations WHERE date >= ?)::int AS upcoming`,
       [since7, today],
     ),
-    get<{ n: number }>(`SELECT COUNT(*)::int AS n FROM lounge_quick_requests WHERE status = 'waiting'`),
-    get<{ n: number; devices: number }>(
-      `SELECT COUNT(DISTINCT user_id)::int AS n, COUNT(*)::int AS devices FROM lounge_push_subscriptions`,
+    soft(get<{ n: number }>(`SELECT COUNT(*)::int AS n FROM lounge_quick_requests WHERE status = 'waiting'`)),
+    soft(
+      get<{ n: number; devices: number }>(
+        `SELECT COUNT(DISTINCT user_id)::int AS n, COUNT(*)::int AS devices FROM lounge_push_subscriptions`,
+      ),
     ),
-    get<{ pending: number; sent7: number }>(
-      `SELECT (COUNT(*) FILTER (WHERE sent_at IS NULL AND due_at > now()))::int AS pending,
-              (COUNT(*) FILTER (WHERE sent_at >= ?::timestamptz))::int AS sent7
-         FROM lecture_alerts`,
-      [since7],
+    soft(
+      get<{ pending: number; sent7: number }>(
+        `SELECT (COUNT(*) FILTER (WHERE sent_at IS NULL AND due_at > now()))::int AS pending,
+                (COUNT(*) FILTER (WHERE sent_at >= ?::timestamptz))::int AS sent7
+           FROM lecture_alerts`,
+        [since7],
+      ),
     ),
     all<{ d: string; n: number }>(
       `SELECT to_char(created_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD') AS d, COUNT(*)::int AS n
@@ -118,7 +125,8 @@ export async function adminOverview(now = Date.now()): Promise<AdminOverview> {
       [since14],
     ),
     listAllGatherings(),
-    recentAdminLog(10),
+    soft(recentAdminLog(8)),
+    soft(adminStats()),
   ]);
 
   const iso = new Date(now).toISOString();
@@ -157,7 +165,13 @@ export async function adminOverview(now = Date.now()): Promise<AdminOverview> {
     push: { users: Number(push?.n ?? 0), devices: Number(push?.devices ?? 0) },
     lectureAlerts: { pending: Number(lecture?.pending ?? 0), sentThisWeek: Number(lecture?.sent7 ?? 0) },
     signups,
-    recentLog: log,
+    health: {
+      averageTemperature: stats?.users.averageTemperature ?? 0,
+      noshowRate: stats?.noshow.rate ?? 0,
+      noshowConfirmed: stats?.noshow.confirmed ?? 0,
+      finishedParticipants: stats?.noshow.participants ?? 0,
+    },
+    recentLog: log ?? [],
   };
 }
 

@@ -312,6 +312,8 @@ export type AdminOverview = {
   lectureAlerts: { pending: number; sentThisWeek: number };
   /** 최근 14일 가입 수 (KST 날짜) */
   signups: { date: string; count: number }[];
+  /** 라운지 분위기: 평균 매너온도, 끝난 모임의 노쇼율 */
+  health: { averageTemperature: number; noshowRate: number; noshowConfirmed: number; finishedParticipants: number };
   recentLog: AdminLogEntry[];
 };
 

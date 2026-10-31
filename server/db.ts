@@ -212,17 +212,6 @@ export const SCHEMA = `
   CREATE INDEX IF NOT EXISTS idx_reservations_facility_date ON reservations(facility_id, date);
   CREATE INDEX IF NOT EXISTS idx_members_user ON meeting_members(user_id);
 
-  -- 미수강 강의 마감 푸시: 앱이 알려 준 마감 목록 (server/lectureAlerts.ts)
-  CREATE TABLE IF NOT EXISTS lecture_alerts (
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    item_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    course TEXT NOT NULL,
-    due_at TIMESTAMPTZ NOT NULL,
-    sent_at TIMESTAMPTZ,
-    PRIMARY KEY (user_id, item_id)
-  );
-  CREATE INDEX IF NOT EXISTS idx_lecture_alerts_due ON lecture_alerts(due_at) WHERE sent_at IS NULL;
 `;
 
 /**
@@ -381,6 +370,20 @@ const LATE_MIGRATIONS = `
    WHERE is_admin = FALSE
      AND email IN ('admin1@hansung.ac.kr', 'admin2@hansung.ac.kr', 'admin3@hansung.ac.kr');
   ALTER TABLE email_verifications ENABLE ROW LEVEL SECURITY;
+
+  -- 미수강 강의 마감 푸시: 앱이 알려 준 마감 목록 (server/lectureAlerts.ts).
+  -- 이미 운영 중인 DB 에도 생기도록 첫 실행용 SCHEMA 가 아니라 여기(빠른 경로에서도 실행)에 둔다.
+  CREATE TABLE IF NOT EXISTS lecture_alerts (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    item_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    course TEXT NOT NULL,
+    due_at TIMESTAMPTZ NOT NULL,
+    sent_at TIMESTAMPTZ,
+    PRIMARY KEY (user_id, item_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_lecture_alerts_due ON lecture_alerts(due_at) WHERE sent_at IS NULL;
+  ALTER TABLE lecture_alerts ENABLE ROW LEVEL SECURITY;
 `;
 
 /**
