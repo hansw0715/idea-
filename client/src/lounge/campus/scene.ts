@@ -1,5 +1,5 @@
 /** 캠퍼스와 라운지를 같은 걷기 엔진에 넣기 위한 장면 정의 */
-import { AREAS, BUILDINGS, CAMPUS_BLOCKED, CAMPUS_H, CAMPUS_SPAWN, CAMPUS_W, GATES, TURTLE, doorOf } from './campus';
+import { AREAS, BUILDINGS, CAMPUS_BLOCKED, CAMPUS_H, CAMPUS_SPAWN, CAMPUS_W, GATES, doorOf } from './campus';
 import { ROOM_DOOR, ROOM_H, ROOM_W, ROOM_WALL, seatsOf, type Room, type SeatPos } from './rooms';
 import type { Pt, Rect } from './geometry';
 
@@ -43,7 +43,6 @@ export function campusScene(): Scene {
   for (const a of AREAS) {
     interactables.push({ id: `area-${a.id}`, kind: 'info', x: a.x + a.w / 2, y: a.y + a.h / 2, r: Math.min(a.w, a.h) / 2, label: `${a.name} 살펴보기`, title: a.name, text: a.info });
   }
-  interactables.push({ id: 'turtle', kind: 'info', x: TURTLE.x, y: TURTLE.y + 30, r: 46, label: '거북상 살펴보기', title: '거북상', text: '탐구관 앞을 지키는 거북상이에요. 상상부기가 등껍질을 멘 이유가 여기 있을지도 몰라요.' });
   for (const g of GATES) {
     interactables.push({ id: `gate-${g.id}`, kind: 'info', x: g.x, y: g.y, r: 46, label: `${g.name} 살펴보기`, title: g.name, text: g.info });
   }

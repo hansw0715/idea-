@@ -19,6 +19,12 @@
   --ink: #0b3a70;
   --on: #ffffff;
   --stage: #eaf2fc;
+  /* 건물 색: 윗면(t) · 왼쪽 면(l) · 오른쪽 면(r) · 테두리(e) · 창(win) */
+  --mint-t: #f2fbf7; --mint-l: #c6eedf; --mint-r: #8fd6bd; --mint-e: #3f9e7f; --mint-win: #5cbf9d;
+  --coral-t: #fff5f1; --coral-l: #ffd6c8; --coral-r: #f7a58c; --coral-e: #d0694e; --coral-win: #ec8c70;
+  --violet-t: #f7f4ff; --violet-l: #ddd5fc; --violet-r: #b3a4f0; --violet-e: #6f5bd0; --violet-win: #9483e6;
+  --amber-t: #fffaf0; --amber-l: #ffe7b3; --amber-r: #f5c56a; --amber-e: #c18a1c; --amber-win: #e8b54b;
+  --leaf-l: #a8dcbf; --leaf-r: #62b58d; --lawn: #dcf1e4; --lawn-e: #b5dfc5;
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -43,6 +49,11 @@
     --b9: #142f52;
     --ink: #e8ebee;
     --stage: #161d27;
+    --mint-t: #3b5a52; --mint-l: #2f4a43; --mint-r: #233a34; --mint-e: #6fd0ae; --mint-win: #6fd0ae;
+    --coral-t: #5e4440; --coral-l: #4c3632; --coral-r: #3a2926; --coral-e: #f29a80; --coral-win: #f29a80;
+    --violet-t: #4a4566; --violet-l: #3b3654; --violet-r: #2d2942; --violet-e: #a998f5; --violet-win: #a998f5;
+    --amber-t: #5c5038; --amber-l: #4a402c; --amber-r: #393121; --amber-e: #f0c35e; --amber-win: #f0c35e;
+    --leaf-l: #3f7a5c; --leaf-r: #2c5a43; --lawn: #24392f; --lawn-e: #2f4a3c;
   }
 }
 :root[data-theme='dark'] .mv {
@@ -59,6 +70,11 @@
   --b9: #142f52;
   --ink: #e8ebee;
   --stage: #161d27;
+  --mint-t: #3b5a52; --mint-l: #2f4a43; --mint-r: #233a34; --mint-e: #6fd0ae; --mint-win: #6fd0ae;
+  --coral-t: #5e4440; --coral-l: #4c3632; --coral-r: #3a2926; --coral-e: #f29a80; --coral-win: #f29a80;
+  --violet-t: #4a4566; --violet-l: #3b3654; --violet-r: #2d2942; --violet-e: #a998f5; --violet-win: #a998f5;
+  --amber-t: #5c5038; --amber-l: #4a402c; --amber-r: #393121; --amber-e: #f0c35e; --amber-win: #f0c35e;
+  --leaf-l: #3f7a5c; --leaf-r: #2c5a43; --lawn: #24392f; --lawn-e: #2f4a3c;
 }
 .mv--center {
   display: grid;
@@ -73,28 +89,6 @@
   -webkit-user-select: none;
 }
 
-/* 지도 아래 목록: 지도가 작은 휴대폰에서도 라운지·탁자를 바로 고른다 */
-.mv-panel {
-  flex: none;
-  max-height: 42%;
-  overflow-y: auto;
-  padding: var(--sp-5) var(--sp-5) calc(var(--sp-5) + var(--safe-bottom));
-  background: var(--c-bg);
-  border-top: 1px solid var(--c-border-soft);
-}
-@media (min-width: 768px) {
-  .mv {
-    flex-direction: row;
-  }
-  .mv-panel {
-    order: 1;
-    width: 34rem;
-    max-height: none;
-    padding-top: calc(7.2rem + var(--safe-top));
-    border-top: 0;
-    border-left: 1px solid var(--c-border-soft);
-  }
-}
 .mv-svg {
   display: block;
 }
@@ -254,8 +248,10 @@
 
 /* ── 아이소메트릭 월드 ── */
 /* ── 땅 ── */
-.i-base {
-  fill: var(--b1);
+.i-slab {
+  fill: var(--b3);
+  stroke: var(--b4);
+  stroke-width: 2;
 }
 .i-ground {
   fill: var(--b0);
@@ -280,17 +276,31 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* 人 자 획: 파란 돌을 깐 넓은 길 */
+.i-stroke-edge {
+  fill: var(--b3);
+  stroke: var(--b3);
+  stroke-width: 14;
+  stroke-linejoin: round;
+}
+.i-stroke {
+  fill: var(--b2);
+  stroke: var(--b4);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
 .i-area {
   stroke-width: 1.5;
 }
 .i-area--lawn,
 .i-area--field {
-  fill: var(--b2);
-  stroke: var(--b3);
+  fill: var(--lawn);
+  stroke: var(--lawn-e);
 }
 .i-area--forest {
-  fill: var(--b1);
-  stroke: var(--b3);
+  fill: var(--lawn);
+  stroke: var(--lawn-e);
+  opacity: 0.7;
 }
 .i-area--plaza,
 .i-area--garden {
@@ -317,33 +327,33 @@
   outline: none;
 }
 .i-bf-t {
-  fill: var(--w);
-  stroke: var(--b3);
+  fill: var(--bt, var(--w));
+  stroke: var(--be, var(--b3));
   stroke-width: 1;
   transition: fill var(--t-base);
 }
 .i-bf-l {
-  fill: var(--b1);
-  stroke: var(--b3);
+  fill: var(--bl, var(--b1));
+  stroke: var(--be, var(--b3));
   stroke-width: 1;
 }
 .i-bf-r {
-  fill: var(--b3);
-  stroke: var(--b4);
+  fill: var(--br, var(--b3));
+  stroke: var(--be, var(--b4));
   stroke-width: 1;
 }
 .i-win line {
-  stroke: var(--b4);
+  stroke: var(--bwin, var(--b4));
   stroke-width: 5;
   stroke-dasharray: 9 5;
 }
 .i-roofline {
   fill: none;
-  stroke: var(--b2);
+  stroke: var(--bl, var(--b2));
   stroke-width: 1.5;
 }
 .i-door {
-  fill: var(--b7);
+  fill: var(--be, var(--b7));
 }
 .i-mullion {
   stroke: var(--w);
@@ -351,9 +361,32 @@
 }
 .i-bld:hover .i-bf-t,
 .i-bld:focus-visible .i-bf-t {
-  fill: var(--b1);
-  stroke: var(--b6);
+  fill: var(--bl, var(--b1));
+  stroke: var(--be, var(--b6));
   stroke-width: 2.5;
+}
+.i-bld {
+  transition: transform var(--t-base);
+}
+.i-bld:hover,
+.i-bld:focus-visible {
+  transform: translateY(-4px);
+}
+.i-bld--c-mint,
+.i-tag--mint {
+  --bt: var(--mint-t); --bl: var(--mint-l); --br: var(--mint-r); --be: var(--mint-e); --bwin: var(--mint-win);
+}
+.i-bld--c-coral,
+.i-tag--coral {
+  --bt: var(--coral-t); --bl: var(--coral-l); --br: var(--coral-r); --be: var(--coral-e); --bwin: var(--coral-win);
+}
+.i-bld--c-violet,
+.i-tag--violet {
+  --bt: var(--violet-t); --bl: var(--violet-l); --br: var(--violet-r); --be: var(--violet-e); --bwin: var(--violet-win);
+}
+.i-bld--c-amber,
+.i-tag--amber {
+  --bt: var(--amber-t); --bl: var(--amber-l); --br: var(--amber-r); --be: var(--amber-e); --bwin: var(--amber-win);
 }
 
 /* 상상관: 학교 파랑 랜드마크 */
@@ -379,15 +412,11 @@
   fill: var(--b2);
 }
 
-/* 미래관: 통유리 */
-.i-bld--glass .i-bf-l {
-  fill: var(--b3);
-}
-.i-bld--glass .i-bf-r {
-  fill: var(--b5);
-}
+/* 미래관: 통유리 (창 띠를 굵고 밝게) */
 .i-bld--glass .i-win line {
-  stroke: var(--b1);
+  stroke: var(--bt, var(--b1));
+  stroke-dasharray: none;
+  opacity: 0.8;
 }
 
 /* 기와 지붕 (총무당 · 학송관 · 의화정) */
@@ -412,13 +441,13 @@
 
 /* ── 나무 · 소품 ── */
 .i-tree-l {
-  fill: var(--b3);
-  stroke: var(--b4);
+  fill: var(--leaf-l);
+  stroke: var(--leaf-r);
   stroke-width: 1;
 }
 .i-tree-r {
-  fill: var(--b5);
-  stroke: var(--b5);
+  fill: var(--leaf-r);
+  stroke: var(--leaf-r);
   stroke-width: 1;
 }
 .i-trunk,
@@ -469,11 +498,11 @@
 }
 .i-label {
   fill: var(--w);
-  stroke: var(--b6);
-  stroke-width: 1.5;
+  stroke: var(--be, var(--b6));
+  stroke-width: 2;
 }
 .i-label-text {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   fill: var(--ink);
 }
@@ -485,11 +514,27 @@
   stroke-width: 2;
 }
 .i-pin text {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   fill: var(--on);
 }
-.i-pin > * {
+.i-pin-icon {
+  fill: var(--on);
+}
+.i-pin.is-empty rect {
+  fill: var(--w);
+  stroke: var(--b4);
+  stroke-width: 1.5;
+}
+.i-pin.is-empty line {
+  stroke: var(--b4);
+}
+.i-pin.is-empty text,
+.i-pin.is-empty .i-pin-icon {
+  fill: var(--ink);
+  opacity: 0.75;
+}
+.i-pin-float {
   animation: float 1.6s ease-in-out infinite alternate;
 }
 @keyframes float {

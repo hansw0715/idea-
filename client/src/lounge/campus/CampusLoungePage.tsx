@@ -127,6 +127,24 @@ function CampusLounge() {
     return set;
   }, [room, gatheringById]);
 
+  // 라운지·건물마다 모임에 앉아 있는 사람 수 (한 사람이 여러 모임에 있어도 한 번만 센다)
+  const { roomCounts, counts } = useMemo(() => {
+    const byRoom = new Map<string, Set<string>>();
+    const byBuilding = new Map<string, Set<string>>();
+    for (const [key, g] of byTable) {
+      const roomId = key.split('/')[0];
+      const buildingId = roomById(roomId)!.building;
+      for (const m of g.slots.flatMap((sl) => sl.members)) {
+        if (!byRoom.has(roomId)) byRoom.set(roomId, new Set());
+        if (!byBuilding.has(buildingId)) byBuilding.set(buildingId, new Set());
+        byRoom.get(roomId)!.add(m.id);
+        byBuilding.get(buildingId)!.add(m.id);
+      }
+    }
+    const size = (m: Map<string, Set<string>>) => new Map([...m].map(([k, v]) => [k, v.size]));
+    return { roomCounts: size(byRoom), counts: size(byBuilding) };
+  }, [byTable]);
+
   const goScene = (id: string) => {
     setSheet(null);
     writeScene(id);
@@ -150,7 +168,7 @@ function CampusLounge() {
 
   return (
     <div className="mv">
-      <World key={sceneId} scene={scene} taken={taken} onBuilding={onBuilding} onTable={onTable} />
+      <World key={sceneId} scene={scene} taken={taken} counts={counts} onBuilding={onBuilding} onTable={onTable} />
 
       <header className="mv-top">
         {room ? (
@@ -164,48 +182,11 @@ function CampusLounge() {
         )}
         <div className="mv-place">
           <p className="mv-place-name">{room ? room.name : '미팅 라운지'}</p>
-          <p className="mv-place-sub">{room ? `${buildingById(room.building)?.name} ${room.floor}` : '건물을 누르면 안에 있는 탁자가 보여요'}</p>
+          <p className="mv-place-sub">
+            {room ? `${buildingById(room.building)?.name} ${room.floor} · 모임에 ${roomCounts.get(room.id) ?? 0}명` : '건물을 누르면 안에 있는 탁자가 보여요'}
+          </p>
         </div>
       </header>
-
-      <section className="mv-panel" aria-label={room ? '이 라운지의 탁자' : '라운지 목록'}>
-        <ul className="mv-list">
-          {room
-            ? room.tables
-                .filter((t) => t.kind === 'meeting' || t.kind === 'meal')
-                .map((t) => {
-                  const used = seatsOf(t).filter((st) => taken.has(`${t.id}:${st.idx}`)).length;
-                  return (
-                    <li key={t.id}>
-                      <button type="button" className="mv-list-btn" onClick={() => onTable(t.id)}>
-                        <span className="mv-list-tag">{KIND_LABEL[t.kind]}</span>
-                        <span className="mv-list-text">
-                          <b>{t.vacant ? '빈 탁자' : t.title}</b>
-                          <span>{t.vacant ? '눌러서 자리 만들기' : `${t.seats}자리 중 ${used}자리 찼어요`}</span>
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })
-            : ROOMS.map((r) => {
-                const b = buildingById(r.building)!;
-                const n = [...byTable.keys()].filter((k) => k.startsWith(`${r.id}/`)).length;
-                return (
-                  <li key={r.id}>
-                    <button type="button" className="mv-list-btn" onClick={() => goScene(r.id)}>
-                      <span className="mv-list-tag">{b.name}</span>
-                      <span className="mv-list-text">
-                        <b>{r.name}</b>
-                        <span>
-                          {r.floor} · {n ? `모임 ${n}개` : '아직 모임이 없어요'}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-        </ul>
-      </section>
 
       <Sheet open={sheet?.type === 'floors'} onClose={() => setSheet(null)} title={sheetBuilding ? `${sheetBuilding.name} 엘리베이터` : '엘리베이터'}>
         {sheetBuilding && (
@@ -220,7 +201,9 @@ function CampusLounge() {
                       <span className="mv-list-tag">{r.floor}</span>
                       <span className="mv-list-text">
                         <b>{r.name}</b>
-                        <span>{r.desc}</span>
+                        <span>
+                          모임에 {roomCounts.get(id) ?? 0}명 · {r.desc}
+                        </span>
                       </span>
                     </button>
                   </li>
