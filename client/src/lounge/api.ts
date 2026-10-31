@@ -92,8 +92,6 @@ export const loungeApi = {
   /** 라운지에서 프로필을 눌러 친구 요청 (아이디를 몰라도 된다) */
   requestFriendById: (userId: string) =>
     api.post<FriendsView & { result: 'requested' | 'accepted' }>(`${L}/friends`, { userId }),
-  /** 1:1 대화방 열기 (없으면 만든다) */
-  openDm: (userId: string) => api.post<{ roomId: string }>(`${L}/dm`, { userId }),
   acceptFriend: (userId: string) => api.post<FriendsView>(`${L}/friends/accept`, { userId }),
   removeFriend: (userId: string) => api.del<FriendsView>(`${L}/friends`, { userId }),
   askMeal: (userId: string) => api.post<{ ok: true }>(`${L}/friends/meal`, { userId }),

@@ -244,7 +244,7 @@ function MeetupLounge({ me, banned, banReason }: { me: LoungePerson; banned: boo
   const { upsert, refresh } = gatherings;
   const { presence, seeking } = useOnline(!banned);
   const loungeRef = useRef<IsoLoungeHandle>(null);
-  // 라운지에서 누른 사람의 프로필 (친구 추가·1:1 채팅)
+  // 라운지에서 누른 사람의 프로필 (친구 추가)
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);

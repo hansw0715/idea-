@@ -223,10 +223,9 @@
   flex: 1;
   min-width: 0;
 }
-/* 사용자 카드: 친구 추가 · 1:1 채팅 (나란히) */
+/* 사용자 카드: 친구 추가 */
 .lounge-user-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: var(--sp-2);
 }
 

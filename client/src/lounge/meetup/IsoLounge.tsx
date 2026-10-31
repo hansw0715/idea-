@@ -136,7 +136,7 @@ function layoutBooth(g: GatheringView, cx: number, cy: number): Table {
 }
 
 /** 앉은 사람의 얼굴 (자기 색 테두리, 나는 파란 테두리) */
-/** 얼굴을 누르면 그 사람 프로필 (친구 추가·1:1 채팅). 탁자 누르기로 번지지 않게 막는다 */
+/** 얼굴을 누르면 그 사람 프로필 (친구 추가). 탁자 누르기로 번지지 않게 막는다 */
 const pickProps = (id: string, onPick?: (id: string) => void) =>
   onPick
     ? {

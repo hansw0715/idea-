@@ -1,5 +1,4 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { DEFAULT_TEMPERATURE, MAX_TEMPERATURE, temperatureFace } from '../../../../shared/lounge';
 import type { PublicUser } from '../../../../shared/lounge';
 import { ApiError } from '../../api';
@@ -92,8 +91,7 @@ export default function UserSheet({
   }, [open, userId, attempt, myProfile]);
 
   // 친구 상태: 이미 친구·요청 보냄이면 버튼을 잠근다
-  const navigate = useNavigate();
-  const [busy, setBusy] = useState<null | 'friend' | 'dm'>(null);
+  const [busy, setBusy] = useState<null | 'friend'>(null);
   const [friendState, setFriendState] = useState<'none' | 'requested' | 'friend'>('none');
   useEffect(() => {
     if (!open || !userId || isMe) return;
@@ -121,20 +119,6 @@ export default function UserSheet({
       toast(r.result === 'accepted' ? '친구가 됐어요.' : '친구 요청을 보냈어요. 상대가 수락하면 친구가 돼요.');
     } catch (err) {
       toast(err instanceof Error ? err.message : '친구 요청을 보내지 못했어요.');
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function openDm() {
-    if (!userId || busy) return;
-    setBusy('dm');
-    try {
-      const { roomId } = await loungeApi.openDm(userId);
-      onClose();
-      navigate(`/lounge/rooms/${roomId}`);
-    } catch (err) {
-      toast(err instanceof Error ? err.message : '대화를 열지 못했어요.');
     } finally {
       setBusy(null);
     }
@@ -228,11 +212,11 @@ export default function UserSheet({
               </>
             )}
 
-            {/* 라운지에서 만난 사람: 친구 추가 · 1:1 대화 */}
+            {/* 라운지에서 만난 사람: 친구 추가 (1:1 채팅은 두지 않는다) */}
             {!isMe && (
               <div className="lounge-user-actions">
                 <Button
-                  variant="secondary"
+                  variant="primary"
                   block
                   loading={busy === 'friend'}
                   disabled={busy !== null || friendState !== 'none'}
@@ -240,10 +224,6 @@ export default function UserSheet({
                 >
                   <Icon name="user-plus" className="btn__icon" />
                   {friendState === 'friend' ? '친구예요' : friendState === 'requested' ? '요청을 보냈어요' : '친구 추가'}
-                </Button>
-                <Button variant="primary" block loading={busy === 'dm'} disabled={busy !== null} onClick={() => void openDm()}>
-                  <Icon name="message" className="btn__icon" />
-                  1:1 채팅
                 </Button>
               </div>
             )}
