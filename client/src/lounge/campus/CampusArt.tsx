@@ -6,7 +6,7 @@
  */
 import type { KeyboardEvent, ReactNode } from 'react';
 import {
-  AREAS, BRIDGE, BUILDINGS, CAMPUS_H, CAMPUS_W, GATES, PATHS, REAR_GAP, TURTLE, WALL_Y,
+  AREAS, BUILDINGS, CAMPUS_H, CAMPUS_W, FORESTS, GATES, GROUND_R, PATHS, PAVILION, TURTLE, fromMap,
   type Building,
 } from './campus';
 import { seeded, type Pt, type Rect } from './geometry';
@@ -28,61 +28,81 @@ const pathD = (list: Pt[]) => list.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`
 /** 건물 높이: 앞벽 값(층수 느낌)을 세워서 키운다 */
 export const heightOf = (b: Building) => Math.round(26 + b.wall * 1.5);
 
+/** 건물 발자국 (앞벽 자리까지 포함 — 충돌 영역과 같다) */
+const footOf = (b: Building): Rect => ({ x: b.x, y: b.y, w: b.w, h: b.h + b.wall });
+
 /* ── 나무 배치 (시드 고정) ─────────────────────────────────── */
 const rnd = seeded(1946);
 const TREES: (Pt & { s: number })[] = [];
-const addTrees = (n: number, x: number, y: number, w: number, h: number, size = 12) => {
-  for (let i = 0; i < n; i++) TREES.push({ x: x + rnd() * w, y: y + rnd() * h, s: size * (0.75 + rnd() * 0.5) });
-};
-addTrees(34, 10, 10, CAMPUS_W - 20, WALL_Y - 34, 15); // 낙산 능선
-addTrees(18, 60, 200, 210, 380); // 낙산정원
-addTrees(6, 1015, 955, 150, 120, 10); // 우진사
-addTrees(7, 30, 1110, 200, 420, 12); // 정문 왼쪽 경사지
-addTrees(4, 1090, 1310, 80, 70, 10);
 
-const PARASOLS: Pt[] = [
-  { x: 400, y: 700 }, { x: 480, y: 770 }, { x: 640, y: 700 }, { x: 680, y: 780 },
-];
+/** 둥근 모서리 땅 안쪽인지 (가장자리에서 inset 만큼 들어온 곳) */
+function onGround(p: Pt, inset: number) {
+  const r = GROUND_R - inset;
+  if (p.x < inset || p.y < inset || p.x > CAMPUS_W - inset || p.y > CAMPUS_H - inset) return false;
+  const cx = Math.min(Math.max(p.x, GROUND_R), CAMPUS_W - GROUND_R);
+  const cy = Math.min(Math.max(p.y, GROUND_R), CAMPUS_H - GROUND_R);
+  return Math.hypot(p.x - cx, p.y - cy) <= r;
+}
+const inside = (p: Pt, r: Rect, m: number) => p.x > r.x - m && p.x < r.x + r.w + m && p.y > r.y - m && p.y < r.y + r.h + m;
+const treeFree = (p: Pt) =>
+  onGround(p, 24) &&
+  !BUILDINGS.some((b) => inside(p, footOf(b), 14)) &&
+  !AREAS.some((a) => a.kind !== 'forest' && inside(p, a, 8)) &&
+  !GATES.some((g) => Math.hypot(p.x - g.x, p.y - g.y) < 40) &&
+  Math.hypot(p.x - PAVILION.x, p.y - PAVILION.y) > 40 &&
+  Math.hypot(p.x - TURTLE.x, p.y - TURTLE.y) > 36;
+for (const f of FORESTS) {
+  for (let i = 0; i < f.n; i++) {
+    const p = fromMap(f.u0 + rnd() * (f.u1 - f.u0), f.v0 + rnd() * (f.v1 - f.v0));
+    const s = 11 * (0.75 + rnd() * 0.5);
+    if (treeFree(p)) TREES.push({ ...p, s });
+  }
+}
+
+const PARASOLS: Pt[] = [fromMap(684, 486), fromMap(714, 504), fromMap(700, 468)];
 
 /* ── 바닥 (평면 좌표, 바깥에서 ISO_MATRIX 로 눕힌다) ─────────── */
 export function campusGround(): ReactNode {
   return (
     <g>
-      <rect x={-40} y={-40} width={CAMPUS_W + 80} height={CAMPUS_H + 80} className="i-base" />
-      <rect width={CAMPUS_W} height={CAMPUS_H} className="i-ground" />
-      <rect width={CAMPUS_W} height={WALL_Y} className="i-ridge" />
-      {/* 바닥 격자 — 메타버스 바닥 느낌 */}
-      {Array.from({ length: CAMPUS_W / 80 + 1 }).map((_, i) => (
-        <line key={`v${i}`} x1={i * 80} x2={i * 80} y1={WALL_Y} y2={CAMPUS_H} className="i-grid" />
-      ))}
-      {Array.from({ length: Math.floor((CAMPUS_H - WALL_Y) / 80) + 1 }).map((_, i) => (
-        <line key={`h${i}`} y1={WALL_Y + i * 80} y2={WALL_Y + i * 80} x1={0} x2={CAMPUS_W} className="i-grid" />
-      ))}
-      {PATHS.map((p, i) => (
-        <path key={`e${i}`} d={pathD(p)} className="i-path-edge" />
-      ))}
-      {PATHS.map((p, i) => (
-        <path key={`p${i}`} d={pathD(p)} className="i-path" />
-      ))}
-      {AREAS.map((a) => (
-        <g key={a.id}>
-          <rect x={a.x} y={a.y} width={a.w} height={a.h} rx={10} className={`i-area i-area--${a.kind}`} />
-          {(a.kind === 'plaza' || a.kind === 'sunken') &&
-            Array.from({ length: Math.floor(a.w / 20) }).map((_, i) => (
-              <line key={i} x1={a.x + 10 + i * 20} x2={a.x + 10 + i * 20} y1={a.y + 6} y2={a.y + a.h - 6} className="i-tile" />
-            ))}
-          {a.kind === 'field' && (
-            <g className="i-field-line">
-              <rect x={a.x + 14} y={a.y + 14} width={a.w - 28} height={a.h - 28} />
-              <line x1={a.x + a.w / 2} x2={a.x + a.w / 2} y1={a.y + 14} y2={a.y + a.h - 14} />
-              <circle cx={a.x + a.w / 2} cy={a.y + a.h / 2} r={22} />
-            </g>
-          )}
-        </g>
-      ))}
-      <path d={pathD(BRIDGE)} className="i-bridge" />
-      {/* 의화정 바닥 */}
-      <circle cx={170} cy={540} r={30} className="i-area i-area--plaza" />
+      <rect x={-30} y={-30} width={CAMPUS_W + 60} height={CAMPUS_H + 60} rx={GROUND_R + 30} className="i-base" />
+      <rect width={CAMPUS_W} height={CAMPUS_H} rx={GROUND_R} className="i-ground" />
+      <clipPath id="mv-ground-clip">
+        <rect width={CAMPUS_W} height={CAMPUS_H} rx={GROUND_R} />
+      </clipPath>
+      <g clipPath="url(#mv-ground-clip)">
+        {/* 바닥 격자 — 메타버스 바닥 느낌 */}
+        {Array.from({ length: Math.floor(CAMPUS_W / 80) + 1 }).map((_, i) => (
+          <line key={`v${i}`} x1={i * 80} x2={i * 80} y1={0} y2={CAMPUS_H} className="i-grid" />
+        ))}
+        {Array.from({ length: Math.floor(CAMPUS_H / 80) + 1 }).map((_, i) => (
+          <line key={`h${i}`} y1={i * 80} y2={i * 80} x1={0} x2={CAMPUS_W} className="i-grid" />
+        ))}
+        {AREAS.map((a) => (
+          <g key={a.id}>
+            <rect x={a.x} y={a.y} width={a.w} height={a.h} rx={a.kind === 'forest' ? 40 : 10} className={`i-area i-area--${a.kind}`} />
+            {(a.kind === 'plaza' || a.kind === 'sunken') &&
+              Array.from({ length: Math.floor(a.w / 20) }).map((_, i) => (
+                <line key={i} x1={a.x + 10 + i * 20} x2={a.x + 10 + i * 20} y1={a.y + 6} y2={a.y + a.h - 6} className="i-tile" />
+              ))}
+            {a.kind === 'field' && (
+              <g className="i-field-line">
+                <rect x={a.x + 10} y={a.y + 10} width={a.w - 20} height={a.h - 20} />
+                <line x1={a.x + a.w / 2} x2={a.x + a.w / 2} y1={a.y + 10} y2={a.y + a.h - 10} />
+                <circle cx={a.x + a.w / 2} cy={a.y + a.h / 2} r={14} />
+              </g>
+            )}
+          </g>
+        ))}
+        {PATHS.map((p, i) => (
+          <path key={`e${i}`} d={pathD(p)} className="i-path-edge" />
+        ))}
+        {PATHS.map((p, i) => (
+          <path key={`p${i}`} d={pathD(p)} className="i-path" />
+        ))}
+        {/* 의화정 바닥 */}
+        <circle cx={PAVILION.x} cy={PAVILION.y} r={26} className="i-area i-area--plaza" />
+      </g>
     </g>
   );
 }
@@ -93,20 +113,11 @@ export function campusProps(onBuilding: (id: string) => void): PropItem[] {
   for (const b of BUILDINGS) out.push({ ...sortable(`b-${b.id}`, footOf(b)), node: <BuildingBox key={b.id} b={b} onBuilding={onBuilding} /> });
   TREES.forEach((t, i) => out.push({ ...sortable(`t-${i}`, { x: t.x - 4, y: t.y - 4, w: 8, h: 8 }, t.s * 1.3), node: <Tree key={i} {...t} /> }));
   PARASOLS.forEach((p, i) => out.push({ ...sortable(`p-${i}`, { x: p.x - 4, y: p.y - 4, w: 8, h: 8 }, 26), node: <Parasol key={i} {...p} /> }));
-  // 성곽: 후문 자리만 비운 낮고 긴 담
-  const walls: Rect[] = [
-    { x: 0, y: WALL_Y, w: REAR_GAP.from, h: 16 },
-    { x: REAR_GAP.to, y: WALL_Y, w: CAMPUS_W - REAR_GAP.to, h: 16 },
-  ];
-  walls.forEach((r, i) => out.push({ ...sortable(`w-${i}`, r), node: <Fortress key={i} r={r} /> }));
   out.push({ ...sortable('turtle', { x: TURTLE.x - 20, y: TURTLE.y - 13, w: 40, h: 26 }), node: <Turtle key="turtle" /> });
-  out.push({ ...sortable('pavilion', { x: 150, y: 520, w: 40, h: 40 }, 10), node: <Pavilion key="pavilion" /> });
+  out.push({ ...sortable('pavilion', { x: PAVILION.x - 18, y: PAVILION.y - 18, w: 36, h: 36 }, 10), node: <Pavilion key="pavilion" /> });
   for (const g of GATES) out.push({ ...sortable(`g-${g.id}`, { x: g.x - 30, y: g.y - 6, w: 60, h: 12 }), node: <GatePosts key={g.id} p={g} /> });
   return out;
 }
-
-/** 건물 발자국 (앞벽 자리까지 포함 — 충돌 영역과 같다) */
-const footOf = (b: Building): Rect => ({ x: b.x, y: b.y, w: b.w, h: b.h + b.wall });
 
 /* ── 이름표 겹 ─────────────────────────────────────────────── */
 export function campusOverlay(): ReactNode {
@@ -147,9 +158,7 @@ export function campusOverlay(): ReactNode {
           </g>
         );
       })}
-      <text {...xy(iso(600, 40, 60))} textAnchor="middle" className="i-region">낙산공원 · 한양도성</text>
-      <text {...xy(iso(170, 540, 52))} textAnchor="middle" className="i-area-name">의화정</text>
-      <text {...xy(iso(150, 760))} textAnchor="middle" className="i-area-name">지선교</text>
+      <text {...xy(iso(PAVILION.x, PAVILION.y, 50))} textAnchor="middle" className="i-area-name">의화정</text>
     </g>
   );
 }
@@ -267,19 +276,6 @@ function Parasol({ x, y }: Pt) {
   );
 }
 
-function Fortress({ r }: { r: Rect }) {
-  const merlons: Rect[] = [];
-  for (let x = r.x + 4; x + 10 < r.x + r.w; x += 24) merlons.push({ x, y: r.y, w: 12, h: r.h });
-  return (
-    <g>
-      <Faces r={r} h={20} cls="i-wall" />
-      {merlons.map((m) => (
-        <Faces key={m.x} r={m} h={8} z={20} cls="i-wall" />
-      ))}
-    </g>
-  );
-}
-
 function Turtle() {
   const c = iso(TURTLE.x, TURTLE.y, 0);
   return (
@@ -293,7 +289,7 @@ function Turtle() {
 }
 
 function Pavilion() {
-  const r = { x: 150, y: 520, w: 40, h: 40 };
+  const r = { x: PAVILION.x - 18, y: PAVILION.y - 18, w: 36, h: 36 };
   const posts = [iso(r.x, r.y + r.h), iso(r.x + r.w, r.y + r.h), iso(r.x + r.w, r.y)];
   return (
     <g>

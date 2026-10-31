@@ -1,5 +1,7 @@
-/* 캠퍼스 라운지 (/lounge/campus) — 흰색과 파랑 단계만 쓰는 아이소메트릭 화면.
-   색은 .mv 안에서만 정의해 앱의 나머지 화면(다크 모드 포함)에는 영향이 없다. */
+/* 미팅 라운지 (/lounge/campus) — 파랑 단계로 그린 아이소메트릭 모형.
+   위·아래 막대와 목록은 앱 토큰을 써서 사용자의 테마(밝게·어둡게·고대비)를 따른다.
+   모형 색(--w, --b0~9)은 .mv 안에서만 정의하고, 어두운 테마에서는 밤의 캠퍼스처럼
+   같은 밝기 순서를 유지한 채 어둡게 바꾼다 (윗면이 가장 밝고 옆면이 어둡다). */
 
 .mv {
   --w: #ffffff;
@@ -13,15 +15,50 @@
   --b7: #0f4a8c;
   --b8: #0b3a70;
   --b9: #082a52;
+  /* 모형 위 글자: 흰 이름표 위(--ink), 파란 면 위(--on) */
+  --ink: #0b3a70;
+  --on: #ffffff;
+  --stage: #eaf2fc;
   position: fixed;
   inset: 0;
   z-index: 60;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--b1);
-  color: var(--b9);
-  color-scheme: only light;
+  background: var(--stage);
+  color: var(--c-text);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .mv {
+    --w: #3a4c64;
+    --b0: #33455c;
+    --b1: #2c3d52;
+    --b2: #283749;
+    --b3: #222f40;
+    --b4: #1c2836;
+    --b5: #2f5f99;
+    --b6: #4f91d4;
+    --b7: #2a5a90;
+    --b8: #1d4373;
+    --b9: #142f52;
+    --ink: #e8ebee;
+    --stage: #161d27;
+  }
+}
+:root[data-theme='dark'] .mv {
+  --w: #3a4c64;
+  --b0: #33455c;
+  --b1: #2c3d52;
+  --b2: #283749;
+  --b3: #222f40;
+  --b4: #1c2836;
+  --b5: #2f5f99;
+  --b6: #4f91d4;
+  --b7: #2a5a90;
+  --b8: #1d4373;
+  --b9: #142f52;
+  --ink: #e8ebee;
+  --stage: #161d27;
 }
 .mv--center {
   display: grid;
@@ -42,23 +79,8 @@
   max-height: 42%;
   overflow-y: auto;
   padding: var(--sp-5) var(--sp-5) calc(var(--sp-5) + var(--safe-bottom));
-  background: var(--w);
-  border-top: 1px solid var(--b2);
-}
-.mv-panel .mv-list-btn {
-  border-color: var(--b2);
-  background: var(--b0);
-  color: var(--b9);
-}
-.mv-panel .mv-list-btn:active {
-  background: var(--b1);
-}
-.mv-panel .mv-list-tag {
-  background: var(--b6);
-  color: var(--w);
-}
-.mv-panel .mv-list-text span {
-  color: var(--b5);
+  background: var(--c-bg);
+  border-top: 1px solid var(--c-border-soft);
 }
 @media (min-width: 768px) {
   .mv {
@@ -70,7 +92,7 @@
     max-height: none;
     padding-top: calc(7.2rem + var(--safe-top));
     border-top: 0;
-    border-left: 1px solid var(--b2);
+    border-left: 1px solid var(--c-border-soft);
   }
 }
 .mv-svg {
@@ -80,11 +102,11 @@
   font-family: var(--font);
 }
 .mv :focus-visible {
-  outline: 3px solid var(--b6);
+  outline: 3px solid var(--c-action);
   outline-offset: 2px;
 }
 
-/* ── 위 · 아래 막대 (불투명 흰 면) ── */
+/* ── 위 막대 (앱 머리글과 같은 면) ── */
 .mv-top {
   position: absolute;
   top: 0;
@@ -95,19 +117,19 @@
   gap: var(--sp-3);
   min-height: calc(6.4rem + var(--safe-top));
   padding: var(--safe-top) var(--sp-5) 0;
-  background: var(--w);
-  border-bottom: 1px solid var(--b2);
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-border-soft);
 }
 .mv-back {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-1);
+  gap: var(--sp-3);
   min-height: var(--touch);
-  padding: 0 var(--sp-4);
-  border: 1px solid var(--b3);
+  padding: 0 var(--sp-5) 0 var(--sp-4);
+  border: 1px solid var(--c-border-soft);
   border-radius: var(--r);
-  background: var(--w);
-  color: var(--b8);
+  background: var(--c-bg);
+  color: var(--c-text);
   font: inherit;
   font-size: var(--fs-sm);
   font-weight: var(--fw-bold);
@@ -135,7 +157,7 @@
 .mv-place-sub {
   margin: 0;
   font-size: var(--fs-xs);
-  color: var(--b7);
+  color: var(--c-text-sub);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -240,9 +262,6 @@
   stroke: var(--b3);
   stroke-width: 2;
 }
-.i-ridge {
-  fill: var(--b2);
-}
 .i-grid {
   stroke: var(--b1);
   stroke-width: 1.5;
@@ -260,12 +279,6 @@
   stroke-width: 30;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-.i-bridge {
-  fill: none;
-  stroke: var(--b4);
-  stroke-width: 14;
-  stroke-dasharray: 4 6;
 }
 .i-area {
   stroke-width: 1.5;
@@ -420,18 +433,6 @@
 .i-parasol-b {
   fill: var(--b6);
 }
-.i-wall-t {
-  fill: var(--w);
-  stroke: var(--b3);
-}
-.i-wall-l {
-  fill: var(--b2);
-  stroke: var(--b3);
-}
-.i-wall-r {
-  fill: var(--b4);
-  stroke: var(--b4);
-}
 .i-gatepost-t {
   fill: var(--w);
   stroke: var(--b5);
@@ -474,7 +475,7 @@
 .i-label-text {
   font-size: 14px;
   font-weight: 700;
-  fill: var(--b8);
+  fill: var(--ink);
 }
 .i-pin rect {
   fill: var(--b6);
@@ -486,7 +487,7 @@
 .i-pin text {
   font-size: 13px;
   font-weight: 700;
-  fill: var(--w);
+  fill: var(--on);
 }
 .i-pin > * {
   animation: float 1.6s ease-in-out infinite alternate;
@@ -505,21 +506,13 @@
   stroke-width: 4;
   stroke-linejoin: round;
 }
-.i-region {
-  font-size: 22px;
-  font-weight: 700;
-  fill: var(--b7);
-  paint-order: stroke;
-  stroke: var(--w);
-  stroke-width: 5;
-}
 .i-gate rect {
   fill: var(--b8);
 }
 .i-gate text {
   font-size: 13px;
   font-weight: 700;
-  fill: var(--w);
+  fill: var(--on);
 }
 
 /* ── 걷기 표시 ── */
@@ -528,7 +521,7 @@
 
 /* ── 라운지 안 ── */
 .mv-world--room {
-  background: var(--b1);
+  background: var(--stage);
 }
 .i-floor {
   fill: var(--w);
@@ -554,7 +547,7 @@
 .i-door-text {
   font-size: 13px;
   font-weight: 700;
-  fill: var(--w);
+  fill: var(--on);
 }
 .i-wall-back {
   fill: var(--w);
@@ -582,7 +575,7 @@
 .i-board-text {
   font-size: 15px;
   font-weight: 700;
-  fill: var(--w);
+  fill: var(--on);
 }
 .i-board-sub {
   font-size: 12px;
@@ -632,10 +625,10 @@
 .i-kind-text {
   font-size: 12px;
   font-weight: 700;
-  fill: var(--w);
+  fill: var(--on);
 }
 .i-tableset--free .i-kind-text {
-  fill: var(--b7);
+  fill: var(--ink);
 }
 .i-chair-t {
   fill: var(--w);
@@ -660,6 +653,14 @@
 .i-seat.is-busy {
   cursor: default;
 }
+/* 모임 멤버가 앉은 의자는 파랗게 채운다 */
+.i-seat.is-busy .i-chair-t {
+  fill: var(--b6);
+  stroke: var(--b7);
+}
+.i-seat.is-busy .i-chair-r {
+  fill: var(--b7);
+}
 .i-counter-t {
   fill: var(--w);
   stroke: var(--b5);
@@ -682,7 +683,7 @@
 .i-counter-text {
   font-size: 14px;
   font-weight: 700;
-  fill: var(--b7);
+  fill: var(--ink);
   paint-order: stroke;
   stroke: var(--w);
   stroke-width: 4;
@@ -703,5 +704,5 @@
   stroke-dasharray: 4 3;
 }
 .i-table-hit:has(.is-vacant) .i-kind-text {
-  fill: var(--b7);
+  fill: var(--ink);
 }
