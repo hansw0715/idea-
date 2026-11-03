@@ -254,15 +254,9 @@ export default function SignupEmail() {
 
   return (
     <>
-      <AppHeader />
+      {/* 회원가입 화면에는 이미지(로고·앱 아이콘)를 두지 않는다 */}
+      <AppHeader bare />
       <main id="main" className="app-main">
-        <img
-          className="auth-logo auth-logo--sm"
-          src="/brand/logo.png"
-          alt="상상Book-E"
-          width="720"
-          height="559"
-        />
         <div className="page-head">
           <h1 className="page-title">회원가입</h1>
           <p className="page-lead">

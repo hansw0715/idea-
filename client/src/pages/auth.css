@@ -26,12 +26,6 @@
   height: auto;
 }
 
-/* 회원가입 상단의 작은 로고 */
-.auth-logo--sm {
-  width: min(60%, 16rem);
-  margin: 0 auto var(--sp-6);
-}
-
 .auth-card {
   padding: var(--sp-8) var(--sp-6) var(--sp-6);
   background: var(--c-bg);
