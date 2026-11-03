@@ -101,16 +101,18 @@
 .school-eclass__tile.is-left strong {
   color: var(--c-text);
 }
-/* 학사 알림: 미수강 강의 · 미제출 과제를 한 상자로 잇고 가운데에 얇은 구분선 */
+/* 학사 알림: 미수강 강의 · 미제출 과제는 상자 없이 두 칸으로, 가운데에 얇은 구분선 */
 .school-eclass__tally {
   gap: 0;
-  border-radius: var(--r);
-  background: var(--c-bg);
-  overflow: hidden;
 }
 .school-eclass__tally .school-eclass__tile {
+  /* 이름과 큰 숫자를 세로 가운데에 맞춘다 */
+  align-items: center;
+  min-height: 0;
+  padding: 0.4rem 1.4rem;
   border-radius: 0;
   background: transparent;
+  line-height: 1;
 }
 .school-eclass__tally .school-eclass__tile + .school-eclass__tile {
   border-left: 1px solid var(--c-divider);
