@@ -12,7 +12,6 @@ import type { InboxNotification } from '../../../shared/notifications';
 import type { GatheringView, RoomSummary } from '../../../shared/lounge';
 import type { Meeting, Reservation, TimetableEntry } from '../types';
 import { buildActivity, scopeFor } from './activity';
-import { isAvailable, needsAttention } from '../school/eclassLogic';
 import { isPushOff } from '../lounge/push';
 import type { Activity, NoticeData, Scope } from './activity';
 
@@ -98,7 +97,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     const report = () => {
       const now = Date.now();
       const items = (readEclassSnapshot(user.id)?.items ?? [])
-        .filter((i) => i.kind === 'lecture' && i.dueAt && Date.parse(i.dueAt) > now && isAvailable(i, now) && needsAttention(i, now))
+        // 아직 공개 전인 강의도 보낸다 — 공개된 뒤 앱을 안 열어도 마감 알림이 가게 (서버는 마감 30시간 안에서만 보낸다)
+        .filter((i) => i.kind === 'lecture' && i.dueAt && Date.parse(i.dueAt) > now && i.completion !== 'completed')
+        .sort((a, b) => Date.parse(a.dueAt as string) - Date.parse(b.dueAt as string))
         .slice(0, 60)
         .map((i) => ({ id: i.id, title: i.title, course: i.courseName, dueAt: i.dueAt as string }));
       const body = JSON.stringify({ items });

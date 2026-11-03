@@ -13,7 +13,7 @@
 import crypto from 'node:crypto';
 import { Router } from 'express';
 import { all, run } from './db.js';
-import { adminLoginUsernames, requireAuth, userId, wrap } from './auth.js';
+import { requireAuth, userId, wrap } from './auth.js';
 import { pushOnly } from './lounge/services/push.js';
 
 export const LECTURE_ALERT_MS = 6 * 3_600_000;
@@ -103,11 +103,9 @@ function cronSecret(): string {
 /** Supabase 예약(pg_cron) 목록: 이름, 일정(UTC), 부를 주소 */
 const JOBS = [
   { name: 'lecture-alerts-sweep', schedule: '0 * * * *', path: '/api/lecture-alerts/sweep' },
-  // 실험용: 매일 13:55(한국 시간 = 04:55 UTC)에 관리자에게 "테스트" 알림
-  { name: 'lecture-alerts-test-push', schedule: '55 4 * * *', path: '/api/lecture-alerts/test-push' },
-  // 실험용: 11월 3일 14:05(05:05 UTC) 한 번 더 — 날짜를 박아 두어 다른 날에는 돌지 않는다
-  { name: 'lecture-alerts-test-push-1405', schedule: '5 5 3 11 *', path: '/api/lecture-alerts/test-push' },
 ];
+/** 예전에 등록했다가 뺀 예약(실험용 테스트 알림 등). 남아 있으면 지운다 */
+const OLD_JOBS = ['lecture-alerts-test-push', 'lecture-alerts-test-push-1400', 'lecture-alerts-test-push-1405'];
 let scheduleChecked = false;
 /**
  * Supabase 에 예약(pg_cron + pg_net)을 둔다. 운영 배포(Vercel production)에서만,
@@ -125,13 +123,15 @@ export async function ensureSweepSchedule(): Promise<void> {
   }
   try {
     const existing = await all<{ jobname: string; schedule: string; command: string }>(`SELECT jobname, schedule, command FROM cron.job`).catch(() => []);
+    for (const name of OLD_JOBS) {
+      if (!existing.some((e) => e.jobname === name)) continue;
+      await run(`SELECT cron.unschedule(?)`, [name]);
+      console.info(`[lecture-alerts] 예약을 지웠어요: ${name}`);
+    }
     let extensions = false;
     for (const job of JOBS) {
       const command = `select net.http_get(url := 'https://${host}${job.path}', headers := jsonb_build_object('Authorization', 'Bearer ${secret}'), timeout_milliseconds := 30000)`;
-      if (existing.some((e) => e.jobname === job.name && e.schedule === job.schedule && e.command === command)) {
-        console.info(`[lecture-alerts] 예약이 이미 있어요: ${job.name}`);
-        continue;
-      }
+      if (existing.some((e) => e.jobname === job.name && e.schedule === job.schedule && e.command === command)) continue;
       if (!extensions) {
         await run('CREATE EXTENSION IF NOT EXISTS pg_cron');
         await run('CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions');
@@ -150,22 +150,6 @@ const cronAuthorized = (authorization: string | undefined) => {
   return !!secret && authorization === `Bearer ${secret}`;
 };
 
-/** 실험용 예약 호출: 관리자에게 "테스트" 푸시를 보낸다 */
-lectureAlertsRouter.get(
-  '/test-push',
-  wrap(async (req, res) => {
-    if (!cronAuthorized(req.get('authorization'))) {
-      res.status(404).json({ error: '찾을 수 없습니다.' });
-      return;
-    }
-    // 관리자 로그인(dedea715 등)은 DB 계정이 없는 세션이라, 같은 아이디의 학생 계정과 is_admin 계정에 보낸다
-    const admins = await all<{ id: number }>(`SELECT id FROM users WHERE is_admin = TRUE OR username = ANY(?::text[])`, [adminLoginUsernames()]);
-    for (const a of admins) await pushOnly(String(a.id), { title: '테스트', body: '예약 알림 실험이에요.', url: '/', tag: 'cron-test' });
-    console.info(`[lecture-alerts] 테스트 알림을 관리자 ${admins.length}명에게 보냈어요.`);
-    res.json({ sent: admins.length });
-  }),
-);
-
 /** 예약 호출(크론)용. 비밀값이 없으면 꺼져 있다 */
 lectureAlertsRouter.get(
   '/sweep',
@@ -174,7 +158,9 @@ lectureAlertsRouter.get(
       res.status(404).json({ error: '찾을 수 없습니다.' });
       return;
     }
-    res.json({ sent: await sweepLectureAlerts() });
+    const sent = await sweepLectureAlerts();
+    console.info(`[lecture-alerts] 정각 확인: 미수강 강의 알림 ${sent}건`);
+    res.json({ sent });
   }),
 );
 
