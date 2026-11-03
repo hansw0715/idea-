@@ -156,7 +156,7 @@ export function createEclassFlow(http: SchoolHttp, opts: EclassFlowOptions = {})
   /**
    * 로그인한 뒤 강의·과제 현황을 모은다 (한성대 e-class 화면 구조를 따른다 — eclassParse.ts 머리말 참고).
    * 강좌마다: 온라인 출석부(_a) · 강의 목록(강좌 페이지) · 과제 목록(/mod/assign/index.php)을 읽고,
-   * 출석부를 못 읽거나 커뮤니티 강좌면 학습 진도 표(user_progress.php)로 대신한다.
+   * 출석부를 못 읽으면 학습 진도 표(user_progress.php)로 대신한다. 커뮤니티(비교과) 강좌는 건너뛴다.
    */
   async function snapshot(budget: Budget): Promise<EclassSnapshot> {
     const warnings = new Set<string>();
@@ -164,15 +164,15 @@ export function createEclassFlow(http: SchoolHttp, opts: EclassFlowOptions = {})
     let parsed = P.parseCourses(home);
     if (!parsed.recognized) parsed = P.parseCourses(await read(budget, `${origin}/local/ubion/user/`));
     if (!parsed.recognized) throw unavailable('e-class 강좌 목록의 형식을 확인하지 못했어요. 학교 사이트에서 확인해 주세요.');
-    const courses = parsed.courses.filter((c) => !IGNORED_COURSE.test(c.name)).slice(0, ECLASS_MAX_COURSES);
-    if (parsed.courses.filter((c) => !IGNORED_COURSE.test(c.name)).length > ECLASS_MAX_COURSES) warnings.add(`강좌가 많아 처음 ${ECLASS_MAX_COURSES}개 강좌만 확인했어요. 나머지는 e-class에서 확인해 주세요.`);
+    // 학부(교과) 강좌만 — 커뮤니티(비교과) 강좌는 강의 목록·학사 알림에 넣지 않는다
+    const eligible = parsed.courses.filter((c) => !c.community && !IGNORED_COURSE.test(c.name));
+    const courses = eligible.slice(0, ECLASS_MAX_COURSES);
+    if (eligible.length > ECLASS_MAX_COURSES) warnings.add(`강좌가 많아 처음 ${ECLASS_MAX_COURSES}개 강좌만 확인했어요. 나머지는 e-class에서 확인해 주세요.`);
 
     let failedCourses = 0;
     const perCourse = await mapLimited(courses, async (course) => {
       const url = (path: string) => `${origin}${path}?id=${course.id}`;
-      const attendanceRead = course.community
-        ? Promise.resolve(null)
-        : read(budget, url('/report/ubcompletion/user_progress_a.php')).then((html) => ({ html, rows: P.parseAttendancePage(html) }));
+      const attendanceRead = read(budget, url('/report/ubcompletion/user_progress_a.php')).then((html) => ({ html, rows: P.parseAttendancePage(html) }));
       const [viewRes, attendanceRes, assignRes] = await Promise.allSettled([
         read(budget, course.url),
         attendanceRead,

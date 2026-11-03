@@ -174,11 +174,12 @@ describe('e-class 조회 (출석부·강의 목록·과제 목록)', () => {
     expect(snap.warnings.join(' ')).not.toContain('출석부를 읽지 못했어요');
   });
 
-  it('커뮤니티 강좌는 출석부(_a)를 요청하지 않고 학습 진도 표로 판단한다', async () => {
+  it('커뮤니티(비교과) 강좌는 열지 않고 강의·과제 목록에서 뺀다', async () => {
     const { snap, site } = await run({ community: '8' });
-    expect(site.seen.some((r) => r.includes('user_progress_a.php?id=8'))).toBe(false);
+    expect(site.seen.some((r) => r.includes('id=8'))).toBe(false);
     expect(site.seen.some((r) => r.includes('user_progress_a.php?id=7'))).toBe(true);
-    expect(lecture(snap, '8', '1주차 실습')).toMatchObject({ completion: 'completed' });
+    expect(snap.items.some((i) => i.courseId === '8')).toBe(false);
+    expect(snap.courseCount).toBe(1);
   });
 
   it('두 표를 모두 못 읽으면 완료 여부를 추측하지 않고 확인 필요로 두며 이유를 알린다', async () => {
