@@ -253,7 +253,7 @@ function InitialToken({ x, y, z, name, n }: { x: number; y: number; z: number; n
     <g className="iso-initial" style={{ '--av': `var(--m-${(n % 8) + 1})` } as CSSProperties}>
       <title>{name}</title>
       <circle cx={b.x} cy={cy} r={HEAD_R + 1} className="iso-initial__disc" />
-      <text x={b.x} y={cy + 7.5} textAnchor="middle" className="iso-initial__text">
+      <text x={b.x} y={cy + 9} textAnchor="middle" className="iso-initial__text">
         {name.trim().slice(0, 1) || '?'}
       </text>
     </g>
@@ -319,9 +319,9 @@ function StandingPerson({
 
 /** 밥약 찾는 중: 머리 위 작은 말풍선. 다른 사람의 말풍선을 누르면 그 사람이 모으는 밥약에 참여한다 (onJoin) */
 function SeekBubble({ x, y, onJoin }: { x: number; y: number; onJoin?: () => void }) {
-  // 회의·모임 이름표와 같은 글자 크기 (이름표 14px ÷ 휴대폰 배율 0.76 ≈ 19)
-  const w = 180;
-  const h = 34;
+  // 회의·모임 이름표와 같은 글자 크기 (이름표 20px ÷ 휴대폰 배율 0.76 ≈ 27)
+  const w = 250;
+  const h = 46;
   return (
     <g
       className={`iso-seek${onJoin ? ' iso-pick' : ''}`}
@@ -335,9 +335,9 @@ function SeekBubble({ x, y, onJoin }: { x: number; y: number; onJoin?: () => voi
           : undefined
       }
     >
-      <rect x={x - w / 2} y={y - h} width={w} height={h} rx={8} className="iso-seek__box" />
-      <path d={`M${x - 6} ${y - 0.5} l6 6.5 l6 -6.5 z`} className="iso-seek__box" />
-      <text x={x} y={y - 10.6} textAnchor="middle" className="iso-seek__text">
+      <rect x={x - w / 2} y={y - h} width={w} height={h} rx={11} className="iso-seek__box" />
+      <path d={`M${x - 8} ${y - 0.5} l8 8.5 l8 -8.5 z`} className="iso-seek__box" />
+      <text x={x} y={y - 14.4} textAnchor="middle" className="iso-seek__text">
         같이 밥 먹을 사람!
       </text>
     </g>
