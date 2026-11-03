@@ -87,10 +87,10 @@ export default function Login() {
         <div className="auth-hero">
           <img
             className="auth-logo"
-            src="/brand/logo.png"
-            alt="상상Book-E · 예약도, 팀도, 상상처럼!"
+            src="/brand/logo-notag.png"
+            alt="상상Book-E"
             width="720"
-            height="559"
+            height="504"
           />
         </div>
 
