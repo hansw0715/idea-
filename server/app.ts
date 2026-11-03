@@ -134,8 +134,8 @@ export function createApp() {
   // 운영에서는 아무도 안 쓰는 때를 위해 Supabase 매시 예약도 한 번 확인해 둔다.
   app.use('/api', (_req, _res, next) => {
     sweepSoon();
-    void ensureSweepSchedule();
-    next();
+    // 인스턴스의 첫 요청만 등록 확인을 기다린다 (응답 뒤에 돌면 로그가 사라질 수 있다)
+    ensureSweepSchedule().then(() => next(), () => next());
   });
   app.use('/api/lecture-alerts', lectureAlertsRouter);
 

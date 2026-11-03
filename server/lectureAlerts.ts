@@ -114,15 +114,22 @@ let scheduleChecked = false;
 export async function ensureSweepSchedule(): Promise<void> {
   if (scheduleChecked) return;
   scheduleChecked = true;
-  const host = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() ?? '';
+  if (process.env.VERCEL_ENV !== 'production' || !process.env.DATABASE_URL) return;
+  const host = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim() || 'sangsang-booke.vercel.app';
   const secret = cronSecret();
-  if (process.env.VERCEL_ENV !== 'production' || !process.env.DATABASE_URL || !/^[a-z0-9.-]+$/i.test(host) || !/^[\w.~+/=-]+$/.test(secret)) return;
+  if (!/^[a-z0-9.-]+$/i.test(host) || !/^[\w.~+/=-]+$/.test(secret)) {
+    console.warn('[lecture-alerts] 예약을 건너뛰었어요: 주소나 비밀값이 없어요.');
+    return;
+  }
   try {
     const existing = await all<{ jobname: string; schedule: string; command: string }>(`SELECT jobname, schedule, command FROM cron.job`).catch(() => []);
     let extensions = false;
     for (const job of JOBS) {
       const command = `select net.http_get(url := 'https://${host}${job.path}', headers := jsonb_build_object('Authorization', 'Bearer ${secret}'), timeout_milliseconds := 30000)`;
-      if (existing.some((e) => e.jobname === job.name && e.schedule === job.schedule && e.command === command)) continue;
+      if (existing.some((e) => e.jobname === job.name && e.schedule === job.schedule && e.command === command)) {
+        console.info(`[lecture-alerts] 예약이 이미 있어요: ${job.name}`);
+        continue;
+      }
       if (!extensions) {
         await run('CREATE EXTENSION IF NOT EXISTS pg_cron');
         await run('CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions');
