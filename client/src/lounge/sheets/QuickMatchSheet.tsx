@@ -5,6 +5,7 @@
  * 흐름: 인원 고르기 → 시작 → (위치 허용) → 모으는 중(모인 사람이 자리에 하나씩 보인다) → 다 모임(수락/거절)
  *      → 확정(단톡방) | 누군가 거절·시간 초과 | 근처에 아무도 없음
  * 3·4명을 고르고 나 말고 한 명 이상 모였으면 "N명으로 바로 시작"으로 지금 인원만으로 방을 열 수 있다.
+ * 라운지에서 다른 사람 머리 위 '같이 밥 먹을 사람!'을 누르면(join) 내 위치 없이 그 사람이 모으는 밥약에 바로 들어간다.
  * 밥약은 실제로 만날 사람끼리라 모인 사람의 실명을 보여 준다.
  * 진실은 서버다. 소켓이 없어서 열려 있는 동안 2초마다 상태를 묻는다(탭이 보일 때만). 시트를 닫아도 대기는 서버에 남는다.
  * 열 때 로딩 화면을 띄우지 않는다: 마지막으로 받은 상태(없으면 첫 화면)를 바로 그리고, 서버 답이 오면 바꾼다.
@@ -29,6 +30,8 @@ export type QuickMatchSheetProps = {
   open: boolean;
   onClose: () => void;
   onConfirmed?: (gatheringId: string) => void;
+  /** 이 사람이 모으는 밥약에 참여한다. at 이 바뀔 때마다(말풍선을 다시 누를 때마다) 한 번 보낸다 */
+  join?: { userId: string; at: number } | null;
 };
 
 const POLL_MS = 2000;
@@ -90,7 +93,7 @@ function phaseOf(state: QuickState | null): Phase {
   return 'idle';
 }
 
-export default function QuickMatchSheet({ open, onClose, onConfirmed, presentation = 'sheet' }: QuickMatchSheetProps) {
+export default function QuickMatchSheet({ open, onClose, onConfirmed, join = null, presentation = 'sheet' }: QuickMatchSheetProps) {
   const navigate = useNavigate();
   const confirm = useConfirm();
   const { handleError } = useLounge();
@@ -146,6 +149,31 @@ export default function QuickMatchSheet({ open, onClose, onConfirmed, presentati
       document.removeEventListener('visibilitychange', tick);
     };
   }, [open, load]);
+
+  // 말풍선을 눌러 열렸으면 그 사람의 밥약에 들어간다 (위치는 묻지 않는다)
+  const joinUserId = join?.userId ?? null;
+  const joinAt = join?.at ?? 0;
+  useEffect(() => {
+    if (!open || !joinUserId) return;
+    let alive = true;
+    setError(null);
+    setEnded(null);
+    setBusy('start');
+    loungeApi
+      .requestQuick({ joinUserId })
+      .then((next) => {
+        if (alive) apply(next);
+      })
+      .catch((err) => {
+        if (alive && !handleError(err)) setError(err instanceof Error ? err.message : '밥약에 참여하지 못했어요.');
+      })
+      .finally(() => {
+        if (alive) setBusy(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [open, joinUserId, joinAt, apply, handleError]);
 
   const phase: Phase = busy === 'locating' ? 'locating' : ended && phaseOf(state) === 'idle' ? 'ended' : phaseOf(state);
 

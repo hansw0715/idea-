@@ -373,3 +373,47 @@ describe('인원을 고른 즉시 매칭', () => {
     expect((await quick.quickState(a.id)).forming.map((u) => u.id)).toEqual([a.id]);
   });
 });
+
+// ───────────── 라운지 말풍선으로 참여 ─────────────
+
+describe('말풍선을 눌러 그 사람의 밥약에 참여', () => {
+  const join = (u: LoungeUser, target: LoungeUser) => quick.requestQuickMatch(u, { joinUserId: target.id });
+
+  it('2명을 찾는 사람에게 참여하면 내 위치 없이 바로 후보 방이 된다', async () => {
+    const [a, b] = [await makeUser(), await makeUser()];
+    must(await go(a, BASE));
+    const s = must(await join(b, a));
+    expect(s.room?.memberIds.sort()).toEqual([a.id, b.id].sort());
+  });
+
+  it('3명을 찾는 사람에게 참여하면 같은 인원으로 그 사람 무리에 들어가고, 내부 표시는 화면에 나가지 않는다', async () => {
+    const [a, b] = [await makeUser(), await makeUser()];
+    must(await quick.requestQuickMatch(a, { ...south(5000), size: 3 }));
+    const s = must(await join(b, a));
+    expect(s.request?.size).toBe(3);
+    expect(s.forming.map((u) => u.id)).toEqual([a.id, b.id]);
+    expect(s.request?.tags).toEqual([]);
+  });
+
+  it('같은 인원의 다른 무리가 가까이 있어도 누른 사람의 무리에 들어간다', async () => {
+    const [x, y, a, b] = [await makeUser(), await makeUser(), await makeUser(), await makeUser()];
+    // x·y 는 서로 차단한 사이 → 가까이에 3명 무리가 둘 생긴다: [x, a] 와 [y]
+    await db.run('INSERT INTO lounge_blocks (blocker_id, blocked_id) VALUES (?, ?)', [Number(x.id), Number(y.id)]);
+    must(await quick.requestQuickMatch(x, { ...BASE, size: 3 }));
+    must(await quick.requestQuickMatch(y, { ...north(30), size: 3 }));
+    must(await quick.requestQuickMatch(a, { ...north(60), size: 3 }));
+    // 그냥 줄을 섰다면 먼저 생긴 [x, a] 에 들어가 방이 됐겠지만, y 를 눌렀으니 y 의 무리로 간다
+    const s = must(await join(b, y));
+    expect(s.room).toBeNull();
+    expect(s.forming.map((u) => u.id)).toEqual([y.id, b.id]);
+  });
+
+  it('찾는 중이 아니거나, 나 자신이거나, 차단한 사이면 참여할 수 없다', async () => {
+    const [a, b, c] = [await makeUser(), await makeUser(), await makeUser()];
+    expect(codeOf(await join(b, a))).toBe('NOT_OPEN');
+    must(await go(a, BASE));
+    expect(codeOf(await join(a, a))).toBe('INVALID');
+    await db.run('INSERT INTO lounge_blocks (blocker_id, blocked_id) VALUES (?, ?)', [Number(a.id), Number(c.id)]);
+    expect(codeOf(await join(c, a))).toBe('FORBIDDEN');
+  });
+});

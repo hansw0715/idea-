@@ -23,6 +23,8 @@ import { createGathering, isFull, join } from '../domain/gathering.js';
 import {
   DEPT_TAG_PREFIX,
   FRIENDS_ONLY_TAG,
+  INSTANT_SIZE_MIN,
+  JOIN_TAG_PREFIX,
   answer,
   confirmedMeetAt,
   countNearby,
@@ -36,9 +38,12 @@ import {
   hasBlockedPair,
   isExpired,
   isFinishedRoom,
+  isInstantAlive,
   isInstantBody,
+  isJoinBody,
   kstDate,
   parseInstantInput,
+  parseJoinInput,
   parseQuickInput,
   toRequestView,
   vote,
@@ -247,6 +252,8 @@ export type PreparedQuickMatch = {
   loc?: { lat: number; lng: number };
   /** 친구끼리만 찾기 (즉시 매칭) */
   friendsOnly?: boolean;
+  /** 라운지 말풍선으로 이 사람의 즉시 밥약에 들어간다 (위치·인원은 저장할 때 그 사람 대기표에서 가져온다) */
+  joinUserId?: string;
 };
 
 /**
@@ -259,6 +266,14 @@ export function prepareQuickMatch(
   raw: unknown,
   now: ISODateTime = nowISO(),
 ): Result<PreparedQuickMatch> {
+  if (isJoinBody(raw)) {
+    const target = parseJoinInput(raw);
+    if (!target.ok) return target;
+    if (user.banned) return fail('BANNED', banReason(user) ?? undefined);
+    if (target.value === user.id) return fail('INVALID', '내 밥약에는 참여할 수 없어요.');
+    const input: QuickLegacyInput = { date: kstDate(now), placeType: '학식', size: INSTANT_SIZE_MIN, bands: [...BAND_KEYS], tags: [] };
+    return ok({ input, bands: [...BAND_KEYS], now, joinUserId: target.value });
+  }
   if (isInstantBody(raw)) {
     // 택시식 즉시 매칭: 위치만 받고 나머지는 서버가 정한다. 시간대 지난 칩 검사는 하지 않는다 (시간대가 없다).
     const loc = parseInstantInput(raw);
@@ -306,22 +321,38 @@ export async function submitQuickMatch(user: LoungeUser, prepared: PreparedQuick
     if (existing?.request.status === 'expired') await repo.cancelRequest(existing.request.id);
     else if (existing) return fail('ALREADY_JOINED', alreadyMessage(existing));
 
+    // 말풍선 참여: 그 사람의 대기표와 같은 인원·위치로 줄을 서고, 그 사람 무리에 먼저 들어가도록 표시해 둔다
+    let loc = prepared.loc;
+    let size = input.size;
+    let joinTag: string[] = [];
+    if (prepared.joinUserId) {
+      const target = (await repo.listWaiting()).find(
+        (r) => r.userId === prepared.joinUserId && r.instant && r.loc && r.status === 'waiting' && isInstantAlive(r, now),
+      );
+      if (!target?.loc) return fail('NOT_OPEN', '이미 사람을 다 모았거나 찾기를 그만둔 밥약이에요.');
+      if ((await instantChecker())(user.id, target.userId)) return fail('FORBIDDEN', '이 밥약에는 참여할 수 없어요.');
+      loc = { lat: target.loc.lat, lng: target.loc.lng };
+      size = target.size;
+      joinTag = [`${JOIN_TAG_PREFIX}${target.userId}`];
+    }
+
     const request: QuickRequest = {
       id: randomUUID(),
       userId: user.id,
       date: input.date,
       placeType: input.placeType,
-      size: input.size,
+      size,
       bands: future,
       tags: [
         ...input.tags,
         `${DEPT_TAG_PREFIX}${user.department}`,
         ...(prepared.friendsOnly ? [FRIENDS_ONLY_TAG] : []),
+        ...joinTag,
       ],
       status: 'waiting',
       roomId: null,
       createdAt: now,
-      ...(prepared.loc ? { instant: true, loc: { lat: prepared.loc.lat, lng: prepared.loc.lng, at: now } } : {}),
+      ...(loc ? { instant: true, loc: { lat: loc.lat, lng: loc.lng, at: now } } : {}),
     };
     try {
       await repo.insertRequest(request);

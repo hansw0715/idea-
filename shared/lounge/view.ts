@@ -193,7 +193,10 @@ export type QuickLegacyInput = {
   tags: string[];
 };
 
-export type QuickInput = QuickInstantInput | QuickLegacyInput;
+/** 라운지에서 다른 사람의 '같이 밥 먹을 사람!' 말풍선을 눌렀다: 그 사람이 모으는 즉시 밥약에 같은 인원·위치로 들어간다 */
+export type QuickJoinInput = { joinUserId: string };
+
+export type QuickInput = QuickInstantInput | QuickLegacyInput | QuickJoinInput;
 
 export type QuickRequestView = {
   id: string;

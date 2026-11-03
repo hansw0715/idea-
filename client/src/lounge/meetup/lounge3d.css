@@ -731,7 +731,7 @@
 }
 .iso-initial__text {
   fill: #ffffff;
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 800;
 }
 
@@ -743,7 +743,7 @@
 }
 .iso-seek__text {
   fill: var(--c-action-text);
-  font-size: 15.5px;
+  font-size: 19px;
   font-weight: 700;
 }
 
@@ -814,8 +814,8 @@
   flex-direction: column;
   align-items: center;
   gap: 0;
-  max-width: 12rem;
-  padding: 0.3rem 0.8rem 0.4rem;
+  max-width: 15rem;
+  padding: 0.4rem 1rem 0.5rem;
   border: 0;
   border-radius: 6px;
   background: var(--iso-plate);
@@ -867,7 +867,7 @@
   align-items: center;
   gap: 0.4rem;
   max-width: 100%;
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sm);
   font-weight: var(--fw-bold);
   line-height: 1.3;
   white-space: nowrap;
@@ -883,8 +883,8 @@
   border-radius: var(--r-xs);
   background: var(--c-panel-strong);
   color: var(--c-text-sub);
-  font-size: 1rem;
-  line-height: 1.5rem;
+  font-size: 1.2rem;
+  line-height: 1.7rem;
 }
 .iso-plate.is-mine .iso-plate__chip {
   background: var(--white);
@@ -892,7 +892,7 @@
 }
 .iso-plate__meta {
   display: block;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   line-height: 1.3;
   color: var(--iso-plate-sub);
   white-space: nowrap;

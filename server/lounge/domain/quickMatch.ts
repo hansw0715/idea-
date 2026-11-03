@@ -46,6 +46,10 @@ export type QuickRoom = QuickRoomView;
 export const DEPT_TAG_PREFIX = 'dept:';
 /** "친구끼리만" 대기표 표시용 내부 태그. 화면에는 태그 대신 friendsOnly 로 내려보낸다 */
 export const FRIENDS_ONLY_TAG = 'opt:friends';
+/** 라운지 말풍선을 눌러 "이 사람의 밥약에" 들어간 대기표 표시용 내부 태그 (join:사용자id). 화면에는 내려보내지 않는다 */
+export const JOIN_TAG_PREFIX = 'join:';
+/** 화면·입력에서 빼는 내부 태그 */
+const isInternalTag = (t: string): boolean => t.startsWith(DEPT_TAG_PREFIX) || t.startsWith(JOIN_TAG_PREFIX) || t === FRIENDS_ONLY_TAG;
 /** 태그 하나의 최대 길이 / 최대 개수 (모임 만들기 규칙 `meta.tags` 와 같다) */
 export const TAG_MAX_LENGTH = 20;
 export const TAG_MAX_COUNT = 6;
@@ -254,7 +258,7 @@ export const toRequestView = (r: QuickRequest): QuickRequestView => ({ // 위치
   placeType: r.placeType,
   size: r.size,
   bands: r.bands,
-  tags: r.tags.filter((t) => !t.startsWith(DEPT_TAG_PREFIX) && t !== FRIENDS_ONLY_TAG),
+  tags: r.tags.filter((t) => !isInternalTag(t)),
   status: r.status,
   roomId: r.roomId,
   createdAt: r.createdAt,
@@ -298,7 +302,7 @@ export function parseQuickInput(raw: unknown): Result<QuickLegacyInput> {
   }
   const trimmed = (rawTags as string[]).map((t) => t.trim());
   if (trimmed.some((t) => hasUnsafeChars(t, false))) return fail('INVALID', '태그에 쓸 수 없는 글자가 들어 있어요.');
-  const tags = [...new Set(trimmed.filter((t) => t && !t.startsWith(DEPT_TAG_PREFIX) && t !== FRIENDS_ONLY_TAG))];
+  const tags = [...new Set(trimmed.filter((t) => t && !isInternalTag(t)))];
   if (tags.length > TAG_MAX_COUNT || tags.some((t) => [...t].length > TAG_MAX_LENGTH)) {
     return fail('INVALID', `태그는 ${TAG_MAX_COUNT}개까지, 각각 ${TAG_MAX_LENGTH}자 이하로 적어 주세요.`);
   }
@@ -324,6 +328,18 @@ function addMinutes(iso: ISODateTime, min: number): ISODateTime {
 export function isInstantBody(raw: unknown): boolean {
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return false;
   return 'lat' in raw || 'lng' in raw;
+}
+
+/** 말풍선으로 참여하는 신청인가 (joinUserId 가 있다) */
+export function isJoinBody(raw: unknown): boolean {
+  return typeof raw === 'object' && raw !== null && !Array.isArray(raw) && 'joinUserId' in raw;
+}
+
+/** 말풍선 참여 본문 검증: 상대 사용자 id 만 받는다 */
+export function parseJoinInput(raw: unknown): Result<string> {
+  const id = (raw as Record<string, unknown>).joinUserId;
+  if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) return fail('INVALID', '함께할 사람 정보가 올바르지 않아요.');
+  return ok(id);
 }
 
 /** 즉시 매칭 인원(본인 포함) 범위와 기본값 */
@@ -408,13 +424,17 @@ export function formInstantGroups(
     .filter((r) => r.instant && r.loc && r.status === 'waiting' && isInstantAlive(r, now))
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   const groups: QuickRequest[][] = [];
+  const fits = (g: QuickRequest[], t: QuickRequest) => {
+    const anchor = g[0];
+    if (anchor.size !== t.size || g.length >= anchor.size) return false;
+    if (!anchor.loc || !t.loc || haversineM(anchor.loc, t.loc) > QUICK_RADIUS_M) return false;
+    return g.every((m) => m.userId !== t.userId && !hidden(m.userId, t.userId));
+  };
   for (const t of tickets) {
-    const home = groups.find((g) => {
-      const anchor = g[0];
-      if (anchor.size !== t.size || g.length >= anchor.size) return false;
-      if (!anchor.loc || !t.loc || haversineM(anchor.loc, t.loc) > QUICK_RADIUS_M) return false;
-      return g.every((m) => m.userId !== t.userId && !hidden(m.userId, t.userId));
-    });
+    // 말풍선으로 들어온 표는 그 사람이 있는 무리에 먼저 넣어 본다
+    const joinTo = t.tags.find((x) => x.startsWith(JOIN_TAG_PREFIX))?.slice(JOIN_TAG_PREFIX.length);
+    const wanted = joinTo ? groups.find((g) => g.some((m) => m.userId === joinTo) && fits(g, t)) : undefined;
+    const home = wanted ?? groups.find((g) => fits(g, t));
     if (home) home.push(t);
     else groups.push([t]);
   }

@@ -253,7 +253,7 @@ function InitialToken({ x, y, z, name, n }: { x: number; y: number; z: number; n
     <g className="iso-initial" style={{ '--av': `var(--m-${(n % 8) + 1})` } as CSSProperties}>
       <title>{name}</title>
       <circle cx={b.x} cy={cy} r={HEAD_R + 1} className="iso-initial__disc" />
-      <text x={b.x} y={cy + 6.5} textAnchor="middle" className="iso-initial__text">
+      <text x={b.x} y={cy + 7.5} textAnchor="middle" className="iso-initial__text">
         {name.trim().slice(0, 1) || '?'}
       </text>
     </g>
@@ -276,7 +276,23 @@ const hashId = (id: string) => {
 };
 
 /** 서 있는 사람: 발밑 그림자, 자기 색 몸통, 동그란 얼굴. 나는 파란 테두리. */
-function StandingPerson({ x, y, p, me, i, onPick }: { x: number; y: number; p: LoungePerson; me: boolean; i: number; onPick?: (id: string) => void }) {
+function StandingPerson({
+  x,
+  y,
+  p,
+  me,
+  i,
+  onPick,
+  onJoin,
+}: {
+  x: number;
+  y: number;
+  p: LoungePerson;
+  me: boolean;
+  i: number;
+  onPick?: (id: string) => void;
+  onJoin?: (id: string) => void;
+}) {
   const b = iso(x, y, 0);
   const color = `var(--m-${p.avatarColor.replace('m', '')})`;
   return (
@@ -296,21 +312,32 @@ function StandingPerson({ x, y, p, me, i, onPick }: { x: number; y: number; p: L
           preserveAspectRatio="xMidYMid slice"
         />
       </g>
-      {p.seeking && <SeekBubble x={b.x} y={b.y - 26 - HEAD_R * 2 - 8} />}
+      {p.seeking && <SeekBubble x={b.x} y={b.y - 26 - HEAD_R * 2 - 8} onJoin={!me && onJoin ? () => onJoin(p.id) : undefined} />}
     </g>
   );
 }
 
-/** 밥약 찾는 중: 머리 위 아주 작은 말풍선 */
-function SeekBubble({ x, y }: { x: number; y: number }) {
-  // 회의·모임 이름표와 같은 글자 크기 (이름표 12px ÷ 휴대폰 배율 0.76 ≈ 16)
-  const w = 150;
-  const h = 28;
+/** 밥약 찾는 중: 머리 위 작은 말풍선. 다른 사람의 말풍선을 누르면 그 사람이 모으는 밥약에 참여한다 (onJoin) */
+function SeekBubble({ x, y, onJoin }: { x: number; y: number; onJoin?: () => void }) {
+  // 회의·모임 이름표와 같은 글자 크기 (이름표 14px ÷ 휴대폰 배율 0.76 ≈ 19)
+  const w = 180;
+  const h = 34;
   return (
-    <g className="iso-seek" aria-hidden="true">
+    <g
+      className={`iso-seek${onJoin ? ' iso-pick' : ''}`}
+      aria-hidden="true"
+      onClick={
+        onJoin
+          ? (e) => {
+              e.stopPropagation();
+              onJoin();
+            }
+          : undefined
+      }
+    >
       <rect x={x - w / 2} y={y - h} width={w} height={h} rx={8} className="iso-seek__box" />
       <path d={`M${x - 6} ${y - 0.5} l6 6.5 l6 -6.5 z`} className="iso-seek__box" />
-      <text x={x} y={y - 8.6} textAnchor="middle" className="iso-seek__text">
+      <text x={x} y={y - 10.6} textAnchor="middle" className="iso-seek__text">
         같이 밥 먹을 사람!
       </text>
     </g>
@@ -357,6 +384,7 @@ export default function IsoLounge({
   meetings = NO_MEETINGS,
   onOpenMeeting,
   onOpenUser,
+  onJoinMeal,
   ref,
 }: {
   gatherings: GatheringView[];
@@ -380,6 +408,8 @@ export default function IsoLounge({
   onOpenMeeting?: (id: number) => void;
   /** 사람(서 있는 사람·앉은 얼굴)을 눌렀다 → 프로필 */
   onOpenUser?: (userId: string) => void;
+  /** 다른 사람 머리 위 '같이 밥 먹을 사람!' 말풍선을 눌렀다 → 그 사람의 밥약에 참여 */
+  onJoinMeal?: (userId: string) => void;
   ref?: Ref<IsoLoungeHandle>;
 }) {
   const cols = COLS;
@@ -389,6 +419,11 @@ export default function IsoLounge({
   const hasPick = Boolean(onOpenUser);
   const pick = useCallback((id: string) => openUserRef.current?.(id), []);
   const onPick = hasPick ? pick : undefined;
+  const joinMealRef = useRef(onJoinMeal);
+  joinMealRef.current = onJoinMeal;
+  const hasJoin = Boolean(onJoinMeal);
+  const joinMeal = useCallback((id: string) => joinMealRef.current?.(id), []);
+  const onJoin = hasJoin ? joinMeal : undefined;
 
   const scene = useMemo(() => {
     const w = SIDE + cols * SLOT_X + RIGHT;
@@ -546,7 +581,7 @@ export default function IsoLounge({
       while (taken.has(k)) k = (k + 1) % spots.length;
       taken.add(k);
       const sp = spots[k];
-      put(`person-${person.id}`, sp.x + sp.y + 1, <StandingPerson key={`person-${person.id}`} x={sp.x} y={sp.y} p={person} me={person.id === meId} i={i} onPick={onPick} />);
+      put(`person-${person.id}`, sp.x + sp.y + 1, <StandingPerson key={`person-${person.id}`} x={sp.x} y={sp.y} p={person} me={person.id === meId} i={i} onPick={onPick} onJoin={onJoin} />);
     });
     // 앞뒤 순서: 뒤(x+y 가 작은 쪽)부터
     props.sort((p, q) => p.depth - q.depth);
@@ -561,7 +596,7 @@ export default function IsoLounge({
     // 처음 보여 줄 곳: 방 가운데 (밥약 띠)
     const focus = iso(fx, fy, 70);
     return { w, d, fx, fy, tables, meetingSpots, props, faces, rugs, rect, vw: rect.x1 - rect.x0, vh: rect.y1 - rect.y0, focus };
-  }, [gatherings, cols, people, meId, meetings, onPick]);
+  }, [gatherings, cols, people, meId, meetings, onPick, onJoin]);
 
   const { w, d, rect, vw, vh } = scene;
 

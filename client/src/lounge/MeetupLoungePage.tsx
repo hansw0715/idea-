@@ -34,7 +34,7 @@ const PRESENCE_READ_MS = PRESENCE_POLL_MS;
  *  - 자리나 빈 의자를 누르면 방을 떠나지 않고 그 모임 창이 열려 바로 참여한다.
  *  - 약속 시간이 2시간 지난 모임은 사라진다.
  *  - 개인 화면: 위에 라운지 이름·접속 인원·내 모임, 그 아래 방(내 자리를 확대해 보여 준다).
- *    방 오른쪽 아래 + 를 누르면 밥약·회의·미팅이 위로 펼쳐진다 (채팅방은 머리의 말풍선 버튼). 지금 들어와 있는 사람들은 방 바닥에 서 있다.
+ *    방 오른쪽 아래 + 를 누르면 밥약·회의·미팅·채팅이 위로 펼쳐진다. 지금 들어와 있는 사람들은 방 바닥에 서 있다.
  *  - 학교 계정을 아직 연동하지 않았으면 연동 안내만 보여 준다.
  */
 export default function MeetupLoungePage() {
@@ -105,8 +105,8 @@ export function LoungePeek() {
   return <div className="iso-peek" aria-hidden="true" />;
 }
 
-/** 방 위 왼쪽: 접속 인원 (라운지 이름은 화면 낭독용으로만), 오른쪽: 채팅방 */
-function LoungeHead({ online, onChats }: { online: number | null; onChats?: () => void }) {
+/** 방 위 왼쪽: 접속 인원 (라운지 이름은 화면 낭독용으로만) */
+function LoungeHead({ online }: { online: number | null }) {
   return (
     <div className="lounge-me__head">
       <div className="lounge-me__title">
@@ -116,11 +116,6 @@ function LoungeHead({ online, onChats }: { online: number | null; onChats?: () =
           <span className="tabular">{online === null ? '접속 인원 확인 중' : `${online}명 접속 중`}</span>
         </p>
       </div>
-      {onChats && (
-        <button type="button" className="lounge-me__icon" aria-label="채팅방" onClick={onChats}>
-          <Icon name="message" />
-        </button>
-      )}
     </div>
   );
 }
@@ -177,14 +172,15 @@ function useOnline(enabled: boolean): { presence: PresenceResponse | null; seeki
   return { presence: state, seeking };
 }
 
-type Action = 'meal' | 'meeting' | 'meetup';
+type Action = 'meal' | 'meeting' | 'meetup' | 'chats';
 const ACTIONS: { key: Action; label: string; icon: IconName }[] = [
   { key: 'meal', label: '밥약', icon: 'utensils' },
   { key: 'meeting', label: '회의', icon: 'users' },
   { key: 'meetup', label: '미팅', icon: 'smile' },
+  { key: 'chats', label: '채팅', icon: 'message' },
 ];
 
-/** 방 오른쪽 아래 작은 + 버튼. 누르면 위로 밥약·회의·미팅이 펼쳐진다. 모임은 모두 여기서 만든다. (채팅방은 머리의 말풍선 버튼) */
+/** 방 오른쪽 아래 작은 + 버튼. 누르면 위로 밥약·회의·미팅·채팅이 펼쳐진다. 모임은 모두 여기서 만들고, 채팅을 누르면 내 채팅방 목록이 열린다. */
 function CreateDial({ onPick }: { onPick: (a: Action) => void }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -226,7 +222,7 @@ function CreateDial({ onPick }: { onPick: (a: Action) => void }) {
       <button
         type="button"
         className="iso-dial__fab"
-        aria-label={open ? '메뉴 닫기' : '만들기: 밥약·회의·미팅'}
+        aria-label={open ? '메뉴 닫기' : '메뉴: 밥약·회의·미팅·채팅'}
         aria-expanded={open}
         aria-controls="iso-dial-menu"
         onClick={() => setOpen((v) => !v)}
@@ -248,6 +244,8 @@ function MeetupLounge({ me, banned, banReason }: { me: LoungePerson; banned: boo
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);
+  // 다른 사람의 '같이 밥 먹을 사람!' 말풍선을 누르면 그 사람 밥약에 참여하며 밥약 창을 연다
+  const [mealJoin, setMealJoin] = useState<{ userId: string; at: number } | null>(null);
   // 방을 떠나지 않고 여는 모임 창 (빈 의자를 눌렀으면 그 자리를 골라 둔다)
   const [table, setTable] = useState<{ g: GatheringView; slot: string | null } | null>(null);
   // 채팅방 목록: 채팅방에서 뒤로 오면(?chats=1) 다시 열린 채로 돌아온다
@@ -318,6 +316,7 @@ function MeetupLounge({ me, banned, banReason }: { me: LoungePerson; banned: boo
   const pick = (a: Action) => {
     if (a === 'meetup') setCreateOpen(true);
     else if (a === 'meal') setMealOpen(true);
+    else if (a === 'chats') setChatsOpen(true);
     else navigate('/lounge/meetings');
   };
 
@@ -354,7 +353,7 @@ function MeetupLounge({ me, banned, banReason }: { me: LoungePerson; banned: boo
     {/* 다른 탭처럼 위에는 앱 아이콘과 이름이 있는 머리글을 그대로 둔다 */}
     <AppHeader />
     <main id="main" className="lounge-me">
-      <LoungeHead online={presence?.count ?? null} onChats={() => setChatsOpen(true)} />
+      <LoungeHead online={presence?.count ?? null} />
 
       {/* 내 모임: 누르면 방이 내 자리로 가고 모임 창이 열린다 */}
       {mine ? (
@@ -391,6 +390,10 @@ function MeetupLounge({ me, banned, banReason }: { me: LoungePerson; banned: boo
           focusId={mine?.id ?? null}
           onOpen={(g, slot) => setTable({ g, slot: slot ?? null })}
           onOpenUser={setProfileUserId}
+          onJoinMeal={(userId) => {
+            setMealJoin({ userId, at: Date.now() });
+            setMealOpen(true);
+          }}
           fill
         >
           <CreateDial onPick={pick} />
@@ -423,9 +426,14 @@ function MeetupLounge({ me, banned, banReason }: { me: LoungePerson; banned: boo
       </Sheet>
       <QuickMatchSheet
         open={mealOpen}
-        onClose={() => setMealOpen(false)}
+        join={mealJoin}
+        onClose={() => {
+          setMealOpen(false);
+          setMealJoin(null);
+        }}
         onConfirmed={() => {
           setMealOpen(false);
+          setMealJoin(null);
           refresh();
         }}
       />
