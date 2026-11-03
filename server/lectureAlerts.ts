@@ -13,7 +13,7 @@
 import crypto from 'node:crypto';
 import { Router } from 'express';
 import { all, run } from './db.js';
-import { requireAuth, userId, wrap } from './auth.js';
+import { adminLoginUsernames, requireAuth, userId, wrap } from './auth.js';
 import { pushOnly } from './lounge/services/push.js';
 
 export const LECTURE_ALERT_MS = 6 * 3_600_000;
@@ -105,6 +105,8 @@ const JOBS = [
   { name: 'lecture-alerts-sweep', schedule: '0 * * * *', path: '/api/lecture-alerts/sweep' },
   // 실험용: 매일 13:55(한국 시간 = 04:55 UTC)에 관리자에게 "테스트" 알림
   { name: 'lecture-alerts-test-push', schedule: '55 4 * * *', path: '/api/lecture-alerts/test-push' },
+  // 실험용: 11월 3일 14:00(05:00 UTC) 한 번 더 — 날짜를 박아 두어 다른 날에는 돌지 않는다
+  { name: 'lecture-alerts-test-push-1400', schedule: '0 5 3 11 *', path: '/api/lecture-alerts/test-push' },
 ];
 let scheduleChecked = false;
 /**
@@ -156,7 +158,8 @@ lectureAlertsRouter.get(
       res.status(404).json({ error: '찾을 수 없습니다.' });
       return;
     }
-    const admins = await all<{ id: number }>(`SELECT id FROM users WHERE is_admin = TRUE`);
+    // 관리자 로그인(dedea715 등)은 DB 계정이 없는 세션이라, 같은 아이디의 학생 계정과 is_admin 계정에 보낸다
+    const admins = await all<{ id: number }>(`SELECT id FROM users WHERE is_admin = TRUE OR username = ANY(?::text[])`, [adminLoginUsernames()]);
     for (const a of admins) await pushOnly(String(a.id), { title: '테스트', body: '예약 알림 실험이에요.', url: '/', tag: 'cron-test' });
     console.info(`[lecture-alerts] 테스트 알림을 관리자 ${admins.length}명에게 보냈어요.`);
     res.json({ sent: admins.length });
