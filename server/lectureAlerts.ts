@@ -105,8 +105,8 @@ const JOBS = [
   { name: 'lecture-alerts-sweep', schedule: '0 * * * *', path: '/api/lecture-alerts/sweep' },
   // 실험용: 매일 13:55(한국 시간 = 04:55 UTC)에 관리자에게 "테스트" 알림
   { name: 'lecture-alerts-test-push', schedule: '55 4 * * *', path: '/api/lecture-alerts/test-push' },
-  // 실험용: 11월 3일 14:00(05:00 UTC) 한 번 더 — 날짜를 박아 두어 다른 날에는 돌지 않는다
-  { name: 'lecture-alerts-test-push-1400', schedule: '0 5 3 11 *', path: '/api/lecture-alerts/test-push' },
+  // 실험용: 11월 3일 14:05(05:05 UTC) 한 번 더 — 날짜를 박아 두어 다른 날에는 돌지 않는다
+  { name: 'lecture-alerts-test-push-1405', schedule: '5 5 3 11 *', path: '/api/lecture-alerts/test-push' },
 ];
 let scheduleChecked = false;
 /**
