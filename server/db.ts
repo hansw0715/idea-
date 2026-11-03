@@ -382,6 +382,8 @@ const LATE_MIGRATIONS = `
     sent_at TIMESTAMPTZ,
     PRIMARY KEY (user_id, item_id)
   );
+  -- 30시간 전 알림을 보낸 시각. sent_at 은 6시간 전 알림
+  ALTER TABLE lecture_alerts ADD COLUMN IF NOT EXISTS sent_30h_at TIMESTAMPTZ;
   CREATE INDEX IF NOT EXISTS idx_lecture_alerts_due ON lecture_alerts(due_at) WHERE sent_at IS NULL;
   ALTER TABLE lecture_alerts ENABLE ROW LEVEL SECURITY;
 `;

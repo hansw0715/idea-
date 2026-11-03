@@ -22,7 +22,7 @@ const TOOLS: { tool: AdminTool; title: string; when: string; label: string }[] =
   {
     tool: 'sweepLectureAlerts',
     title: '미수강 강의 알림 지금 보내기',
-    when: '새벽처럼 앱을 쓰는 사람이 없어 알림이 늦을 때. 마감 6시간 안인 강의 알림을 바로 보내요.',
+    when: '새벽처럼 앱을 쓰는 사람이 없어 알림이 늦을 때. 마감 30시간·6시간 전 강의 알림을 바로 보내요.',
     label: '지금 보내기',
   },
   {

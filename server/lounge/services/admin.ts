@@ -114,9 +114,9 @@ export async function adminOverview(now = Date.now()): Promise<AdminOverview> {
     soft(
       get<{ pending: number; sent7: number }>(
         `SELECT (COUNT(*) FILTER (WHERE sent_at IS NULL AND due_at > now()))::int AS pending,
-                (COUNT(*) FILTER (WHERE sent_at >= ?::timestamptz))::int AS sent7
+                (COUNT(*) FILTER (WHERE sent_at >= ?::timestamptz) + COUNT(*) FILTER (WHERE sent_30h_at >= ?::timestamptz))::int AS sent7
            FROM lecture_alerts`,
-        [since7],
+        [since7, since7],
       ),
     ),
     all<{ d: string; n: number }>(
@@ -446,7 +446,7 @@ export async function adminRunTool(adminId: string, tool: AdminTool): Promise<Re
     }
     case 'sweepLectureAlerts': {
       const n = await sweepLectureAlerts();
-      message = n > 0 ? `마감 6시간 안의 미수강 강의 알림 ${n}건을 보냈어요.` : '지금 보낼 강의 알림이 없어요.';
+      message = n > 0 ? `마감 30시간·6시간 전 미수강 강의 알림 ${n}건을 보냈어요.` : '지금 보낼 강의 알림이 없어요.';
       break;
     }
     case 'closeOldReports': {

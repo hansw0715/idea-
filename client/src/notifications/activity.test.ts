@@ -27,17 +27,32 @@ describe('통합 알림', () => {
     expect(items[2].when).toContain('일정 미정');
     expect(activityDate('2026-10-25T15:30:00Z')).toMatch(/10월 26일.*00:30/);
   });
-  it('미수강 강의는 마감 6시간 안으로 들어올 때만 알림이 되고, 과제는 지금처럼 알린다', () => {
+  it('미수강 강의는 마감 30시간 안으로 들어올 때 알림이 되고, 6시간 안이면 새 알림으로 다시 뜬다. 과제는 지금처럼 알린다', () => {
     const now = Date.parse('2026-11-02T12:00:00+09:00');
     const item = (id: string, kind: EclassItem['kind'], dueAt: string | null): EclassItem => ({ id, courseId: 'c', courseName: '자료구조', title: id, kind, url: '', completion: 'pending', attendance: 'unknown', dueAt, availableAt: null, progress: 0 });
     const learning = [
       item('3시간 남은 강의', 'lecture', '2026-11-02T15:00:00+09:00'),
       item('10시간 남은 강의', 'lecture', '2026-11-02T22:00:00+09:00'),
+      item('이틀 남은 강의', 'lecture', '2026-11-04T12:00:00+09:00'),
       item('마감 모르는 강의', 'lecture', null),
       item('사흘 남은 과제', 'assignment', '2026-11-05T12:00:00+09:00'),
     ];
-    const titles = buildActivity({ learning }, now).map((a) => a.title);
-    expect(titles).toEqual(['3시간 남은 강의', '사흘 남은 과제']);
-    expect(buildActivity({ learning }, now)[0].body).toBe('자료구조 · 마감 3시간 전');
+    const list = buildActivity({ learning }, now);
+    expect(list.map((a) => a.title)).toEqual(['3시간 남은 강의', '10시간 남은 강의', '사흘 남은 과제']);
+    expect(list[0].body).toBe('자료구조 · 마감 3시간 전');
+    expect(list[0].id).toMatch(/:6h$/);
+    expect(list[1].id).toMatch(/:30h$/);
+    // 같은 강의가 6시간 안으로 들어오면 id 가 바뀌어 한 번 더 알린다
+    const later = buildActivity({ learning: [learning[1]] }, now + 5 * 3_600_000)[0];
+    expect(later.id).not.toBe(list[1].id);
+    expect(later.id).toMatch(/:6h$/);
+  });
+  it('강의 알림 시각은 정각으로 올린다 (11월 4일 23:59 마감 → 11월 3일 18:00, 11월 4일 18:00)', () => {
+    const lecture: EclassItem = { id: 'l', courseId: 'c', courseName: '자료구조', title: 'l', kind: 'lecture', url: '', completion: 'pending', attendance: 'unknown', dueAt: '2026-11-04T23:59:00+09:00', availableAt: null, progress: 0 };
+    const at = (s: string) => buildActivity({ learning: [lecture] }, Date.parse(`${s}+09:00`))[0]?.id ?? null;
+    expect(at('2026-11-03T17:59:00')).toBeNull();
+    expect(at('2026-11-03T18:00:00')).toMatch(/:30h$/);
+    expect(at('2026-11-04T17:59:00')).toMatch(/:30h$/);
+    expect(at('2026-11-04T18:00:00')).toMatch(/:6h$/);
   });
 });

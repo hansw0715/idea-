@@ -23,13 +23,16 @@ export function activityDate(at: string, end?: string): string {
   const time = (d: Date) => new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
   return `${date} ${time(start)}${end ? `–${time(new Date(end))}` : ''}`;
 }
-/** 미수강 강의는 출석 인정 마감 6시간 전부터 알린다 (그 전에는 학사 알림 목록에만 있다) */
-export const LECTURE_ALERT_MS = 6 * 3_600_000;
-/** 강의라면 마감이 6시간 안으로 다가왔을 때만 알림이 된다. 과제 등은 지금처럼 */
+/** 미수강 강의는 출석 인정 마감 30시간 전에 한 번, 6시간 전에 한 번 알린다 (그 전에는 학사 알림 목록에만 있다) */
+export const LECTURE_ALERT_MS = 30 * 3_600_000;
+const LECTURE_ALERT_LAST_MS = 6 * 3_600_000;
+/** 알림 시각은 정각으로 올린다(23:59 마감 → 18:00). 그래서 남은 시간은 지금을 정각으로 내린 때부터 잰다 */
+const untilDue = (dueAt: string | null, now: number) => (dueAt ? Date.parse(dueAt) : NaN) - Math.floor(now / 3_600_000) * 3_600_000;
+/** 강의라면 마감이 30시간 안으로 다가왔을 때만 알림이 된다. 과제 등은 지금처럼 */
 export function lectureDueSoon(i: EclassItem, now: number): boolean {
   if (i.kind !== 'lecture') return true;
-  const due = i.dueAt ? Date.parse(i.dueAt) : NaN;
-  return Number.isFinite(due) && due - now <= LECTURE_ALERT_MS;
+  const left = untilDue(i.dueAt, now);
+  return Number.isFinite(left) && left <= LECTURE_ALERT_MS;
 }
 const hoursLeft = (dueAt: string | null | undefined, now: number) => {
   const due = dueAt ? Date.parse(dueAt) : NaN;
@@ -61,6 +64,8 @@ export function buildActivity(input: { inbox?: InboxNotification[]; reservations
   for (const r of input.rooms ?? []) if (r.lastActivityAt) result.push({ id: `chat:${r.id}:${r.lastActivityAt}`, title: r.title, body: '채팅방에 새 대화가 있어요.', when: `약속 · ${activityDate(r.meetAt)}`, to: `/lounge/rooms/${r.id}`, at: r.lastActivityAt, scopes: ['lounge'], kind: 'chat' });
   for (const section of [input.notices?.school, input.notices?.department]) for (const n of section?.items ?? []) result.push({ id: `notice:${n.id}:${n.title}`, title: n.title, body: `${n.date} · 학교·학과 공지`, to: '/campus?tab=notices', at: `${n.date}T00:00:00+09:00`, scopes: ['campus'], kind: 'notice' });
   for (const t of input.timetable ?? []) result.push({ id: `timetable:${t.id}:${t.title}:${t.day}:${t.startMin}:${t.endMin}:${t.place}`, title: t.title, body: '시간표 일정이 추가되거나 변경됐어요.', to: '/timetable', at: '', scopes: ['timetable'], kind: 'timetable' });
-  for (const i of input.learning ?? []) if (isAvailable(i, now) && needsAttention(i, now) && lectureDueSoon(i, now)) result.push({ id: `learning:${i.id}:${i.dueAt}:${i.completion}`, title: i.title, body: i.kind === 'lecture' ? `${i.courseName}${hoursLeft(i.dueAt, now)}` : i.courseName, to: `/campus?tab=learning&kind=${i.kind}&item=${encodeURIComponent(i.id)}`, at: i.dueAt ?? '', scopes: ['campus'], kind: 'learning' });
+  // 강의는 30시간 전·6시간 전 단계를 id 에 넣어, 6시간 전이 되면 새 알림으로 다시 뜬다
+  const lectureStage = (i: EclassItem) => (i.kind !== 'lecture' ? '' : untilDue(i.dueAt, now) <= LECTURE_ALERT_LAST_MS ? ':6h' : ':30h');
+  for (const i of input.learning ?? []) if (isAvailable(i, now) && needsAttention(i, now) && lectureDueSoon(i, now)) result.push({ id: `learning:${i.id}:${i.dueAt}:${i.completion}${lectureStage(i)}`, title: i.title, body: i.kind === 'lecture' ? `${i.courseName}${hoursLeft(i.dueAt, now)}` : i.courseName, to: `/campus?tab=learning&kind=${i.kind}&item=${encodeURIComponent(i.id)}`, at: i.dueAt ?? '', scopes: ['campus'], kind: 'learning' });
   return result;
 }

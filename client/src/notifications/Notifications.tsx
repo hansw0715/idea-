@@ -92,7 +92,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   useEffect(() => { window.addEventListener(ECLASS_UPDATED_EVENT, refresh); return () => window.removeEventListener(ECLASS_UPDATED_EVENT, refresh); }, [refresh]);
 
   // 앱이 닫혀 있어도 알림이 가도록: e-class 를 읽을 때마다 아직 안 들은 강의의 마감을 서버에 알려 둔다.
-  // 서버가 마감 6시간 전에 폰으로 푸시한다 (server/lectureAlerts.ts). 목록이 지난번과 같으면 보내지 않는다.
+  // 서버가 마감 30시간 전·6시간 전에 폰으로 푸시한다 (server/lectureAlerts.ts). 목록이 지난번과 같으면 보내지 않는다.
   useEffect(() => {
     if (!user || !school.linked) return;
     const report = () => {
@@ -113,7 +113,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener(ECLASS_UPDATED_EVENT, report);
   }, [user?.id, school.linked]);
 
-  // 앱이 열려 있을 때 미수강 강의가 마감 6시간 안으로 들어오면 휴대폰 알림을 한 번 띄운다.
+  // 앱이 열려 있을 때 미수강 강의가 마감 30시간·6시간 안으로 들어올 때마다 휴대폰 알림을 한 번씩 띄운다.
   // 폰 알림(푸시)을 켜 둔 기기는 서버가 보내므로 여기서는 띄우지 않는다 (두 번 울리지 않게).
   useEffect(() => {
     if (!user || typeof Notification === 'undefined' || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) return;
