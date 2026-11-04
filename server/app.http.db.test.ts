@@ -325,4 +325,34 @@ describe('관리자 로그인: admin_아이디 + 원래 비밀번호', () => {
     const { usernameError } = await import('../shared/auth.js');
     expect(usernameError('admin_newbie')).toContain('쓸 수 없어요');
   });
+
+  it('관리자 로그인 아이디(dedea715·doctor·hansw)는 새로 가입할 수 없다 — 학생이 먼저 가입해 관리자 모드를 얻지 못한다', async () => {
+    for (const name of ['doctor', 'hansw', 'dedea715', 'Doctor']) {
+      const r = await call('GET', `/api/auth/username-available?username=${name}`);
+      expect(r.status).toBe(200);
+      expect(r.json, name).toMatchObject({ available: false });
+    }
+    expect((await call('GET', '/api/auth/username-available?username=doctor2')).json).toMatchObject({ available: true });
+    const { isReservedAdminUsername } = await import('./auth.js');
+    expect(isReservedAdminUsername('doctor')).toBe(true);
+    expect(isReservedAdminUsername('student01')).toBe(false);
+  });
+
+  it('관리자 목록에서 빠지면 이미 받은 관리자 증표도 바로 쓸 수 없다', async () => {
+    await addLoginUser('hansw', 'Pw-1234!');
+    const admin = await login('admin_hansw', 'Pw-1234!');
+    expect(admin.status).toBe(200);
+    expect((await call('GET', '/api/lounge/admin/stats', { cookie: admin.cookie })).status).toBe(200);
+    process.env.ADMIN_LOGIN_USERNAMES = 'dedea715';
+    try {
+      expect((await call('GET', '/api/lounge/admin/stats', { cookie: admin.cookie })).status).toBe(401);
+    } finally {
+      delete process.env.ADMIN_LOGIN_USERNAMES;
+    }
+  });
+
+  it('가입할 수 없는 길이의 아이디로는 로그인 시도 자체를 받지 않는다 (제한 장치에 긴 키가 쌓이지 않는다)', async () => {
+    const r = await login('a'.repeat(5000), 'Pw-1234!');
+    expect(r.status).toBe(401);
+  });
 });

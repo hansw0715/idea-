@@ -44,12 +44,33 @@ export const publicKey = (): string | null => keys()?.publicKey ?? null;
 
 type SubscriptionInput = { endpoint: string; keys: { p256dh: string; auth: string } };
 
-/** 받은 구독 본문이 브라우저 PushSubscription.toJSON() 모양인지 확인 (https 주소만) */
+/**
+ * 브라우저 푸시 서비스의 주소들. 구독 주소는 사용자가 보내는 값이라, 여기 없는 곳(내부망·임의 서버)으로는
+ * 서버가 요청을 보내지 않는다. (Chrome·Android = FCM, Firefox = Mozilla, Safari = Apple, Edge = Windows)
+ */
+const PUSH_SERVICE_HOSTS = [/^fcm\.googleapis\.com$/, /^updates\.push\.services\.mozilla\.com$/, /^([a-z0-9-]+\.)*push\.apple\.com$/, /^([a-z0-9-]+\.)*notify\.windows\.com$/];
+/** 푸시 서비스 한 곳이 답하지 않아도 다른 알림이 멈추지 않게 기다리는 상한 */
+export const PUSH_SEND_TIMEOUT_MS = 10_000;
+
+/** https 이고, 알려진 브라우저 푸시 서비스의 주소인가 */
+export function isPushServiceEndpoint(endpoint: string): boolean {
+  if (!/^https:\/\/[^\s]{1,2000}$/.test(endpoint)) return false;
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    return false;
+  }
+  if (url.port !== '' || url.username !== '' || url.password !== '') return false;
+  return PUSH_SERVICE_HOSTS.some((re) => re.test(url.hostname));
+}
+
+/** 받은 구독 본문이 브라우저 PushSubscription.toJSON() 모양인지 확인 (브라우저 푸시 서비스의 https 주소만) */
 export function parseSubscription(raw: unknown): SubscriptionInput | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Record<string, unknown>;
   const k = r.keys as Record<string, unknown> | undefined;
-  if (typeof r.endpoint !== 'string' || !/^https:\/\/[^\s]{1,2000}$/.test(r.endpoint)) return null;
+  if (typeof r.endpoint !== 'string' || !isPushServiceEndpoint(r.endpoint)) return null;
   if (!k || typeof k.p256dh !== 'string' || typeof k.auth !== 'string') return null;
   if (!/^[A-Za-z0-9_-]{1,200}=*$/.test(k.p256dh) || !/^[A-Za-z0-9_-]{1,100}=*$/.test(k.auth)) return null;
   return { endpoint: r.endpoint, keys: { p256dh: k.p256dh, auth: k.auth } };
@@ -86,10 +107,13 @@ export async function pushOnly(userId: string, message: PushMessage): Promise<vo
     const payload = JSON.stringify(message);
     await Promise.all(
       subs.map(async (s) => {
+        // 이 검사가 생기기 전에 저장된 구독도 푸시 서비스 주소가 아니면 보내지 않는다
+        if (!isPushServiceEndpoint(s.endpoint)) return;
         try {
           await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, {
             TTL: 60 * 60 * 6,
             urgency: 'high',
+            timeout: PUSH_SEND_TIMEOUT_MS,
           });
         } catch (err) {
           const status = (err as { statusCode?: number }).statusCode;

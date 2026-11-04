@@ -156,6 +156,26 @@ export async function lockState(hash: string, nowMs: number = Date.now()): Promi
 }
 
 /**
+ * 로그인하지 않은 사람(가입 ① 학생 인증)이 이 학번으로 시도할 수 있는 연속 실패의 상한.
+ * 가입 전에는 누가 시도하는지 알 수 없으므로, 남의 학번을 일부러 틀려 30분 잠금·완전 중단(8회)까지 몰고 가지 못하게
+ * 잠금이 시작되는 횟수(SCHOOL_LOCK_AFTER) **앞에서** 멈춘다. 그 뒤로는 학번 주인이 학교 포털에서 확인하고 운영자가 풀어 준다.
+ */
+export const ANONYMOUS_VERIFY_MAX_FAILS = SCHOOL_LOCK_AFTER - 1;
+
+/** 가입 ① 학생 인증 직전에 부른다. 이 학번의 연속 실패가 상한에 닿았으면 학교에 요청하지 않고 거절한다 */
+export async function assertAnonymousVerifyAllowed(studentId: string): Promise<void> {
+  const row = await get<{ fails: number | string }>('SELECT fails FROM school_login_guard WHERE student_hash = ?', [
+    studentHash(studentId),
+  ]);
+  if (row && Number(row.fails) >= ANONYMOUS_VERIFY_MAX_FAILS) {
+    throw new ApiInputError(
+      'RATE_LIMITED',
+      '이 학번은 최근 학교 로그인 실패가 많아 가입 인증을 멈췄어요. 학교 포털에서 학번과 비밀번호를 확인한 뒤 운영자에게 문의해 주세요.',
+    );
+  }
+}
+
+/**
  * 로그인 **직전**에 부른다. 잠겨 있으면 SchoolLocked 를 던진다 (학교에는 아무 요청도 가지 않는다).
  * 5~7회째 뒤의 쉬는 시간이 끝났다면 통과한다 — fails 는 그대로다. 8회 이상(상태 멈춤)은 시간이 지나도 항상 던진다.
  */

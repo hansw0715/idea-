@@ -194,22 +194,29 @@ describe('POST /api/auth/school-verify — 가입 ① 학교 계정 학생 인�
     expect(logs.join('\n')).not.toContain('wrong-pass-XYZ');
   });
 
-  it('연속 5번 틀리면 30분 잠그고, 그 뒤에는 학교에 아무것도 나가지 않는다 (SCHOOL_LOCKED 429)', async () => {
-    for (let i = 1; i <= 5; i++) {
+  it('로그인 없이 틀릴 수 있는 건 4번까지 — 남의 학번을 30분 잠금·완전 중단까지 몰고 갈 수 없다 (RATE_LIMITED 429)', async () => {
+    for (let i = 1; i <= 4; i++) {
       const r = await verify('2021204044', `wrong-${i}-pw`);
       expect(r.status, `${i}번째`).toBe(422);
     }
     const loginsBefore = fake.state.infoLogins;
     const callsBefore = fake.state.calls.length;
-    expect(loginsBefore).toBe(5);
-    // 맞는 비밀번호여도 잠겨 있으면 학교에 가지 않는다
-    const locked = await verify('2021204044', SCHOOL_PW);
-    expect(locked.status).toBe(429);
-    expect(locked.json).toMatchObject({ code: 'SCHOOL_LOCKED', long: false });
-    expect(Number(locked.json!.retryAfterSec)).toBeGreaterThan(0);
-    expect(locked.headers.get('retry-after')).not.toBeNull();
+    expect(loginsBefore).toBe(4);
+    // 5번째부터는 (맞는 비밀번호여도) 학교에 가지 않는다 — 학교 쪽 실패 횟수가 더 늘지 않는다
+    for (const pw of ['wrong-5-pw', SCHOOL_PW]) {
+      const stopped = await verify('2021204044', pw);
+      expect(stopped.status).toBe(429);
+      expect(stopped.json).toMatchObject({ code: 'RATE_LIMITED' });
+    }
     expect(fake.state.infoLogins).toBe(loginsBefore);
     expect(fake.state.calls.length).toBe(callsBefore);
+    // 가드의 실패 횟수는 잠금이 시작되는 5회에 닿지 않는다
+    const g = await get<{ fails: number; lockedUntil: string | null }>(
+      'SELECT fails, locked_until AS "lockedUntil" FROM school_login_guard WHERE student_hash = ?',
+      [studentHash('2021204044')],
+    );
+    expect(Number(g!.fails)).toBe(4);
+    expect(g!.lockedUntil).toBeNull();
   });
 
   it('이미 가입된 학번은 학교 인증에 성공한 뒤 409 SCHOOL_ALREADY_REGISTERED 이고 ticket 은 없다', async () => {
