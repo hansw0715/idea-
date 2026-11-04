@@ -12,14 +12,22 @@
 .lounge-admin-tabs {
   margin-bottom: var(--sp-6);
 }
-/* 탭이 7개라 좁은 화면에서는 글자를 한 줄로 두고 탭 줄만 옆으로 민다 (글자가 세로로 쪼개지지 않게) */
+/* 탭이 7개라 좁은 화면에서는 두 줄로 넘긴다 — 공용 탭 줄은 옆으로 밀 수 없어(overflow hidden) 끝 탭(탈퇴 학번)이 잘렸다.
+   탭 너비가 제각각이라 공용 밑줄(같은 너비로 미끄러지는 ::after) 대신 고른 탭 아래에 바로 밑줄을 긋는다. */
 .lounge-admin-tabs .tabs {
-  scrollbar-width: none;
+  flex-wrap: wrap;
+}
+.lounge-admin-tabs .tabs::after {
+  display: none;
 }
 .lounge-admin-tabs .tabs__tab {
   flex: 1 0 auto;
   white-space: nowrap;
   padding-inline: var(--sp-4);
+  border-bottom: 2px solid transparent;
+}
+.lounge-admin-tabs .tabs__tab[aria-selected='true'] {
+  border-bottom-color: var(--c-action);
 }
 
 /* 탭 패널 안의 위쪽 줄: 설명 + 새로 고치기 */
