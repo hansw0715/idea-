@@ -20,7 +20,7 @@ import {
   parseSealedBox,
 } from './school/service.js';
 import type { SchoolService } from './school/service.js';
-import { ADMIN_LOGIN_PREFIX, normalizeUsername, passwordError, usernameError } from '../shared/auth.js';
+import { ADMIN_LOGIN_PREFIX, USERNAME_MAX, normalizeUsername, passwordError, usernameError } from '../shared/auth.js';
 import type { AuthUser } from '../shared/auth.js';
 import type { SchoolSignupRequest, SchoolVerifyResponse } from '../shared/school/types.js';
 
@@ -54,6 +54,7 @@ function jwtSecret(): string {
 }
 
 const TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const ADMIN_TOKEN_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 /** 관리자 모드 세션(admin_아이디)이 부를 수 있는 API. 원래 계정의 시간표·라운지 등은 열지 않는다. */
 function adminSessionAllows(req: Request): boolean {
@@ -80,10 +81,25 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       res.status(403).json({ error: '관리자 로그인으로는 관리자 화면만 쓸 수 있어요.', code: 'FORBIDDEN' });
       return;
     }
-    next();
   } catch {
     res.status(401).json({ error: '세션이 만료되었습니다. 다시 로그인해 주세요.' });
+    return;
   }
+  if (!res.locals.adminMode) {
+    next();
+    return;
+  }
+  // 관리자 모드 세션은 요청마다 "그 계정이 아직 관리자 아이디인가"를 다시 본다.
+  // 관리자 목록(ADMIN_LOGIN_USERNAMES)에서 빼면 이미 받은 증표도 바로 쓸 수 없게 된다.
+  get<{ username: string | null }>('SELECT username FROM users WHERE id = ?', [res.locals.userId])
+    .then((row) => {
+      if (!row?.username || !adminLoginUsernames().includes(normalizeUsername(row.username))) {
+        res.status(401).json({ error: '관리자 권한이 없습니다. 다시 로그인해 주세요.' });
+        return;
+      }
+      next();
+    })
+    .catch(next);
 }
 
 export function userId(res: Response): number {
@@ -102,6 +118,16 @@ export function adminLoginUsernames(): string[] {
   const list = raw ? raw.split(',') : DEFAULT_ADMIN_LOGIN_USERNAMES;
   return list.map((u) => normalizeUsername(u)).filter(Boolean);
 }
+
+/**
+ * 관리자 로그인 아이디는 가입으로 새로 만들 수 없다. 운영자 계정이 아직 없을 때 학생이 먼저 그 아이디로 가입해
+ * "admin_아이디" 로 관리자 모드를 얻는 것을 막는다. (이미 있는 운영자 계정에는 영향이 없다)
+ */
+export function isReservedAdminUsername(raw: unknown): boolean {
+  const u = normalizeUsername(raw);
+  return u.length > 0 && adminLoginUsernames().includes(u);
+}
+const RESERVED_USERNAME_MESSAGE = '쓸 수 없는 아이디예요. 다른 아이디를 골라 주세요.';
 
 /** "admin_아이디" 로 들어왔고 그 아이디가 지정된 관리자면 원래 아이디, 아니면 null */
 export function adminLoginBase(username: string): string | null {
@@ -130,14 +156,15 @@ export function wrap(
 }
 
 function issueToken(res: Response, uid: number, admin = false): void {
-  const token = jwt.sign(admin ? { uid, adm: true } : { uid }, jwtSecret(), { expiresIn: '7d' });
+  // 관리자 모드 증표는 12시간만 유효하다 (일반 로그인은 7일)
+  const token = jwt.sign(admin ? { uid, adm: true } : { uid }, jwtSecret(), { expiresIn: admin ? '12h' : '7d' });
   res.cookie('token', token, {
     httpOnly: true,
     sameSite: 'lax',
     // 서버리스 플랫폼은 항상 HTTPS로 서빙되므로 NODE_ENV 설정 여부와 무관하게 Secure를 켠다.
     // (브라우저는 http://localhost 는 예외로 허용하므로 로컬 테스트도 그대로 된다.)
     secure: process.env.NODE_ENV === 'production' || isServerless,
-    maxAge: TOKEN_MAX_AGE_MS,
+    maxAge: admin ? ADMIN_TOKEN_MAX_AGE_MS : TOKEN_MAX_AGE_MS,
   });
 }
 
@@ -263,6 +290,8 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
   const signupLimiter = createRateLimiter(10, 10 * 60 * 1000); // 가입: IP 기준 10분에 10회
   const availableLimiter = createRateLimiter(60, 10 * 60 * 1000); // 아이디 중복 확인: IP 기준 10분에 60회
   const loginLimiter = createRateLimiter(10, 10 * 60 * 1000); // 온라인 무차별 대입 방지: IP+아이디 기준 10분에 10회
+  // 아이디만 바꿔 가며 보내면 IP+아이디 제한을 매번 새로 받으므로(비밀번호 해시 계산이 무제한), IP 하나의 전체 시도도 묶는다
+  const loginIpLimiter = createRateLimiter(50, 10 * 60 * 1000); // IP 기준 10분에 50회
 
   /** 학교 오류·입력 오류는 학교 라우터와 같은 모양(`{error, code}`)으로, 그 밖은 전역 오류 처리기로 */
   const route = (handler: (req: Request, res: Response) => Promise<void>): RequestHandler => (req, res, next) => {
@@ -331,6 +360,7 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
       // ① 형식 검사 (항목별 문장)
       const nameError = usernameError(body.username);
       if (nameError) throw invalid(nameError, 'username');
+      if (isReservedAdminUsername(body.username)) throw invalid(RESERVED_USERNAME_MESSAGE, 'username');
       const pwError = passwordError(body.password);
       if (pwError) throw invalid(pwError, 'password');
       const username = normalizeUsername(body.username);
@@ -411,6 +441,10 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
       const reason = usernameError(typeof raw === 'string' ? raw : '');
       if (reason) {
         res.json({ available: false, reason });
+        return;
+      }
+      if (isReservedAdminUsername(raw)) {
+        res.json({ available: false, reason: RESERVED_USERNAME_MESSAGE });
         return;
       }
       const exists = await get('SELECT 1 AS x FROM users WHERE username = ?', [normalizeUsername(raw)]);
@@ -604,8 +638,13 @@ export function createAuthRouter(deps: AuthRouterDeps = {}): Router {
         res.status(400).json({ error: '아이디와 비밀번호를 입력해 주세요.' });
         return;
       }
+      // 가입할 수 없는 길이의 아이디는 볼 것도 없이 실패로 답한다 (제한 장치에 긴 키가 쌓이지 않게)
+      if (username.length > USERNAME_MAX + ADMIN_LOGIN_PREFIX.length) {
+        res.status(401).json({ error: BAD_LOGIN });
+        return;
+      }
       const limiterKey = `${req.ip}:${username}`;
-      if (!loginLimiter.hit(limiterKey)) {
+      if (!loginIpLimiter.hit(String(req.ip)) || !loginLimiter.hit(limiterKey)) {
         res.status(429).json({ error: '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.' });
         return;
       }

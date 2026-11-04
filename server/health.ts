@@ -29,10 +29,32 @@ healthRouter.get(
   }),
 );
 
-/** 메일 발송 설정이 살아 있는지 확인한다. (실제로 보내지는 않는다) */
+/** 메일 점검 결과를 이만큼 재사용한다 — 로그인 없이 부를 수 있으므로 요청마다 메일 서버에 로그인하지 않는다 */
+export const MAIL_CHECK_CACHE_MS = 5 * 60 * 1000;
+let mailCheck: { at: number; result: Promise<{ configured: boolean; ok: boolean }> } | null = null;
+
+/** 시험용: 캐시를 비운다 */
+export function resetMailCheckCache(): void {
+  mailCheck = null;
+}
+
+/**
+ * 메일 발송 설정이 살아 있는지 확인한다. (실제로 보내지는 않는다)
+ * 로그인 없이 열린 주소이므로 메일 서버의 오류 문구·코드는 응답에 넣지 않고 서버 로그에만 남긴다.
+ */
 healthRouter.get(
   '/mail',
   wrap(async (_req, res) => {
-    res.json(await verifyMailConnection());
+    const now = Date.now();
+    if (!mailCheck || now - mailCheck.at > MAIL_CHECK_CACHE_MS) {
+      mailCheck = {
+        at: now,
+        result: verifyMailConnection().then((r) => {
+          if (r.configured && !r.ok) console.warn('[health] 메일 서버 점검 실패:', 'code' in r ? r.code : undefined);
+          return { configured: r.configured, ok: r.ok };
+        }),
+      };
+    }
+    res.json(await mailCheck.result);
   }),
 );

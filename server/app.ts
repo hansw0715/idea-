@@ -101,12 +101,26 @@ export function errorHandler(err: unknown, _req: Request, res: Response, next: N
   res.status(500).json({ error: '서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' });
 }
 
+/**
+ * 'trust proxy' 값. TRUST_PROXY 환경 변수(홉 수 또는 false)가 있으면 그 값을, 없으면 알려진 프록시 플랫폼
+ * (Vercel·Fly.io·Netlify)에서만 1 을 쓴다.
+ */
+export function trustProxySetting(env: NodeJS.ProcessEnv = process.env): number | false {
+  const raw = env.TRUST_PROXY?.trim();
+  if (raw) {
+    const hops = Number(raw);
+    return Number.isInteger(hops) && hops > 0 ? hops : false;
+  }
+  return env.VERCEL || env.FLY_APP_NAME || env.NETLIFY ? 1 : false;
+}
+
 export function createApp() {
   const app = express();
 
-  // 리버스 프록시(Fly.io / Vercel / Netlify) 뒤에 놓이므로 X-Forwarded-* 를 신뢰해야
-  // secure 쿠키와 req.ip(레이트리밋 키)가 올바르게 동작한다.
-  app.set('trust proxy', 1);
+  // 리버스 프록시(Fly.io / Vercel / Netlify) 뒤에서는 X-Forwarded-* 를 신뢰해야
+  // secure 쿠키와 req.ip(레이트리밋 키)가 올바르게 동작한다. 프록시 없이 직접 열린 서버(npm start, docker run)에서
+  // 신뢰하면 누구나 X-Forwarded-For 로 req.ip 를 바꿔 IP 기준 제한을 피할 수 있으므로 그때는 신뢰하지 않는다.
+  app.set('trust proxy', trustProxySetting());
 
   // 학교 계정 정보가 오가는 경로의 응답은 절대 캐시하지 않는다. 본문 해석(express.json)보다 **앞**에 두어야
   // 깨진 JSON(400)·너무 큰 본문(413) 같은 해석 단계의 오류 응답에도 이 헤더가 붙는다.

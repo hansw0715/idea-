@@ -179,7 +179,29 @@ interface CacheEntry {
 }
 
 const CACHE_TTL_MS = 15 * 60 * 1000;
+/** 캐시 칸 수 상한 (시스템 수 × 조회 가능한 달 수보다 넉넉하게) */
+const CACHE_MAX_ENTRIES = 200;
 const cache = new Map<string, CacheEntry>();
+
+/** 학교 예약 현황을 물어볼 수 있는 달: 지난달부터 6개월 뒤까지. 그 밖의 달은 학교 서버에 묻지 않는다 */
+export const CAMPUS_MONTHS_BACK = 1;
+export const CAMPUS_MONTHS_AHEAD = 6;
+export function isCampusMonthInRange(year: number, month: number, nowMs: number = Date.now()): boolean {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return false;
+  const now = new Date(nowMs);
+  const diff = (year - now.getFullYear()) * 12 + (month - (now.getMonth() + 1));
+  return diff >= -CAMPUS_MONTHS_BACK && diff <= CAMPUS_MONTHS_AHEAD;
+}
+
+function cacheSet(key: string, entry: CacheEntry): void {
+  cache.delete(key);
+  cache.set(key, entry);
+  // 넣은 순서가 오래된 칸부터 버린다
+  for (const k of cache.keys()) {
+    if (cache.size <= CACHE_MAX_ENTRIES) break;
+    cache.delete(k);
+  }
+}
 
 /**
  * 해당 연·월의 학교 예약/휴무 현황을 돌려준다.
@@ -195,8 +217,10 @@ export async function getCampusBusy(
   month: number,
   systemKeys?: string[],
 ): Promise<BusyBlock[] | null> {
-  const systems = systemKeys ? CAMPUS_SYSTEMS.filter((s) => systemKeys.includes(s.key)) : CAMPUS_SYSTEMS;
   const now = Date.now();
+  // 아무 연·월로 학교 서버에 요청을 늘리거나 캐시를 키우지 못하게 한다 (모름 = null → 화면은 "확인 불가")
+  if (!isCampusMonthInRange(year, month, now)) return null;
+  const systems = systemKeys ? CAMPUS_SYSTEMS.filter((s) => systemKeys.includes(s.key)) : CAMPUS_SYSTEMS;
   const results = await Promise.allSettled(
     systems.map(async (s) => {
       const key = `${s.key}:${year}-${month}`;
@@ -204,7 +228,7 @@ export async function getCampusBusy(
       if (hit && now - hit.fetchedAt < CACHE_TTL_MS) return { blocks: hit.blocks, fresh: true };
       try {
         const blocks = await fetchSystem(s, year, month);
-        cache.set(key, { fetchedAt: Date.now(), blocks });
+        cacheSet(key, { fetchedAt: Date.now(), blocks });
         return { blocks, fresh: true };
       } catch (err) {
         console.error(`[campus] ${s.label} 예약 현황 조회 실패:`, err);

@@ -28,6 +28,7 @@ import type {
   TimetablePreview,
 } from '../../shared/school/types.js';
 import {
+  assertAnonymousVerifyAllowed,
   assertLinkProbeBudget,
   clearLinkProbe,
   guardedLogin,
@@ -393,10 +394,12 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
   /**
    * 가입 ① 학생 인증: 학교에 **한 번** 로그인해 학번·비밀번호가 맞는지 보고 프로필을 읽는다. 아무것도 저장하지 않는다.
    * 로그인은 guardedLogin 을 그대로 거친다(학번당 연속 5회 실패 30분 잠금, 8회 멈춤, 동시 요청 거절).
-   * 사용자 id 가 아직 없어 link() 의 "남의 학번 시도 예산"은 쓸 수 없다 — 그 자리는 호출하는 쪽(auth.ts)의 IP 기준 제한이 맡는다.
+   * 사용자 id 가 아직 없어 link() 의 "남의 학번 시도 예산"은 쓸 수 없다 — 그 자리는 호출하는 쪽(auth.ts)의 IP 기준 제한과
+   * 학번별 상한(assertAnonymousVerifyAllowed: 잠금이 시작되기 전인 4회에서 멈춤)이 맡는다.
    * 이미 어느 계정에 연동된 학번이면 학교 인증에 성공한 **뒤에** 409 로 알린다(비밀번호를 모르는 사람이 가입 여부를 알 수 없다).
    */
   async function verifyStudent(creds: SchoolCredentials): Promise<{ profile: SchoolProfile; hint: string; linkHash: string }> {
+    await assertAnonymousVerifyAllowed(creds.studentId);
     const http = newInfoHttp();
     await guardedLogin(creds.studentId, () => loginInfo(http, creds), now, { relink: false });
     const profile = toProfile(await fetchProfile(http));
@@ -862,12 +865,17 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
     const member = await get('SELECT 1 AS x FROM meeting_members WHERE meeting_id = ? AND user_id = ?', [r.meetingId, uid]);
     if (!member) throw new ApiInputError('FORBIDDEN', '이 회의의 멤버만 학교 신청을 취소할 수 있어요.');
 
-    const booking = await get<{ id: number; status: string }>(
-      `SELECT id, status FROM school_bookings WHERE reservation_id = ? AND status IN ('confirmed', 'unknown') ORDER BY id DESC LIMIT 1`,
+    const booking = await get<{ id: number; status: string; userId: number }>(
+      `SELECT id, status, user_id AS "userId" FROM school_bookings WHERE reservation_id = ? AND status IN ('confirmed', 'unknown') ORDER BY id DESC LIMIT 1`,
       [reservationId],
     );
     if (!booking && r.schoolStatus !== 'confirmed') {
       return { status: 'nothing-to-cancel', message: '학교에 보낸 신청이 없어서 앱의 예약만 지우면 돼요.' };
+    }
+    // 학교 신청은 신청한 사람의 학교 계정에 있다. 다른 멤버는 자기 학교 내역에서 찾지 못하므로,
+    // 그 결과로 "취소됨"을 기록하면 실제로 살아 있는 학교 예약이 앱에서 사라진다 — 신청한 사람만 취소한다.
+    if (booking && Number(booking.userId) !== uid) {
+      throw new ApiInputError('FORBIDDEN', '학교에 신청한 멤버만 그 신청을 취소할 수 있어요.');
     }
 
     const system = systemForFacility(r.systemKey);

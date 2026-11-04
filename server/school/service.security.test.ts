@@ -500,3 +500,36 @@ describe('6. 저장된 비밀번호가 틀어졌을 때 (학생이 학교 비밀
     expect(fake.state.infoLogins).toBeLessThan(10); // 학교의 계정 잠금 한도
   });
 });
+
+// ───────────────────────────────────────────────────────────────
+describe('7. 학교 신청 취소는 신청한 멤버만 한다 (다른 멤버가 남의 실제 학교 예약을 앱에서 지우지 못한다)', () => {
+  it('같은 회의의 다른 멤버가 취소하면 403 이고, 학교 호출·앱 기록 변경이 없다', async () => {
+    const OTHER_ID = '2022301122';
+    const OTHER_PW = 'other-PW-9z8y7x';
+    const { uid: ownerUid, svc, fake } = await linkedOwner({ [OWNER_ID]: OWNER_PW, [OTHER_ID]: OTHER_PW });
+    const otherUid = await makeUser();
+    await svc.link(otherUid, { creds: { studentId: OTHER_ID, password: OTHER_PW }, cipher });
+    resetLimits(otherUid);
+    fake.state.calls.length = 0;
+    fake.state.infoLogins = 0;
+    fake.state.resveLogins = 0;
+
+    const meetingId = await insert('INSERT INTO meetings (name, code, owner_id) VALUES (?, ?, ?) RETURNING id', ['보안 시험 회의', `9${Date.now() % 1000}`, ownerUid]);
+    await run('INSERT INTO meeting_members (meeting_id, user_id) VALUES (?, ?), (?, ?)', [meetingId, ownerUid, meetingId, otherUid]);
+    const facility = await get<{ id: number }>('SELECT id FROM facilities ORDER BY id LIMIT 1');
+    const reservationId = await insert(
+      "INSERT INTO reservations (facility_id, meeting_id, user_id, date, start_min, end_min, school_status) VALUES (?, ?, ?, '2026-10-20', 600, 660, 'confirmed') RETURNING id",
+      [facility!.id, meetingId, ownerUid],
+    );
+    const bookingId = await insert("INSERT INTO school_bookings (reservation_id, user_id, status) VALUES (?, ?, 'confirmed') RETURNING id", [reservationId, ownerUid]);
+
+    const err = await svc
+      .bookCancel(otherUid, { creds: { studentId: OTHER_ID, password: OTHER_PW }, reservationId })
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiInputError);
+    expect((err as ApiInputError).code).toBe('FORBIDDEN');
+    expect(fake.state.resveLogins).toBe(0);
+    expect((await get<{ status: string }>('SELECT status FROM school_bookings WHERE id = ?', [bookingId]))!.status).toBe('confirmed');
+    expect((await get<{ s: string }>('SELECT school_status AS s FROM reservations WHERE id = ?', [reservationId]))!.s).toBe('confirmed');
+  });
+});
