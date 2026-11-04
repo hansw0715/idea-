@@ -111,7 +111,8 @@ export function userId(res: Response): number {
  * 없으면 아래 기본값을 쓴다. 이 아이디를 "admin_아이디" 로, 비밀번호는 원래 것으로 로그인하면 관리자 모드가 된다.
  * 관리자 모드는 원래 계정으로 인증만 할 뿐, 원래 계정의 정보·화면과는 상관없이 관리자 화면만 연다.
  */
-const DEFAULT_ADMIN_LOGIN_USERNAMES = ['dedea715', 'doctor', 'hansw'];
+// dedea715 는 2026-11-04 탈퇴 뒤 같은 아이디로 다시 가입하도록 잠시 뺐다 — 다시 가입하면 목록에 되돌린다
+const DEFAULT_ADMIN_LOGIN_USERNAMES = ['doctor', 'hansw'];
 
 export function adminLoginUsernames(): string[] {
   const raw = process.env.ADMIN_LOGIN_USERNAMES;
