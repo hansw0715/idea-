@@ -58,6 +58,7 @@ import type { FetchLike, SchoolOrigins } from './http.js';
 import { fetchProfile, fetchTimetable, loginInfo } from './info.js';
 import { assertNotWithdrawn } from './withdrawn.js';
 import { createEclassFlow } from './eclass.js';
+import { RUAUTH_DATA, RUAUTH_TOKEN } from './eclassParse.js';
 import type { EclassSnapshot } from '../../shared/school/eclass.js';
 import {
   admissionYearOf,
@@ -912,6 +913,23 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
     return flow.snapshot(budget);
   }
 
+  /**
+   * 원격수업 본인 인증을 학생이 앱에서 마친 뒤(알림톡 코드·링크) e-class 에 인증 완료를 알린다.
+   * 인증 화면이 보내는 확인 요청 하나뿐이다. token·ruauthData 는 직전 조회가 인증 화면에서 읽어 준 값이다.
+   */
+  async function eclassVerify(uid: number, body: unknown): Promise<{ verified: boolean }> {
+    const o = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
+    const creds = parseCredentials(o.creds);
+    const token = typeof o.token === 'string' ? o.token : '';
+    const ruauthData = typeof o.ruauthData === 'string' ? o.ruauthData : '';
+    if (!RUAUTH_TOKEN.test(token) || !RUAUTH_DATA.test(ruauthData)) throw invalid('본인 인증 정보가 올바르지 않아요. 새로고침한 뒤 다시 시도해 주세요.');
+    hitLimiter(schoolCallLimiter, uid);
+    await requireLinked(uid, creds);
+    const flow = createEclassFlow(newEclassHttp(), { now });
+    const budget = await guardedLogin(creds.studentId, () => flow.login(creds), now);
+    return { verified: await flow.confirmVerification(budget, { token, ruauthData }) };
+  }
+
   return {
     getLink,
     link,
@@ -925,6 +943,7 @@ export function createSchoolService(deps: SchoolServiceDeps = {}) {
     bookSubmit,
     bookCancel,
     eclassOverview,
+    eclassVerify,
   };
 }
 

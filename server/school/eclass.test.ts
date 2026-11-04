@@ -65,7 +65,13 @@ const ASSIGN_INDEX = `<html><body><table class="generaltable"><tbody>
   <tr><td class="cell c0"></td><td class="cell c1"><a href="${ORIGIN}/mod/assign/view.php?id=702">과제 2</a></td><td class="cell c2">2026-10-20 23:59</td><td class="cell c3">제출 완료</td><td class="cell c4">-</td></tr>
 </tbody></table></body></html>`;
 
-type Site = { password?: string; drift?: boolean; community?: string; attFail?: boolean; progFail?: boolean; weekly?: string; noAssign?: boolean; emptyAtt?: boolean };
+const RUAUTH_TOKEN_VALUE = 'eyJ0eXAiOiJKV1QifQ.eyJ1c2VyX2lkIjoiMSJ9.c2lnbmF0dXJlLXZhbHVl';
+const RUAUTH_PAGE = `<html><body id="page-local_ruauth"><a href="${ORIGIN}/login/logout.php?sesskey=x">로그아웃</a>
+  <div class="ruauth-data-section" style="display:none"><div id="ruauth-token" data="${RUAUTH_TOKEN_VALUE}"></div>
+  <div id="organization-code" data="hansung"></div><div id="target-rd" data="/course/view.php?id=8"></div><div id="ruauth-data" data="COURSE-8"></div></div>
+  <div id="btn-kakaoAuth" class="btn">인증 진행하기</div></body></html>`;
+
+type Site = { gate?: string; gateOk?: boolean; password?: string; drift?: boolean; community?: string; attFail?: boolean; progFail?: boolean; weekly?: string; noAssign?: boolean; emptyAtt?: boolean };
 
 function fakeSite(opts: Site = {}) {
   const seen: string[] = [];
@@ -83,6 +89,14 @@ function fakeSite(opts: Site = {}) {
     }
     if (url.pathname === '/login/index.php') return redirect('/');
     if (url.pathname === '/') return html(homeOf(opts.community));
+    // 원격수업 본인 인증: gate 강좌의 페이지는 모두 /local/ruauth/ 로 보낸다
+    if (opts.gate && url.searchParams.get('id') === opts.gate && url.pathname !== '/local/ruauth/') return redirect('/local/ruauth/');
+    if (url.pathname === '/local/ruauth/') return html(RUAUTH_PAGE);
+    if (url.pathname === '/local/ruauth/apis/checkUserAuth.php' && init.method === 'POST') {
+      const body = new URLSearchParams(String(init.body));
+      const ok = opts.gateOk && body.get('token') === RUAUTH_TOKEN_VALUE && body.get('ruauth_data') === 'COURSE-8';
+      return new Response(JSON.stringify({ code: ok ? '100' : '200' }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
     if (url.pathname === '/course/view.php') return html(COURSE(url.searchParams.get('id')!));
     if (url.pathname === '/report/ubcompletion/user_progress_a.php') {
       if (opts.attFail) return html('gone', 404);
@@ -288,5 +302,32 @@ describe('e-class 날짜 해석', () => {
     expect(P.parseSeoulDate('2026년 10월 13일 (화) 오후 11:59')).toBe('2026-10-13T14:59:00.000Z');
     expect(P.parseSeoulDate('2026-10-13 09:00')).toBe('2026-10-13T00:00:00.000Z');
     expect(P.parseSeoulDate('2026년 10월 13일')).toBeNull();
+  });
+});
+
+describe('원격수업 본인 인증 (/local/ruauth/)', () => {
+  it('인증에 막힌 강좌는 건너뛰고 인증 값을 돌려준다 (나머지 강좌는 그대로)', async () => {
+    const { snap, site } = await run({ gate: '8' });
+    expect(snap.verification).toEqual({ token: RUAUTH_TOKEN_VALUE, organizationCode: 'hansung', ruauthData: 'COURSE-8', courses: ['운영체제'] });
+    expect(snap.courseCount).toBe(1);
+    expect(snap.items.every((i) => i.courseId === '7')).toBe(true);
+    expect(snap.warnings.some((w) => w.includes('운영체제'))).toBe(false);
+    // 인증 화면은 읽기만 한다 (본문을 보내는 요청은 로그인뿐)
+    expect(site.seen.filter((l) => l.startsWith('POST'))).toEqual(['POST /login/index.php']);
+  });
+
+  it('막힌 강좌가 없으면 verification 은 null', async () => {
+    expect((await run()).snap.verification).toBeNull();
+  });
+
+  it('인증 완료 확인은 checkUserAuth.php 하나만 보낸다', async () => {
+    const site = fakeSite({ gate: '8', gateOk: true });
+    const flow = flowOf(site);
+    const ok = await flow.confirmVerification(await flow.login(CREDS), { token: RUAUTH_TOKEN_VALUE, ruauthData: 'COURSE-8' });
+    expect(ok).toBe(true);
+    expect(site.seen.at(-1)).toBe('POST /local/ruauth/apis/checkUserAuth.php');
+    const bad = fakeSite({ gate: '8', gateOk: false });
+    const flow2 = flowOf(bad);
+    expect(await flow2.confirmVerification(await flow2.login(CREDS), { token: RUAUTH_TOKEN_VALUE, ruauthData: 'COURSE-8' })).toBe(false);
   });
 });

@@ -5,7 +5,12 @@
  */
 import { load } from 'cheerio';
 import type { CheerioAPI } from 'cheerio';
-import type { EclassCompletion, EclassItem } from '../../shared/school/eclass.js';
+import type { EclassCompletion, EclassItem, EclassVerification } from '../../shared/school/eclass.js';
+
+/** 본인 인증 값의 형식 (JWT · 기관 코드 · 강좌 표시). 서버가 인증 완료를 알릴 때도 같은 형식만 받는다 */
+export const RUAUTH_TOKEN = /^[\w-]{10,2000}\.[\w-]{10,4000}\.[\w-]{10,200}$/;
+export const RUAUTH_ORG = /^[a-z0-9_-]{1,40}$/i;
+export const RUAUTH_DATA = /^COURSE-\d{1,10}$/;
 
 export interface EclassCourse {
   id: string;
@@ -483,7 +488,18 @@ export function createEclassParser(origin: string) {
     }));
   }
 
+  /** 원격수업 본인 인증 화면(/local/ruauth/)의 숨은 값. 셋 중 하나라도 형식이 다르면 null */
+  function parseRuauthGate(html: string): Omit<EclassVerification, 'courses'> | null {
+    const $ = load(html);
+    const token = $('#ruauth-token').attr('data')?.trim() ?? '';
+    const organizationCode = $('#organization-code').attr('data')?.trim() ?? '';
+    const ruauthData = $('#ruauth-data').attr('data')?.trim() ?? '';
+    if (!RUAUTH_TOKEN.test(token) || !RUAUTH_ORG.test(organizationCode) || !RUAUTH_DATA.test(ruauthData)) return null;
+    return { token, organizationCode, ruauthData };
+  }
+
   return {
+    parseRuauthGate,
     eclassUrl, hasLoginForm, isAuthenticatedPage, parseLoginForm, parseCourses, parseSeoulDate,
     parseAttendancePage, parseProgressPage, parseVodList, parseAssignList, mergeLectures, mergeAssignments, describeTables, describeAttendanceRows,
   };

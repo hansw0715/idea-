@@ -333,3 +333,44 @@
     animation: spin 0.9s linear infinite reverse;
   }
 }
+
+/* 원격수업 본인 인증 (EclassVerifyCard): 경고 상자 없이 불러오기 안내와 같은 한 줄 + 글자 버튼 */
+.school-eclass__verify {
+  display: grid;
+  gap: var(--sp-2);
+}
+.school-eclass__verify .school-eclass__notice {
+  margin-bottom: 0;
+}
+.school-eclass__verify-icon {
+  color: var(--c-warning);
+}
+.school-eclass__verify-form {
+  display: grid;
+  gap: var(--sp-2);
+}
+.school-eclass__verify-code {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+.school-eclass__verify-code .input {
+  flex: 1;
+  min-width: 0;
+  letter-spacing: 0.15em;
+}
+.school-eclass__verify-code .btn {
+  flex: none;
+}
+.school-eclass__verify-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.school-eclass__verify-links .school-eclass__textbtn {
+  min-height: 2.4rem;
+  font-weight: var(--fw-regular);
+}
+.school-eclass__verify-msg {
+  padding: 0 var(--sp-1);
+}

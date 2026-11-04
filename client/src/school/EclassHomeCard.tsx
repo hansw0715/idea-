@@ -44,7 +44,8 @@ export function readEclassSnapshot(userId: number): EclassSnapshot | null {
 /** 새로 읽은 결과를 이 기기에 두고, 화면들(홈 카드 · 학사 알림)에 알린다 */
 function writeEclassSnapshot(userId: number, snapshot: EclassSnapshot): void {
   try {
-    localStorage.setItem(cacheKey(userId), JSON.stringify(snapshot));
+    // 본인 인증 값(token)에는 전화번호·이메일이 들어 있어 기기에 남기지 않는다
+    localStorage.setItem(cacheKey(userId), JSON.stringify({ ...snapshot, verification: null }));
   } catch {
     /* 저장하지 못해도 이번 화면에서는 알림으로 다시 그린다 */
   }

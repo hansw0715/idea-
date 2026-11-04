@@ -32,6 +32,7 @@ import {
   ts,
 } from "./eclassLogic";
 import { useSchool } from "./SchoolContext";
+import EclassVerifyCard from "./EclassVerifyCard";
 import "./eclass.css";
 
 const PAGE = 5;
@@ -76,7 +77,8 @@ function readCache(userId: number): EclassSnapshot | null {
 
 function writeCache(userId: number, snapshot: EclassSnapshot): void {
   try {
-    localStorage.setItem(cacheKey(userId), JSON.stringify(snapshot));
+    // 본인 인증 값(token)에는 전화번호·이메일이 들어 있어 기기에 남기지 않는다
+    localStorage.setItem(cacheKey(userId), JSON.stringify({ ...snapshot, verification: null }));
     // 홈 요약 카드(EclassHomeCard)가 새 결과를 다시 읽게 알린다
     window.dispatchEvent(new Event("sangsang-booke:eclass-updated"));
   } catch {
@@ -296,6 +298,14 @@ export default function EclassHome() {
               완료 여부를 확인하지 못한 {counts.unknownCompletion}개는 위 숫자에
               넣지 않았어요.
             </p>
+          )}
+
+          {snapshot.verification && (
+            <EclassVerifyCard
+              key={snapshot.verification.ruauthData}
+              verification={snapshot.verification}
+              onVerified={() => void refresh()}
+            />
           )}
 
           {snapshot.warnings.length > 0 && (

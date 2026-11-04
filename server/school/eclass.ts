@@ -10,13 +10,30 @@
  *
  * 설계 메모: 팀이 먼저 만든 프로토타입은 e-class 로그인 세션 쿠키를 서버에 암호화해 8시간 보관했다. 여기서는 다른 학교 기능과 같이
  * "브라우저가 풀어서 보낸 계정으로 요청마다 로그인하고 바로 버린다"로 바꿨다(서버에 e-class 세션이 남지 않는다).
+ *
+ * 원격수업 본인 인증: 원격수업 강좌를 열면 e-class 가 학번마다 7일에 한 번 /local/ruauth/ (대리출석 방지 본인 인증)로 보낸다.
+ * 그 화면은 읽기만 하고(숨은 값만 꺼낸다) 그 강좌는 건너뛴다. 인증은 학생이 앱에서 직접 진행하고(알림톡 코드는 학생 휴대폰으로 간다),
+ * 끝나면 confirmVerification 이 인증 화면과 같은 확인 요청(checkUserAuth.php) 하나만 보낸다.
  */
 import type { SchoolCredentials } from '../../shared/school/types.js';
-import type { EclassSnapshot } from '../../shared/school/eclass.js';
+import type { EclassSnapshot, EclassVerification } from '../../shared/school/eclass.js';
 import { SchoolAuthFailed, SchoolUnavailable } from './http.js';
 import type { SchoolHttp, SchoolResponse } from './http.js';
 import { createEclassParser } from './eclassParse.js';
 import type { VodAttendanceRow } from './eclassParse.js';
+
+/** 원격수업 본인 인증이 필요한 강좌를 만났다. 강좌 하나만 건너뛰게 SchoolUnavailable 로 둔다 */
+export class EclassVerificationRequired extends SchoolUnavailable {
+  readonly gate: Omit<EclassVerification, 'courses'>;
+  constructor(gate: Omit<EclassVerification, 'courses'>) {
+    super('원격수업 본인 인증이 필요해서 확인하지 못했어요.');
+    this.name = 'EclassVerificationRequired';
+    this.gate = gate;
+  }
+}
+
+const RUAUTH_PATH = /^\/local\/ruauth\/?$/;
+const RUAUTH_CHECK_PATH = '/local/ruauth/apis/checkUserAuth.php';
 
 export const ECLASS_MAX_COURSES = 12;
 export const ECLASS_MAX_ITEMS = 160;
@@ -72,14 +89,25 @@ export function createEclassFlow(http: SchoolHttp, opts: EclassFlowOptions = {})
 
   const unavailable = (msg = 'e-class 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.') => new SchoolUnavailable(msg);
 
-  /** 읽기 요청 한 번(리다이렉트는 한 단계씩 검사하며 따라간다). 로그인 화면이 돌아오면 세션이 없는 것이다. */
-  async function read(budget: Budget, target: string, form?: [string, string][], purpose: 'login' | 'read' = 'read'): Promise<string> {
+  /**
+   * 읽기 요청 한 번(리다이렉트는 한 단계씩 검사하며 따라간다). 로그인 화면이 돌아오면 세션이 없는 것이다.
+   * 본인 인증 화면(/local/ruauth/)으로 보내지면 숨은 값을 꺼내 EclassVerificationRequired 로 알린다.
+   * 본문을 보내는 요청은 로그인과 본인 인증 확인(checkUserAuth.php) 두 가지뿐이다.
+   */
+  async function read(
+    budget: Budget,
+    target: string,
+    form?: [string, string][],
+    purpose: 'login' | 'read' | 'ruauth' = 'read',
+  ): Promise<string> {
     await budget.acquire();
     try {
       let url = P.eclassUrl(target);
       if (!url) throw unavailable('e-class 주소를 확인하지 못해서 중단했어요.');
       if (!form && !safeReadUrl(url.href)) throw unavailable('e-class의 읽을 수 없는 주소라서 중단했어요.');
-      if (form && !(purpose === 'login' && url.pathname === '/login/index.php')) throw unavailable('e-class 요청을 확인하지 못해서 중단했어요.');
+      const formAllowed =
+        (purpose === 'login' && url.pathname === '/login/index.php') || (purpose === 'ruauth' && url.pathname === RUAUTH_CHECK_PATH);
+      if (form && !formAllowed) throw unavailable('e-class 요청을 확인하지 못해서 중단했어요.');
       let body = form;
       for (let hop = 0; hop <= 5; hop++) {
         if (now() > budget.deadline || ++budget.requests > MAX_REQUESTS) {
@@ -90,12 +118,21 @@ export function createEclassFlow(http: SchoolHttp, opts: EclassFlowOptions = {})
           form: body,
           follow: false,
           encoding: 'utf-8',
-          headers: { 'Accept-Language': 'ko-KR,ko;q=0.9', ...(body ? { Origin: origin, Referer: `${origin}/login.php?lang=ko` } : {}) },
+          headers: {
+            'Accept-Language': 'ko-KR,ko;q=0.9',
+            ...(body && purpose === 'ruauth'
+              ? { Origin: origin, Referer: `${origin}/local/ruauth/`, 'X-Requested-With': 'XMLHttpRequest' }
+              : body
+                ? { Origin: origin, Referer: `${origin}/login.php?lang=ko` }
+                : {}),
+          },
         });
         if (res.status >= 300 && res.status < 400 && res.location) {
           const next = P.eclassUrl(res.location, url.href);
+          // 본인 인증 화면은 매개변수가 붙어 와도 읽기만 하므로 따라간다
+          const toGate = !!next && !body && purpose === 'read' && RUAUTH_PATH.test(next.pathname);
           // 307/308 은 본문(비밀번호)을 그대로 다시 보내므로 따라가지 않는다.
-          if (!next || (body && (res.status === 307 || res.status === 308)) || !safeReadUrl(next.href)) {
+          if (!next || (body && (res.status === 307 || res.status === 308)) || (!toGate && !safeReadUrl(next.href))) {
             throw unavailable(`e-class가 허용되지 않은 주소(${next?.pathname ?? '알 수 없음'})로 이동시켜 중단했어요.`);
           }
           url = next;
@@ -105,6 +142,11 @@ export function createEclassFlow(http: SchoolHttp, opts: EclassFlowOptions = {})
         if (res.status === 401 || res.status === 403) throw unavailable('e-class 접근이 거절됐어요. 잠시 후 다시 시도해 주세요.');
         if (res.status >= 400) throw unavailable(`e-class가 ${res.status} 응답을 돌려줬어요.`);
         if (purpose !== 'login' && P.hasLoginForm(res.text)) throw unavailable('e-class 로그인 세션이 확인되지 않았어요. 다시 시도해 주세요.');
+        if (purpose === 'read' && RUAUTH_PATH.test(url.pathname)) {
+          const gate = P.parseRuauthGate(res.text);
+          if (!gate) throw unavailable('e-class 원격수업 본인 인증 화면을 읽지 못했어요. e-class에서 직접 인증해 주세요.');
+          throw new EclassVerificationRequired(gate);
+        }
         return res.text;
       }
       throw unavailable('e-class의 이동이 반복돼서 중단했어요.');
@@ -170,6 +212,8 @@ export function createEclassFlow(http: SchoolHttp, opts: EclassFlowOptions = {})
     if (eligible.length > ECLASS_MAX_COURSES) warnings.add(`강좌가 많아 처음 ${ECLASS_MAX_COURSES}개 강좌만 확인했어요. 나머지는 e-class에서 확인해 주세요.`);
 
     let failedCourses = 0;
+    let gate: Omit<EclassVerification, 'courses'> | null = null;
+    const gatedCourses: string[] = [];
     const perCourse = await mapLimited(courses, async (course) => {
       const url = (path: string) => `${origin}${path}?id=${course.id}`;
       const attendanceRead = read(budget, url('/report/ubcompletion/user_progress_a.php')).then((html) => ({ html, rows: P.parseAttendancePage(html) }));
@@ -178,6 +222,15 @@ export function createEclassFlow(http: SchoolHttp, opts: EclassFlowOptions = {})
         attendanceRead,
         read(budget, url('/mod/assign/index.php')),
       ]);
+      // 원격수업 본인 인증에 막힌 강좌: 읽지 못한 강좌로 세지 않고 인증 안내로 모은다
+      const gated = [viewRes, attendanceRes, assignRes].find(
+        (r): r is PromiseRejectedResult => r.status === 'rejected' && r.reason instanceof EclassVerificationRequired,
+      );
+      if (gated) {
+        gate ??= (gated.reason as EclassVerificationRequired).gate;
+        gatedCourses.push(course.name);
+        return [];
+      }
 
       // 출석 자료: 출석부(_a)가 우선, 안 되면 학습 진도 표(user_progress.php)
       let attendance: VodAttendanceRow[] | null = null;
@@ -260,7 +313,8 @@ export function createEclassFlow(http: SchoolHttp, opts: EclassFlowOptions = {})
       if (!anyOk) failedCourses++;
       return items;
     });
-    if (courses.length > 0 && failedCourses === courses.length) {
+    const readable = courses.length - gatedCourses.length;
+    if (readable > 0 && failedCourses === readable) {
       throw unavailable('e-class 강좌 정보를 불러오지 못했어요. 잠시 후 새로고침해 주세요.');
     }
 
@@ -273,10 +327,40 @@ export function createEclassFlow(http: SchoolHttp, opts: EclassFlowOptions = {})
     const items = all.slice(0, ECLASS_MAX_ITEMS);
     if (items.some((i) => i.completion === 'unknown')) warnings.add('완료 여부를 확인하지 못한 항목은 "확인 필요"로 표시해요.');
 
-    return { items, courseCount: courses.length - failedCourses, syncedAt: new Date(now()).toISOString(), warnings: [...warnings] };
+    // gate 는 강좌별 콜백 안에서 채워져 TS 가 null 로만 본다
+    const found = gate as Omit<EclassVerification, 'courses'> | null;
+    return {
+      items,
+      courseCount: readable - failedCourses,
+      syncedAt: new Date(now()).toISOString(),
+      warnings: [...warnings],
+      verification: found ? { ...found, courses: gatedCourses } : null,
+    };
   }
 
-  return { login, snapshot, safeReadUrl };
+  /**
+   * 학생이 앱에서 본인 인증(알림톡 코드·링크)을 마친 뒤, 인증 화면이 하는 확인 요청을 그대로 보낸다.
+   * e-class 가 인증을 기록하면(code 100) 이 학번은 7일 동안 원격수업 강좌를 다시 읽을 수 있다.
+   */
+  async function confirmVerification(budget: Budget, gate: Pick<EclassVerification, 'token' | 'ruauthData'>): Promise<boolean> {
+    const text = await read(
+      budget,
+      `${origin}${RUAUTH_CHECK_PATH}`,
+      [
+        ['token', gate.token],
+        ['ruauth_data', gate.ruauthData],
+      ],
+      'ruauth',
+    );
+    try {
+      const data = JSON.parse(text) as { code?: unknown };
+      return String(data?.code) === '100';
+    } catch {
+      throw unavailable('e-class 본인 인증 결과를 읽지 못했어요. e-class에서 직접 확인해 주세요.');
+    }
+  }
+
+  return { login, snapshot, confirmVerification, safeReadUrl };
 }
 
 export type EclassFlow = ReturnType<typeof createEclassFlow>;
